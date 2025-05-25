@@ -1,0 +1,1 @@
+ALTER TABLE activities MODIFY lesson_id BIGINT NULL; 

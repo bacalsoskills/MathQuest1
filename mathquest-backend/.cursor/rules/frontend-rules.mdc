@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Always re-run and test after changes
+→ After implementing changes or responding to any request:
+- Run the project: npm start
+- Run lint checks: npm run lint
+- Run tests: npm test
+
+Only update necessary files
+→ Do not modify unrelated files. Only touch files that:
+- Contain the bug or requested change
+- Are directly required to implement a new feature
+
+Project Type
+→ This is a JavaScript React project
+→ Use npm commands:
+    - npm install
+    - npm run lint
+    - npm test
+    - npm start
+
+Coding Conventions
+    - Use clear, descriptive variable and function names
+    - Use camelCase for variables and functions
+    - Use PascalCase for React component names
+    - Write JSdoc comments for exported functions and components where needed
+    - Add comments only when logic is not obvious
+    - Avoid magic numbers — define constants for repeated values
+
+Component Structure and Practices
+    - Use functional components and React hooks (useState, useEffect, etc.)
+    - Keep components small and focused on a single responsibility
+    - Reuse UI components where possible
+    - Maintain separation of concerns: structure (JSX), style (CSS/utility classes), and logic should be organized clearly
+
+Testing
+- Write unit tests for all utility functions and components using Jest / React Testing Library
+- Use data-testid attributes for critical testable elements
+- Ensure minimum 80% test coverage for all new code
+
+State and Props
+- Use local state for component-specific logic
+- Use context or Redux only for shared/global state
+- Avoid prop drilling; use composition or context if needed
+
+Code Quality and Tooling
+→ Before committing, always run:
+    - npm run lint
+    - npm run format
+→ Use ESLint and Prettier for consistent code style
+→ Do not use console.log in production code
+→ If using TypeScript, avoid any and use proper typings
+
+Security Best Practices
+    - Never hardcode API keys, secrets, or tokens
+    - Use .env files and process.env to manage environment variables
+    - Sanitize and validate all user input
+    - Avoid using dangerouslySetInnerHTML unless absolutely necessary
+
+Navigation and Routing
+    - Use React Router (v6 or newer) for route management
+    - Implement proper 404 fallback routes
+    - Centralize route definitions for maintainability
+
+Performance Best Practices
+    - Use code splitting with React.lazy and Suspense for heavy components
+    - Optimize image usage (e.g., use .webp, responsive sizes)
+    - Minimize unnecessary re-renders using React.memo, useMemo, and useCallback where appropriate    

@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Always re-run after all answers are given
+→ Ensure the project is compiled, tested, and verified after implementing changes or answering a request. Use: .\mvnw spring-boot:run
+
+
+Only update necessary files
+→ Do not modify unrelated files. Only touch files that: 
+    - Contain the bug or issue
+    - Are required to implement a specific request or feature
+
+Project type:
+→ This is a Java Maven project
+→ Use Maven commands: 
+    - .\mvnw clean install
+    - .\mvnw test
+    - .\mvnw spring-boot:run
+
+
+Follow these coding conventions:
+- Use meaningful variable and method names
+- Follow Java naming conventions (camelCase for variables and methods, PascalCase for class names)
+- Always write JavaDocs for public methods and classes
+- Add comments only when logic is not obvious
+
+Logging:
+→ Use SLF4J or Log4j for logging
+→ Do not use System.out.println() in production code
+
+Security:
+→ Never hardcode credentials or secrets
+→ Use environment variables or configuration files
+
+Always validate user input
+
+→ Avoid trusting input directly (especially for REST APIs)
