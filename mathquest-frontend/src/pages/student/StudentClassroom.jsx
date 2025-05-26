@@ -137,52 +137,36 @@ const StudentClassrooms = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredClassrooms.map(classroom => (
-              <div key={classroom.id} className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col">
-            
-                <div className={`${getRandomColor(classroom.shortCode)} px-4 py-3 text-white text-base sm:text-lg font-semibold text-left`}>
-                  {classroom.shortCode || classroom.subject?.substring(0, 3)?.toUpperCase() || 'CLASS'}
-                </div>
-                
-        
-                <div className="w-full h-48 bg-gray-100">
-                  {classroom.image ? (
-                    <img 
-                      src={`data:image/jpeg;base64,${classroom.image}`} 
-                      alt={classroom.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-[200px] bg-dark flex items-center justify-center">
-                      <span className="text-white font-medium text-lg lg:text-3xl">{classroom.shortCode || 'N/A'}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Content: Name and Teacher */}
-                <div className="p-5 text-left flex-grow flex flex-col justify-start">
-                  <Header type="h2" fontSize="xl" weight="bold" className="text-gray-800 mb-2 truncate " title={classroom.name}>{classroom.name}</Header>
-                  <p className="text-sm sm:text-base text-primary font-normal">
-                    Teacher: {
-                      classroom.teacher?.firstName && classroom.teacher?.lastName 
-                      ? `${classroom.teacher.firstName} ${classroom.teacher.lastName}` 
-                      : classroom.teacher?.name || 'N/A' 
-                    }
-                  </p>
-                  <div className="flex items-center space-x-2 mt-5">
-                    
-                    <Link
-                      to={`/student/classrooms/${classroom.id}`}
-                      className="font-medium text-gray-600 hover:text-gray-900"
-                    >
-                      <button className="text-primary text-left text-xs font-normal">View</button>
-                    </Link>
-                    <span className="text-xs text-gray-400">|</span>
-                    <button onClick={() => handleLeaveClassroom(classroom.id)} className="text-left text-xs text-error font-normal">Leave</button>
+              <Link to={`/student/classrooms/${classroom.id}`} key={classroom.id} className="block">
+                <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col">
+                  <div className={`${getRandomColor(classroom.shortCode)} px-4 py-3 text-white text-base sm:text-lg font-semibold text-left`}>
+                    {classroom.shortCode || classroom.subject?.substring(0, 3)?.toUpperCase() || 'CLASS'}
                   </div>
-
-
+                  <div className="w-full h-48 bg-gray-100">
+                    {classroom.image ? (
+                      <img 
+                        src={`data:image/jpeg;base64,${classroom.image}`} 
+                        alt={classroom.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-[200px] bg-dark flex items-center justify-center">
+                        <span className="text-white font-medium text-lg lg:text-3xl">{classroom.shortCode || 'N/A'}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 text-left flex-grow flex flex-col justify-start">
+                    <Header type="h2" fontSize="xl" weight="bold" className="text-gray-800 mb-2 truncate " title={classroom.name}>{classroom.name}</Header>
+                    <p className="text-sm sm:text-base text-primary font-normal">
+                      Teacher: {
+                        classroom.teacher?.firstName && classroom.teacher?.lastName 
+                        ? `${classroom.teacher.firstName} ${classroom.teacher.lastName}` 
+                        : classroom.teacher?.name || 'N/A' 
+                      }
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

@@ -132,7 +132,7 @@ const ClassroomGamesTab = ({ classroomId: propClassroomId }) => {
       <h2 className="text-xl font-bold mb-6">Available Games</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {games.map(game => (
+        {Array.isArray(games) && games.map(game => (
           <div 
             key={game.id} 
             className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transform transition hover:scale-105"
@@ -145,12 +145,20 @@ const ClassroomGamesTab = ({ classroomId: propClassroomId }) => {
             
             <div className="p-4">
               <h3 className="text-lg font-bold mb-2">{game.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">Type: {getGameTypeLabel(game.type)}</p>
+              {/* <p className="text-sm text-gray-600 mb-2">Type: {getGameTypeLabel(game.type)}</p>
               <p className="text-sm text-gray-600 mb-2">Topic: {game.topic}</p>
               
               {game.instructions && (
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2">{game.instructions}</p>
-              )}
+              )} */}
+
+            <div className="mt-3 space-y-1 text-base text-gray-600">
+                <p><span className="font-bold">Type: </span> {getGameTypeLabel(game.type)}</p>
+                <p><span className="font-bold">Topic: </span> {game.topic}</p>
+                {game.instructions && (
+                <p className=" text-gray-600 mb-4 line-clamp-2">{game.instructions}</p>
+              )} 
+              </div>
               
               <div className="flex justify-between mt-4">
                 <div className="flex items-center text-sm text-gray-500">

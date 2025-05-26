@@ -51,10 +51,13 @@ public class Quiz {
     @Column(columnDefinition = "LONGTEXT")
     private String quizContent;
 
+    @Column(name = "max_attempts")
+    private Integer maxAttempts;
+
     public Quiz(Activity activity, String quizName, String description, Boolean repeatable,
             Integer totalItems, Integer passingScore, Integer overallScore,
             LocalDateTime availableFrom, LocalDateTime availableTo, Integer timeLimitMinutes,
-            String quizContent) {
+            String quizContent, Integer maxAttempts) {
         this.activity = activity;
         this.quizName = quizName;
         this.description = description;
@@ -66,5 +69,6 @@ public class Quiz {
         this.availableTo = availableTo;
         this.timeLimitMinutes = timeLimitMinutes;
         this.quizContent = quizContent;
+        this.maxAttempts = maxAttempts;
     }
 }

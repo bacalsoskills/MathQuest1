@@ -19,6 +19,7 @@ public class QuizDTO {
     private Integer totalItems;
     private Integer passingScore;
     private Integer overallScore;
+    private Integer maxAttempts;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime availableFrom;

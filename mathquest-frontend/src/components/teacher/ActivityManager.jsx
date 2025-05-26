@@ -170,36 +170,51 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
             </div>
             
             <div className="p-4">
-              <p className="text-sm text-gray-600 mb-2">Type: {getGameTypeLabel(game.type)}</p>
+              {/* <p className="text-sm text-gray-600 mb-2">Type: {getGameTypeLabel(game.type)}</p>
               <p className="text-sm text-gray-600 mb-2">Topic: {game.topic}</p>
               
               {game.instructions && (
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2">{game.instructions}</p>
-              )}
-              
-              <div className="flex justify-between mt-4">
-                <button
-                  onClick={() => handleDeleteGame(game.id)}
-                  className="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100"
-                >
-                  Delete
-                </button>
-                
-                <div className="flex space-x-2">
-                  <Link
-                    to={`/teacher/games/${game.id}/analytics`}
-                    className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
-                  >
-                    Analytics
-                  </Link>
-                  <button
-                    onClick={() => navigate(`/student/games/${game.id}`)}
-                    className="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-                  >
-                    Preview
-                  </button>
-                </div>
+              )} */}
+               <div className=" space-y-1 text-base text-gray-600">
+                <p><span className="font-bold">Type: </span> {getGameTypeLabel(game.type)}</p>
+                <p><span className="font-bold">Topic: </span> {game.topic}</p>
+                {game.instructions && (
+                <p className=" text-gray-600 mb-4 line-clamp-2">{game.instructions}</p>
+              )} 
               </div>
+              
+          
+{/* TODO: add edit and preview */}
+              <div className="flex items-center space-x-2 mt-4">
+                    <button
+                
+                      className="text-gray-600 hover:text-gray-900 text-base focus:outline-none cursor-not-allowed"
+                      style={{ background: 'none', border: 'none', padding: 0 }}
+                      disabled = {true}
+                    >
+                      Edit
+                    </button>
+                    <span className="mx-1 text-gray-400">|</span>
+                    <button
+                     
+                      className="text-gray-600 hover:text-gray-900 text-base focus:outline-none cursor-not-allowed"
+                      style={{ background: 'none', border: 'none', padding: 0 }}
+                      disabled = {true}
+                    >
+                      Preview
+                    </button>
+                    <span className="mx-1 text-gray-400">|</span>
+                    <button
+                 onClick={() => handleDeleteGame(game.id)}
+                className=" text-red-600 hover:text-red-900 text-base focus:outline-none"
+                style={{ background: 'none', border: 'none', padding: 0 }}
+                // disabled = {true}
+              >
+                Delete
+              </button>
+            
+                  </div>
             </div>
           </div>
         ))}

@@ -13,7 +13,14 @@ import classroomService from "../../services/classroomService";
 // Register ChartJS components
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-
+// Calculate student ranks based on average score
+const calculateRanks = (students) => {
+  return students
+    .map((student, index) => ({ ...student, index }))
+    .sort((a, b) => b.averageScore - a.averageScore)
+    .map((student, rank) => ({ ...student, rank: rank + 1 }))
+    .sort((a, b) => a.index - b.index);
+};
 
 const ClassRecordManager = ({ classroomId }) => {
   const { currentUser, token } = useAuth();
@@ -21,7 +28,8 @@ const ClassRecordManager = ({ classroomId }) => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
-  const [generatingReport, setGeneratingReport] = useState(false);
+  const [generatingExcelReport, setGeneratingExcelReport] = useState(false);
+  const [generatingCsvReport, setGeneratingCsvReport] = useState(false);
   const [reportName, setReportName] = useState("");
   const [reportDescription, setReportDescription] = useState("");
   const [visibleSection, setVisibleSection] = useState("reports");
@@ -175,7 +183,11 @@ const ClassRecordManager = ({ classroomId }) => {
     }
 
     try {
-      setGeneratingReport(true);
+      if (fileType === 'EXCEL') {
+        setGeneratingExcelReport(true);
+      } else if (fileType === 'CSV') {
+        setGeneratingCsvReport(true);
+      }
       console.log("%c=== STARTING NEW REPORT GENERATION ===", "background: blue; color: white; font-size: 16px");
       
       // Validate required data
@@ -239,27 +251,20 @@ const ClassRecordManager = ({ classroomId }) => {
         }
       });
 
-      // Create student records with validated data
-      const studentRecordsForExcel = quizAttempts.students.map(student => {
+      // Update student records for Excel to include rank and ensure totalPoints is calculated
+      const studentRecordsForExcel = calculateRanks(quizAttempts.students.map(student => {
         const studentAttempts = organizedAttempts[student.id] || {};
         const quizScores = {};
         let totalPoints = 0;
-        let validScoresCount = 0;
         
         quizData.quizzes.forEach(quiz => {
           const attempt = studentAttempts[quiz.id];
           const highestScore = attempt?.score ?? 0;
           quizScores[`quiz_${quiz.id}`] = highestScore;
-          
-          if (highestScore > 0) {
-            totalPoints += highestScore;
-            validScoresCount++;
-          }
+          totalPoints += highestScore;
         });
         
-        const averageScore = validScoresCount > 0 
-          ? (totalPoints / validScoresCount).toFixed(2)
-          : "0.00";
+        const averageScore = (totalPoints / quizData.quizzes.length).toFixed(2);
         
         return {
           studentId: student.id,
@@ -269,15 +274,42 @@ const ClassRecordManager = ({ classroomId }) => {
           totalPoints: totalPoints,
           averageScore: parseFloat(averageScore)
         };
-      });
+      }));
 
-      // Create headers for Excel/CSV
+      // Update student records for CSV to include rank and ensure totalPoints is calculated
+      const studentRecordsForCsv = calculateRanks(quizAttempts.students.map(student => {
+        const studentAttempts = organizedAttempts[student.id] || {};
+        const quizScores = {};
+        let totalPoints = 0;
+        
+        quizData.quizzes.forEach(quiz => {
+          const attempt = studentAttempts[quiz.id];
+          const highestScore = attempt?.score ?? 0;
+          quizScores[`quiz_${quiz.id}`] = highestScore.toString(); // Convert score to string
+          totalPoints += highestScore;
+        });
+        
+        const averageScore = (totalPoints / quizData.quizzes.length).toFixed(2);
+        
+        return {
+          studentId: student.id ? student.id.toString() : '', // Convert ID to string
+          studentName: `${student.firstName} ${student.lastName}`,
+          username: student.username || '',
+          ...quizScores,
+          totalPoints: totalPoints.toString(), // Convert total points to string
+          averageScore: averageScore.toString(), // Convert average score to string
+          rank: student.rank ? student.rank.toString() : '' // Convert rank to string
+        };
+      }));
+
+      // Add rank to headers for Excel/CSV
       const headers = [
+        { key: "rank", label: "Rank" },
         { key: "studentName", label: "Student Name" },
         { key: "username", label: "Username" },
         ...quizData.quizzes.map(quiz => ({ 
           key: `quiz_${quiz.id}`, 
-          label: `${quiz.quizName} (Total: ${quiz.totalItems}, Passing: ${quiz.passingScore})`
+          label: `${quiz.quizName} (Total: ${quiz.totalItems} Passing: ${quiz.passingScore})`
         })),
         { key: "totalPoints", label: "Total Points" },
         { key: "averageScore", label: "Average Score (%)" }
@@ -295,7 +327,7 @@ const ClassRecordManager = ({ classroomId }) => {
           totalItems: quiz.totalItems,
           passingScore: quiz.passingScore
         })),
-        students: studentRecordsForExcel,
+        students: studentRecordsForCsv, // Use CSV-specific records
         headers: headers,
         generatedAt: new Date().toISOString()
       });
@@ -357,7 +389,11 @@ const ClassRecordManager = ({ classroomId }) => {
         toast.error(`Failed to generate report: ${errorMessage}`);
       }
     } finally {
-      setGeneratingReport(false);
+      if (fileType === 'EXCEL') {
+        setGeneratingExcelReport(false);
+      } else if (fileType === 'CSV') {
+        setGeneratingCsvReport(false);
+      }
     }
   };
 
@@ -448,7 +484,13 @@ const ClassRecordManager = ({ classroomId }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rank
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Student Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Username
               </th>
               {quizzes.map(quiz => (
                 <th key={quiz.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -459,25 +501,33 @@ const ClassRecordManager = ({ classroomId }) => {
                 </th>
               ))}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Points
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Average Score
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {students.map(student => {
+            {calculateRanks(students).map(student => {
               const studentAttempts = attemptsByStudent[student.id] || {};
-              const scores = quizzes.map(quiz => studentAttempts[quiz.id]?.score || null);
-              const validScores = scores.filter(score => score !== null);
-              const averageScore = validScores.length > 0 
-                ? (validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2)
-                : 'N/A';
+              const scores = quizzes.map(quiz => studentAttempts[quiz.id]?.score || 0);
+              const totalPoints = scores.reduce((acc, score) => acc + score, 0);
+              const averageScore = (totalPoints / quizzes.length).toFixed(2);
 
               return (
                 <tr key={student.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
+                      {student.rank}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
                       {student.firstName} {student.lastName}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{student.username}</div>
                   </td>
                   {quizzes.map(quiz => {
@@ -491,7 +541,7 @@ const ClassRecordManager = ({ classroomId }) => {
                               attempt.passed ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
-                            {attempt.score}%
+                            {attempt.score}
                             <FaInfoCircle className="ml-1" />
                           </button>
                         ) : (
@@ -501,14 +551,17 @@ const ClassRecordManager = ({ classroomId }) => {
                     );
                   })}
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-medium text-gray-900">
+                      {totalPoints}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`text-sm font-medium ${
-                      averageScore !== 'N/A' 
-                        ? parseFloat(averageScore) >= 60 
-                          ? 'text-green-600' 
-                          : 'text-red-600'
-                        : 'text-gray-400'
+                      parseFloat(averageScore) >= 60 
+                        ? 'text-green-600' 
+                        : 'text-red-600'
                     }`}>
-                      {averageScore !== 'N/A' ? `${averageScore}%` : averageScore}
+                      {averageScore}%
                     </span>
                   </td>
                 </tr>
@@ -668,12 +721,12 @@ const ClassRecordManager = ({ classroomId }) => {
             <div className="flex space-x-4 justify-end">
               <button
                 onClick={() => handleGenerateReport('EXCEL')}
-                disabled={generatingReport}
+                disabled={generatingExcelReport}
                 className={`px-4 py-2 rounded-md text-white ${
-                  generatingReport ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                  generatingExcelReport ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
                 } flex items-center justify-center`}
               >
-                {generatingReport ? (
+                {generatingExcelReport ? (
                   <>
                     <FaSpinner className="animate-spin mr-2" /> Generating...
                   </>
@@ -685,12 +738,12 @@ const ClassRecordManager = ({ classroomId }) => {
               </button>
               <button
                 onClick={() => handleGenerateReport('CSV')}
-                disabled={generatingReport}
+                disabled={generatingCsvReport}
                 className={`px-4 py-2 rounded-md text-white ${
-                  generatingReport ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                  generatingCsvReport ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
                 } flex items-center justify-center`}
               >
-                {generatingReport ? (
+                {generatingCsvReport ? (
                   <>
                     <FaSpinner className="animate-spin mr-2" /> Generating...
                   </>

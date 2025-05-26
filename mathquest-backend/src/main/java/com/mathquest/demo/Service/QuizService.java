@@ -59,7 +59,8 @@ public class QuizService {
                 quizDTO.getAvailableFrom(),
                 quizDTO.getAvailableTo(),
                 quizDTO.getTimeLimitMinutes(),
-                quizDTO.getQuizContent());
+                quizDTO.getQuizContent(),
+                quizDTO.getMaxAttempts());
 
         quiz = quizRepository.save(quiz);
         return convertToDTO(quiz);
@@ -113,6 +114,7 @@ public class QuizService {
         quiz.setAvailableTo(quizDTO.getAvailableTo());
         quiz.setTimeLimitMinutes(quizDTO.getTimeLimitMinutes());
         quiz.setQuizContent(quizDTO.getQuizContent());
+        quiz.setMaxAttempts(quizDTO.getMaxAttempts());
 
         quiz = quizRepository.save(quiz);
         return convertToDTO(quiz);
@@ -240,6 +242,7 @@ public class QuizService {
         dto.setAvailableTo(quiz.getAvailableTo());
         dto.setTimeLimitMinutes(quiz.getTimeLimitMinutes());
         dto.setQuizContent(quiz.getQuizContent());
+        dto.setMaxAttempts(quiz.getMaxAttempts());
 
         return dto;
     }

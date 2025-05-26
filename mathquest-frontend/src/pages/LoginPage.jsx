@@ -4,16 +4,19 @@ import { useAuth } from '../context/AuthContext';
 import { FaGoogle, FaFacebookF } from 'react-icons/fa';
 import { Button } from "../ui/button"
 import { Header } from "../ui/heading"
+import { FaRegEyeSlash, FaRegEye } from "react-icons/fa";
 
 const LoginPage = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+
   
   useEffect(() => {
     if (location.state?.message) {
@@ -124,31 +127,36 @@ const LoginPage = () => {
                 onChange={(e) => setIdentifier(e.target.value)}
               />
             </div>
-            <div>
+            <div className="relative mb-5">
               <label htmlFor="password" className="sr-only">
                 Password
               </label>
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
-                className="appearance-none rounded relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded relative block w-full px-3 py-2 pr-12 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-                <div className="flex justify-end mt-1 mb-5">
-                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
-                  Forgot Password?
-                </Link>
-              </div>
-
-          <div>
-              
+              <button
+                type="button"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                aria-label="Toggle password visibility"
+                style={{ background: 'none', border: 'none', padding: 0 }}
+              >
+                {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+              </button>
             </div>
-
-          </div>
+            <div className="flex justify-end mt-1">
+              <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                Forgot Password?
+              </Link>
+            </div>
         
           <Button type="submit" disabled={loading} 
               variant="default"

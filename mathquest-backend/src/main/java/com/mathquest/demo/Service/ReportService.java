@@ -558,7 +558,7 @@ public class ReportService {
                                                 } else if (key.equals("totalPoints")) {
                                                         csv.append(student.getInt(key));
                                                 } else {
-                                                        csv.append(student.getString(key));
+                                                        csv.append(student.get(key).toString());
                                                 }
                                         } else {
                                                 csv.append("N/A");

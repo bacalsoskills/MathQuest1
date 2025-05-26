@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaGoogle, FaFacebookF } from 'react-icons/fa';
+import { FaGoogle, FaFacebookF, FaRegEyeSlash, FaRegEye } from 'react-icons/fa';
 import { Button } from "../ui/button"
 import { Header } from "../ui/heading"
 
@@ -20,6 +20,8 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
 
@@ -38,6 +40,14 @@ const RegisterPage = () => {
         [name]: ''
       }));
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(prev => !prev);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(prev => !prev);
   };
 
   const validateForm = () => {
@@ -278,18 +288,27 @@ const RegisterPage = () => {
                   <label htmlFor="password" className="sr-only">
                     Password
                   </label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    className={`appearance-none rounded relative block w-full px-3 py-2 border ${
-                      errors.password ? 'border-red-300' : 'border-gray-300'
-                    } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                    placeholder="Password"
-                    value={formData.password}
-                    onChange={handleChange}
-                  />
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      className={`appearance-none rounded relative block w-full px-3 py-2 pr-12 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                      placeholder="Password"
+                      value={formData.password}
+                      onChange={handleChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                      aria-label="Toggle password visibility"
+                      style={{ background: 'none', border: 'none', padding: 0 }}
+                    >
+                      {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                    </button>
+                  </div>
                   {errors.password && (
                     <p className="text-red-500 text-xs mt-1">{errors.password}</p>
                   )}
@@ -299,18 +318,27 @@ const RegisterPage = () => {
                   <label htmlFor="confirmPassword" className="sr-only">
                     Confirm Password
                   </label>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    required
-                    className={`appearance-none rounded relative block w-full px-3 py-2 border ${
-                      errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                    } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                    placeholder="Confirm Password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                  />
+                  <div className="relative">
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      className={`appearance-none rounded relative block w-full px-3 py-2 pr-12 border ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                      placeholder="Confirm Password"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={toggleConfirmPasswordVisibility}
+                      className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                      aria-label="Toggle confirm password visibility"
+                      style={{ background: 'none', border: 'none', padding: 0 }}
+                    >
+                      {showConfirmPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                    </button>
+                  </div>
                   {errors.confirmPassword && (
                     <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
                   )}

@@ -9,7 +9,7 @@ import quizService from '../../services/quizService';
 import activityService from '../../services/activityService';
 
 
-const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated }) => {
+const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated, quizId, isEdit = false }) => {
   const { token } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
@@ -20,6 +20,7 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
     availableTo: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().slice(0, 16), 
     repeatable: false,
     timeLimitMinutes: 30, 
+    maxAttempts: 2,
     questions: [
       {
         question: '',
@@ -42,6 +43,26 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
     }, 0);
   };
 
+    // Helper to convert backend date string to local datetime-local string for input fields
+    function toDatetimeLocal(dtString) {
+      if (!dtString) return '';
+      // dtString is like '2025-05-26T00:30:00' or '2025-05-26T00:30:00.000'
+      const date = new Date(dtString);
+      // Get local time in 'YYYY-MM-DDTHH:mm'
+      const offset = date.getTimezoneOffset();
+      const localDate = new Date(date.getTime() - offset * 60000);
+      return localDate.toISOString().slice(0, 16);
+    }
+  
+
+  const formatLocalDateTime = (dateTimeStr) => {
+    if (!dateTimeStr) return null;
+    // If input is 'YYYY-MM-DDTHH:mm', add ':00' for seconds
+    return dateTimeStr.length === 16
+      ? dateTimeStr + ':00'
+      : dateTimeStr;
+  };
+
   // Update overall score whenever questions change
   useEffect(() => {
     const totalScore = calculateOverallScore();
@@ -50,6 +71,59 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
       overallScore: totalScore
     }));
   }, [formData.questions]);
+
+  useEffect(() => {
+    if (isEdit && quizId && isOpen) {
+      // Fetch quiz data and populate form
+      (async () => {
+        try {
+          const quiz = await quizService.getQuiz(quizId);
+          let questions = quiz.quizContent;
+          if (typeof questions === 'string') {
+            questions = JSON.parse(questions);
+          }
+          // Ensure correctAnswers is always an array and all fields exist
+          questions = (questions || []).map(q => ({
+            question: q.questionText || q.question || '',
+            questionType: q.questionType || 'MULTIPLE_CHOICE',
+            options: q.options || ['', '', '', ''],
+            correctAnswers: Array.isArray(q.correctAnswers)
+              ? q.correctAnswers
+              : q.questionType === 'IDENTIFICATION'
+                ? [q.correctAnswer || '']
+                : (typeof q.correctAnswer !== 'undefined' && q.correctAnswer !== null)
+                  ? [q.options && q.options.indexOf(q.correctAnswer) !== -1 ? q.options.indexOf(q.correctAnswer) : 0]
+                  : [],
+            points: typeof q.points === 'number' ? q.points : 10,
+          }));
+
+            // Format date to 'YYYY-MM-DDTHH:mm' (local time) for input
+            const formatForInput = (dateStr) => {
+              if (!dateStr) return '';
+              const d = new Date(dateStr);
+              const pad = (n) => n.toString().padStart(2, '0');
+              return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+          setFormData({
+            title: quiz.quizName || '',
+            description: quiz.description || '',
+            overallScore: quiz.overallScore || 100,
+            passingScore: quiz.passingScore || 60,
+            // availableFrom: quiz.availableFrom ? new Date(quiz.availableFrom).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+            // availableTo: quiz.availableTo ? new Date(quiz.availableTo).toISOString().slice(0, 16) : '',
+            availableFrom: toDatetimeLocal(quiz.availableFrom),
+            availableTo: toDatetimeLocal(quiz.availableTo),
+            repeatable: quiz.repeatable || false,
+            timeLimitMinutes: quiz.timeLimitMinutes || 30,
+            maxAttempts: quiz.maxAttempts || 2,
+            questions: questions,
+          });
+        } catch (err) {
+          toast.error('Failed to load quiz for editing');
+        }
+      })();
+    }
+  }, [isEdit, quizId, isOpen]);
 
   const handleInputChange = (e) => {
     const { name, value, checked, type } = e.target;
@@ -140,6 +214,11 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
       return;
     }
 
+    if (new Date(formData.availableTo) <= new Date(formData.availableFrom)) {
+      toast.error('Available To must be after Available From.');
+      return;
+    }
+
     // Return if already loading or submitting to prevent multiple submissions
     if (loading || isSubmitting) {
       return;
@@ -154,16 +233,18 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
     }
 
     try {
-      // Create the quiz data
       const quizData = {
         quizName: formData.title,
         description: formData.description,
         overallScore: parseInt(formData.overallScore, 10),
         passingScore: parseInt(formData.passingScore, 10),
-        availableFrom: new Date(formData.availableFrom).toISOString().slice(0, 19),
-        availableTo: formData.availableTo ? new Date(formData.availableTo).toISOString().slice(0, 19) : null,
+        // availableFrom: new Date(formData.availableFrom).toISOString().slice(0, 19),
+        // availableTo: formData.availableTo ? new Date(formData.availableTo).toISOString().slice(0, 19) : null,
+        availableFrom: formatLocalDateTime(formData.availableFrom),
+        availableTo: formData.availableTo ? formatLocalDateTime(formData.availableTo) : null,
         repeatable: formData.repeatable,
         timeLimitMinutes: formData.timeLimitMinutes,
+        maxAttempts: formData.repeatable ? parseInt(formData.maxAttempts, 10) : null,
         totalItems: formData.questions.length,
         quizContent: JSON.stringify(formData.questions.map(q => {
           let correctAnswers;
@@ -171,48 +252,54 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
             correctAnswers = q.correctAnswers[0];
           } else if (q.questionType === 'CHECKBOX') {
             correctAnswers = q.correctAnswers.map(index => q.options[index]);
-          } else { // MULTIPLE_CHOICE
+          } else {
             correctAnswers = q.correctAnswers.length > 0 ? q.options[q.correctAnswers[0]] : null;
           }
-
           return {
             questionText: q.question,
             questionType: q.questionType,
             options: q.questionType !== 'IDENTIFICATION' ? q.options : null,
             correctAnswer: correctAnswers,
-            points: parseInt(q.points) || 10 // Include points
+            points: parseInt(q.points) || 10
           };
         }))
       };
 
-      // Create a new activity for this quiz with a unique timestamp to prevent duplication
-      const timestamp = new Date().toISOString();
-      const activityData = {
-        title: `Quiz: ${formData.title}`,
-        description: formData.description || 'Quiz activity',
-        type: 'QUIZ',
-        classroomId: classroomId,
-        content: JSON.stringify({
-          quizName: formData.title,
-          description: formData.description,
+      if (isEdit && quizId) {
+        await quizService.updateQuiz(quizId, quizData);
+        toast.success('Quiz updated successfully!');
+        onQuizCreated && onQuizCreated();
+        onClose();
+      } else {
+        // Create a new activity for this quiz with a unique timestamp to prevent duplication
+        const timestamp = new Date().toISOString();
+        const activityData = {
+          title: `Quiz: ${formData.title}`,
+          description: formData.description || 'Quiz activity',
           type: 'QUIZ',
-          timestamp // Add timestamp to make each request unique
-        })
-      };
+          classroomId: classroomId,
+          content: JSON.stringify({
+            quizName: formData.title,
+            description: formData.description,
+            type: 'QUIZ',
+            timestamp // Add timestamp to make each request unique
+          })
+        };
 
-      // Create the activity first
-      const activity = await activityService.createActivity(activityData);
-      
-      if (!activity || !activity.id) {
-        throw new Error('Failed to create activity for quiz');
+        // Create the activity first
+        const activity = await activityService.createActivity(activityData);
+        
+        if (!activity || !activity.id) {
+          throw new Error('Failed to create activity for quiz');
+        }
+
+        // Now create the quiz with the new activity ID
+        const savedQuiz = await quizService.createQuiz(activity.id, quizData);
+
+        toast.success('Quiz created successfully!');
+        onQuizCreated(savedQuiz);
+        onClose();
       }
-
-      // Now create the quiz with the new activity ID
-      const savedQuiz = await quizService.createQuiz(activity.id, quizData);
-
-      toast.success('Quiz created successfully!');
-      onQuizCreated(savedQuiz);
-      onClose();
     } catch (error) {
       console.error('Error creating quiz activity:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create quiz';
@@ -237,7 +324,7 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
         <div className="p-8">
           <div className="flex justify-between items-center mb-4">
         <Header type="h2" fontSize="2xl" weight="bold" className="mb-6">
-              Create New Quiz
+              {isEdit ? 'Edit Quiz' : 'Create New Quiz'}
             </Header>
           <button
             onClick={onClose}
@@ -350,17 +437,37 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
                     />
                   </div>
 
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="repeatable"
-                      checked={formData.repeatable}
-                      onChange={handleChange}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-2"
-                    />
-                    <label className="text-sm font-medium text-gray-700">
-                      Allow Multiple Attempts
-                    </label>
+                  {/* Attempts column: vertically stack Allow Multiple Attempts and Max Attempts */}
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <input
+                        type="checkbox"
+                        name="repeatable"
+                        checked={formData.repeatable}
+                        onChange={handleChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-2"
+                        id="allow-multiple-attempts"
+                      />
+                      <label htmlFor="allow-multiple-attempts" className="text-sm font-medium text-gray-700">
+                        Allow Multiple Attempts
+                      </label>
+                    </div>
+                    {formData.repeatable && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Max Attempts (per student)
+                        </label>
+                        <input
+                          type="number"
+                          name="maxAttempts"
+                          value={formData.maxAttempts}
+                          min="1"
+                          onChange={handleChange}
+                          className="w-full p-2 border rounded"
+                          required={formData.repeatable}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -488,7 +595,7 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
                           </label>
                           <input
                             type="text"
-                            value={question.correctAnswers[0] || ''}
+                            value={Array.isArray(question.correctAnswers) ? (question.correctAnswers[0] || '') : ''}
                             onChange={(e) => handleQuestionChange(qIndex, 'correctAnswers', e.target.value)}
                             className="w-full p-2 border rounded text-sm"
                             placeholder="Enter the exact correct answer"
@@ -523,7 +630,7 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated 
                   disabled={loading || isSubmitting}
                   className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${(loading || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {loading ? 'Creating...' : 'Create Quiz'}
+                  {loading ? 'Saving...' : 'Save Quiz'}
                 </button>
               </div>
             </form>

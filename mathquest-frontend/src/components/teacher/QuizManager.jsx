@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast';
 import quizService from '../../services/quizService';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import AddQuizModal from './AddQuizModal';
+import QuizPreviewModal from './QuizPreviewModal';
 
 const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => {
   const { token, currentUser } = useAuth();
@@ -11,6 +13,8 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editQuizId, setEditQuizId] = useState(null);
+  const [previewQuizId, setPreviewQuizId] = useState(null);
 
   useEffect(() => {
     if (!classroomId) return;
@@ -28,9 +32,13 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
         try {
           // First try getting classroom quizzes
           fetchedQuizzes = isStudent 
-            ? await quizService.getAvailableQuizzes(classroomId)
+            ? await quizService.getQuizzesByClassroom(classroomId)
             : await quizService.getQuizzesByClassroom(classroomId);
           
+          if (isStudent) {
+            console.log("Raw available quizzes response:", fetchedQuizzes);
+          }
+
           console.log(`Retrieved ${fetchedQuizzes.length} quizzes for classroom ${classroomId}`);
         } catch (err) {
           console.error(`Error fetching quizzes for classroom ${classroomId}:`, err);
@@ -43,8 +51,12 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
             const activitiesResponse = await api.get(`/activities/classroom/${classroomId}`);
             const activities = activitiesResponse.data;
             
+            console.log('Activities fetched:', activities);
+            
             // Filter quiz activities
             const quizActivities = activities.filter(a => a.type === 'QUIZ');
+            console.log('Filtered quiz activities:', quizActivities);
+            // Filter quiz activities
             console.log(`Found ${quizActivities.length} quiz activities`);
             
             // Get quizzes for each activity
@@ -62,6 +74,7 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
         }
         
         if (fetchedQuizzes && Array.isArray(fetchedQuizzes)) {
+          console.log('Fetched quizzes:', fetchedQuizzes);
           setQuizzes(fetchedQuizzes);
         } else {
           console.warn('Response is not an array:', fetchedQuizzes);
@@ -86,6 +99,22 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
         toast.error('You must be logged in to take a quiz');
         return;
       }
+
+        // Find the quiz to check its availability
+        const quiz = quizzes.find(q => q.id === quizId);
+        if (!quiz) {
+          toast.error('Quiz not found');
+          return;
+        }
+  
+        const now = new Date();
+        const availableFrom = new Date(quiz.availableFrom);
+        const availableTo = new Date(quiz.availableTo);
+  
+        if (now < availableFrom || now > availableTo) {
+          toast.error('Quiz is not available at this time');
+          return;
+        }
       
       // Start the quiz attempt
       const attempt = await quizService.startQuizAttempt(quizId, currentUser.id);
@@ -168,56 +197,69 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
               <h4 className="font-semibold truncate">{quiz.quizName}</h4>
             </div>
             
-            <div className="p-4">
-              <p className="text-sm text-gray-700 mb-2 line-clamp-2">{quiz.description || 'No description provided'}</p>
+            <div className="p-4 text-base">
+              <p className="text-base text-gray-700 mb-2 line-clamp-2">{quiz.description || 'No description provided'}</p>
               
-              <div className="mt-3 space-y-1 text-xs text-gray-600">
-                <p>Total Questions: {quiz.totalItems}</p>
-                <p>Time Limit: {quiz.timeLimitMinutes} minutes</p>
-                <p>Passing Score: {quiz.passingScore}/{quiz.overallScore}</p>
-                <p>Available From: {formatDate(quiz.availableFrom)}</p>
-                <p>Available To: {formatDate(quiz.availableTo)}</p>
-                <p>{quiz.repeatable ? 'Multiple attempts allowed' : 'Single attempt only'}</p>
+              <div className="mt-3 space-y-1 text-base text-gray-600">
+                <p><span className="font-bold">Total Questions:</span> {quiz.totalItems}</p>
+                <p><span className="font-bold">Time Limit:</span> {quiz.timeLimitMinutes} minutes</p>
+                <p><span className="font-bold">Passing Score:</span> {quiz.passingScore}/{quiz.overallScore}</p>
+                <p><span className="font-bold">Available From:</span> {formatDate(quiz.availableFrom)}</p>
+                <p><span className="font-bold">Available To:</span> {formatDate(quiz.availableTo)}</p>
+                <p><span className="font-bold">{quiz.repeatable ? (`Multiple attempts allowed${quiz.maxAttempts ? ` :   ${quiz.maxAttempts} attempts only` : ''}`) : 'Single attempt only'}</span></p>
               </div>
               
-              <div className="flex justify-between mt-4">
+              <div className="flex justify-between mt-4 items-center">
                 {isStudent ? (
                   <button
                     onClick={() => handleStartQuiz(quiz.id)}
-                    className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-base"
                   >
                     Start Quiz
                   </button>
                 ) : (
-                  <>
+                  <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => handleDeleteQuiz(quiz.id)}
-                      className="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100"
+                      onClick={() => setEditQuizId(quiz.id)}
+                      className="text-gray-600 hover:text-gray-900 text-base focus:outline-none"
+                      style={{ background: 'none', border: 'none', padding: 0 }}
                     >
-                      Delete
+                      Edit
                     </button>
-                    
-                    <div className="flex space-x-2">
-                      <Link
-                        to={`/teacher/quizzes/${quiz.id}/results`}
-                        className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
-                      >
-                        Results
-                      </Link>
-                      <button
-                        onClick={() => navigate(`/student/quizzes/${quiz.id}/preview`)}
-                        className="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-                      >
-                        Preview
-                      </button>
-                    </div>
-                  </>
+                    <span className="mx-1 text-gray-400">|</span>
+                    <button
+                      onClick={() => setPreviewQuizId(quiz.id)}
+                      className="text-gray-600 hover:text-gray-900 text-base focus:outline-none"
+                      style={{ background: 'none', border: 'none', padding: 0 }}
+                    >
+                      Preview
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
           </div>
         ))}
       </div>
+      {/* Edit Quiz Modal */}
+      {editQuizId && (
+        <AddQuizModal
+          isOpen={!!editQuizId}
+          onClose={() => setEditQuizId(null)}
+          quizId={editQuizId}
+          classroomId={classroomId}
+          isEdit={true}
+          onQuizCreated={() => { setEditQuizId(null); setLoading(true); }}
+        />
+      )}
+      {/* Preview Quiz Modal */}
+      {previewQuizId && (
+        <QuizPreviewModal
+          isOpen={!!previewQuizId}
+          onClose={() => setPreviewQuizId(null)}
+          quizId={previewQuizId}
+        />
+      )}
     </div>
   );
 };

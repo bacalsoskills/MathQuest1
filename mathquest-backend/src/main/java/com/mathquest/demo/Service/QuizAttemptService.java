@@ -62,10 +62,15 @@ public class QuizAttemptService {
         }
 
         // Check if student can attempt the quiz again
+        int attempts = quizAttemptRepository.countAttemptsByQuizAndStudent(quiz, student);
         if (!quiz.getRepeatable()) {
-            int attempts = quizAttemptRepository.countAttemptsByQuizAndStudent(quiz, student);
             if (attempts > 0) {
                 throw new RuntimeException("This quiz cannot be attempted more than once");
+            }
+        } else if (quiz.getMaxAttempts() != null && quiz.getMaxAttempts() > 0) {
+            if (attempts >= quiz.getMaxAttempts()) {
+                throw new RuntimeException("You have reached the maximum number of attempts for this quiz ("
+                        + quiz.getMaxAttempts() + ")");
             }
         }
 

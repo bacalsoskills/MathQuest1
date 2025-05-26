@@ -3,10 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AuthService from '../services/authService';
 import { Button } from "../ui/button";
 import { Header } from "../ui/heading";
+import { FaRegEyeSlash, FaRegEye } from "react-icons/fa";
 
 const ResetPasswordPage = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,6 +57,14 @@ const ResetPasswordPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleNewPasswordVisibility = () => {
+    setShowNewPassword(prev => !prev);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(prev => !prev);
   };
 
   if (!token) {
@@ -110,32 +121,54 @@ const ResetPasswordPage = () => {
               <label htmlFor="newPassword" className="sr-only">
                 New Password
               </label>
-              <input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                required
-                className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="New Password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="newPassword"
+                  name="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  required
+                  className="appearance-none rounded relative block w-full px-3 py-2 pr-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={toggleNewPasswordVisibility}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                  aria-label="Toggle new password visibility"
+                  style={{ background: 'none', border: 'none', padding: 0 }}
+                >
+                  {showNewPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                </button>
+              </div>
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="sr-only">
                 Confirm Password
               </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  className="appearance-none rounded relative block w-full px-3 py-2 pr-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={toggleConfirmPasswordVisibility}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                  aria-label="Toggle confirm password visibility"
+                  style={{ background: 'none', border: 'none', padding: 0 }}
+                >
+                  {showConfirmPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                </button>
+              </div>
             </div>
           </div>
 

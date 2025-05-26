@@ -9,6 +9,7 @@ import { Label } from "../ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import AuthService from '../services/authService';
+import { FaRegEyeSlash, FaRegEye } from "react-icons/fa";
 
 const ProfilePage = () => {
   const { currentUser, logout, refreshCurrentUser } = useAuth();
@@ -22,6 +23,7 @@ const ProfilePage = () => {
   const [avatarKey, setAvatarKey] = useState(Date.now()); // Used to force re-render of avatar
   const [imageLoaded, setImageLoaded] = useState(false);
   const [profileImageSrc, setProfileImageSrc] = useState('');
+  
   
   const [editFormData, setEditFormData] = useState({
     fullName: '',
@@ -37,6 +39,9 @@ const ProfilePage = () => {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -497,43 +502,79 @@ const ProfilePage = () => {
                   <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
                     <div>
                       <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input
-                        id="currentPassword"
-                        name="currentPassword"
-                        type="password"
-                        required
-                        className="!rounded-none !bg-transparent border-[#464545] border"
-                        value={passwordFormData.currentPassword}
-                        onChange={handlePasswordChange}
-                        disabled={passwordLoading}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          name="currentPassword"
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          required
+                          className="!rounded-none !bg-transparent border-[#464545] border pr-12"
+                          value={passwordFormData.currentPassword}
+                          onChange={handlePasswordChange}
+                          disabled={passwordLoading}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                          onClick={() => setShowCurrentPassword((prev) => !prev)}
+                          tabIndex={-1}
+                          aria-label="Toggle current password visibility"
+                          style={{ background: 'none', border: 'none', padding: 0 }}
+                        >
+                          {showCurrentPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="newPassword">New Password</Label>
-                      <Input
-                        id="newPassword"
-                        name="newPassword"
-                        type="password"
-                        required
-                        className="!rounded-none !bg-transparent border-[#464545] border"
-                        value={passwordFormData.newPassword}
-                        onChange={handlePasswordChange}
-                        disabled={passwordLoading}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="newPassword"
+                          name="newPassword"
+                          type={showNewPassword ? 'text' : 'password'}
+                          required
+                          className="!rounded-none !bg-transparent border-[#464545] border pr-12"
+                          value={passwordFormData.newPassword}
+                          onChange={handlePasswordChange}
+                          disabled={passwordLoading}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                          onClick={() => setShowNewPassword((prev) => !prev)}
+                          tabIndex={-1}
+                          aria-label="Toggle new password visibility"
+                          style={{ background: 'none', border: 'none', padding: 0 }}
+                        >
+                          {showNewPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                        </button>
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long.</p>
                     </div>
                     <div>
                       <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        required
-                        className="!rounded-none !bg-transparent border-[#464545] border"
-                        value={passwordFormData.confirmPassword}
-                        onChange={handlePasswordChange}
-                        disabled={passwordLoading}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          required
+                          className="!rounded-none !bg-transparent border-[#464545] border pr-12"
+                          value={passwordFormData.confirmPassword}
+                          onChange={handlePasswordChange}
+                          disabled={passwordLoading}
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                          onClick={() => setShowConfirmPassword((prev) => !prev)}
+                          tabIndex={-1}
+                          aria-label="Toggle confirm password visibility"
+                          style={{ background: 'none', border: 'none', padding: 0 }}
+                        >
+                          {showConfirmPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                        </button>
+                      </div>
                     </div>
                     <div className="flex justify-start space-x-3 pt-4">
                     

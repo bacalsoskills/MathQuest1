@@ -78,18 +78,43 @@ const quizService = {
     return response.data;
   },
 
+  // getAvailableQuizzes: async (classroomId) => {
+  //   console.log("quizService.getAvailableQuizzes - Request:", {
+  //     url: `${API_URL}/classroom/${classroomId}/available`,
+  //   });
+  //   const response = await api.get(
+  //     `${API_URL}/classroom/${classroomId}/available`
+  //   );
+  //   console.log("quizService.getAvailableQuizzes - Response:", response.data);
+  //   return response.data;
+  // },
+
+  // Quiz attempt operations
+
   getAvailableQuizzes: async (classroomId) => {
     console.log("quizService.getAvailableQuizzes - Request:", {
       url: `${API_URL}/classroom/${classroomId}/available`,
     });
-    const response = await api.get(
-      `${API_URL}/classroom/${classroomId}/available`
-    );
-    console.log("quizService.getAvailableQuizzes - Response:", response.data);
-    return response.data;
+    try {
+      const response = await api.get(
+        `${API_URL}/classroom/${classroomId}/available`
+      );
+      console.log("quizService.getAvailableQuizzes - Response:", response.data);
+
+      // Log the response data for debugging
+      if (Array.isArray(response.data)) {
+        console.log("Available quizzes fetched:", response.data);
+      } else {
+        console.warn("Expected an array but got:", response.data);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching available quizzes:", error);
+      throw error;
+    }
   },
 
-  // Quiz attempt operations
   startQuizAttempt: async (quizId, studentId) => {
     console.log("quizService.startQuizAttempt - Request:", {
       url: `${API_URL}/${quizId}/attempts/start`,

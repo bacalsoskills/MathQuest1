@@ -23,6 +23,7 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
         List<Quiz> findByClassroomOrderByCreatedAtDesc(Classroom classroom);
 
         @Query("SELECT q FROM Quiz q WHERE q.activity.classroom = :classroom " +
-                        "AND q.availableFrom <= :now AND q.availableTo >= :now")
+                        "AND (q.availableFrom IS NULL OR q.availableFrom <= :now) " +
+                        "AND (q.availableTo IS NULL OR q.availableTo >= :now)")
         List<Quiz> findAvailableQuizzes(Classroom classroom, LocalDateTime now);
 }

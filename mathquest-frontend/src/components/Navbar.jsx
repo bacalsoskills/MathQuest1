@@ -304,9 +304,9 @@ const Navbar = () => {
               </Button>
             )}
 
-            <div className="h-10 w-10 flex items-center justify-center ">
+            {/* <div className="h-10 w-10 flex items-center justify-center ">
               <IoMdNotificationsOutline className="h-5 w-5 text-black" />
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

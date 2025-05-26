@@ -317,11 +317,9 @@ const StudentClassroomPage = () => {
           {activeTab === "activities" && (
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="mb-8">
-                {/* <h2 className="text-2xl font-semibold mb-4 text-gray-700">Quizzes</h2> */}
-                <QuizManager classroomId={classroomId} isStudent={true} />
+                <QuizManager classroomId={classroomId} isStudent={true}/>
               </div>
-              {/* <h2 className="text-2xl font-semibold mb-4 text-gray-700">Game Activities</h2> */}
-           <ClassroomGamesTab classroomId={classroomId} />
+              <ClassroomGamesTab classroomId={classroomId} />
             </div>
           )}
 
