@@ -91,7 +91,7 @@ const ChallengePage = () => {
 
     return () => {
       // Cleanup audio elements
-      correctSound.current.pause();
+      correctSound.current.pause(); 
       wrongSound.current.pause();
       levelUpSound.current.pause();
     };
@@ -120,7 +120,8 @@ const ChallengePage = () => {
     setShowFeedback({ type, message });
     setTimeout(() => setShowFeedback({ type: '', message: '' }), 2000);
   };
-
+  
+/* Cajegas Angelo Test */
   const resetGameState = () => {
     setGameComplete(false);
     setScore(0);
