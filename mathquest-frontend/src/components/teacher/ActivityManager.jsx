@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import Leaderboard from '../games/Leaderboard';
 
 const ActivityManager = ({ classroomId, refreshTrigger }) => {
   const { token } = useAuth();
@@ -12,6 +13,8 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedGame, setSelectedGame] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   useEffect(() => {
     if (!classroomId) return;
@@ -120,6 +123,16 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
     );
   };
 
+  const handlePreviewGame = (game) => {
+    setSelectedGame(game);
+    setShowPreviewModal(true);
+  };
+
+  const closePreviewModal = () => {
+    setShowPreviewModal(false);
+    setSelectedGame(null);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -170,55 +183,63 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
             </div>
             
             <div className="p-4">
-              {/* <p className="text-sm text-gray-600 mb-2">Type: {getGameTypeLabel(game.type)}</p>
-              <p className="text-sm text-gray-600 mb-2">Topic: {game.topic}</p>
-              
-              {game.instructions && (
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{game.instructions}</p>
-              )} */}
-               <div className=" space-y-1 text-base text-gray-600">
+              <div className="space-y-1 text-base text-gray-600">
                 <p><span className="font-bold">Type: </span> {getGameTypeLabel(game.type)}</p>
                 <p><span className="font-bold">Topic: </span> {game.topic}</p>
                 {game.instructions && (
-                <p className=" text-gray-600 mb-4 line-clamp-2">{game.instructions}</p>
-              )} 
+                  <p className="text-gray-600 mb-4 line-clamp-2">{game.instructions}</p>
+                )} 
               </div>
               
-          
-{/* TODO: add edit and preview */}
               <div className="flex items-center space-x-2 mt-4">
-                    <button
-                
-                      className="text-gray-600 hover:text-gray-900 text-base focus:outline-none cursor-not-allowed"
-                      style={{ background: 'none', border: 'none', padding: 0 }}
-                      disabled = {true}
-                    >
-                      Edit
-                    </button>
-                    <span className="mx-1 text-gray-400">|</span>
-                    <button
-                     
-                      className="text-gray-600 hover:text-gray-900 text-base focus:outline-none cursor-not-allowed"
-                      style={{ background: 'none', border: 'none', padding: 0 }}
-                      disabled = {true}
-                    >
-                      Preview
-                    </button>
-                    <span className="mx-1 text-gray-400">|</span>
-                    <button
-                 onClick={() => handleDeleteGame(game.id)}
-                className=" text-red-600 hover:text-red-900 text-base focus:outline-none"
-                style={{ background: 'none', border: 'none', padding: 0 }}
-                // disabled = {true}
-              >
-                Delete
-              </button>
-            
-                  </div>
+                <button
+                  onClick={() => handlePreviewGame(game)}
+                  className="text-gray-600 hover:text-gray-900 text-base focus:outline-none"
+                  style={{ background: 'none', border: 'none', padding: 0 }}
+                >
+                  Preview
+                </button>
+                <span className="mx-1 text-gray-400">|</span>
+                <button
+                  onClick={() => handleDeleteGame(game.id)}
+                  className="text-red-600 hover:text-red-900 text-base focus:outline-none"
+                  style={{ background: 'none', border: 'none', padding: 0 }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Preview Modal */}
+      {showPreviewModal && selectedGame && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Only close if clicking the backdrop (outer div)
+            if (e.target === e.currentTarget) {
+              closePreviewModal();
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-xl font-bold">Preview Leaderboard - {selectedGame.name}</h3>
+              <button
+                onClick={closePreviewModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              <Leaderboard gameId={selectedGame.id} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -884,7 +884,8 @@ const FallingGame = ({ game, onGameComplete }) => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-gray-800 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    // <div className="w-full min-h-screen bg-gray-800 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="w-full h-screen bg-gray-800 text-white flex flex-col items-center justify-between p-4 relative overflow-hidden">
       <audio ref={audioRef} src="/game-bg-music.mp3" loop autoPlay style={{ display: 'none' }} />
       
       {/* Progress Modal - render at top level */}

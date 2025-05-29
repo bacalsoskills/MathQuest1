@@ -1,174 +1,3 @@
-// import axios from "axios";
-
-// const API_URL = "/quizzes";
-
-// // Helper function to get auth header
-// const getAuthHeader = () => {
-//   const token = localStorage.getItem("token");
-//   if (!token) {
-//     throw new Error("No authentication token found");
-//   }
-//   return {
-//     headers: {
-//       Authorization: `Bearer ${token}`,
-//     },
-//   };
-// };
-
-// export const leaderboardService = {
-//   getQuizLeaderboard: async (quizId) => {
-//     const response = await axios.get(
-//       `${API_URL}/${quizId}/leaderboard`,
-//       getAuthHeader()
-//     );
-//     return response.data;
-//   },
-
-//   getClassroomLeaderboard: async (classroomId) => {
-//     const response = await axios.get(
-//       `${API_URL}/classroom/${classroomId}/leaderboard`,
-//       getAuthHeader()
-//     );
-//     return response.data;
-//   },
-
-//   getParticipationLeaderboard: async (classroomId) => {
-//     const response = await axios.get(
-//       `${API_URL}/classroom/${classroomId}/leaderboard/participation`,
-//       getAuthHeader()
-//     );
-//     return response.data;
-//   },
-
-//   getStudentPerformance: async (classroomId) => {
-//     // Get the current user's ID from the auth context or local storage
-//     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-//     if (!currentUser || !currentUser.id) {
-//       throw new Error("User not authenticated");
-//     }
-
-//     const response = await axios.get(
-//       `${API_URL}/performance/student/${currentUser.id}/classroom/${classroomId}`,
-//       getAuthHeader()
-//     );
-
-//     // Transform the response to match the expected format for the My Status tab
-//     const data = response.data;
-//     return {
-//       averageScore: data.averageScore || 0,
-//       totalQuizzes: data.totalQuizzesCompleted || 0,
-//       currentRank: data.currentRank || "-",
-//       bestScore: data.highestScore || 0,
-//       recentQuizzes: data.recentQuizzes || [],
-//       improvement: data.improvement || 0,
-//       streak: data.streak || 0,
-//     };
-//   },
-
-//   getOverallStudentPerformance: async (studentId) => {
-//     const response = await axios.get(
-//       `${API_URL}/performance/student/${studentId}/overall`,
-//       getAuthHeader()
-//     );
-//     return response.data;
-//   },
-
-//   getTopPerformers: async (classroomId) => {
-//     const response = await axios.get(
-//       `${API_URL}/performance/classroom/${classroomId}/top`,
-//       getAuthHeader()
-//     );
-//     return response.data;
-//   },
-
-//   getStudentsNeedingAttention: async (classroomId) => {
-//     const response = await axios.get(
-//       `${API_URL}/performance/classroom/${classroomId}/attention`,
-//       getAuthHeader()
-//     );
-//     return response.data;
-//   },
-
-//   getClassroomAverageScore: async (classroomId) => {
-//     const response = await axios.get(
-//       `${API_URL}/performance/classroom/${classroomId}/average`,
-//       getAuthHeader()
-//     );
-//     return response.data;
-//   },
-
-//   getStudentQuizAttempts: async (classroomId) => {
-//     // Get the current user's ID from auth context or local storage
-//     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-//     if (!currentUser || !currentUser.id) {
-//       throw new Error("User not authenticated");
-//     }
-
-//     try {
-//       const response = await axios.get(
-//         `${API_URL}/attempts/student/${currentUser.id}/classroom/${classroomId}`,
-//         getAuthHeader()
-//       );
-
-//       // Group attempts by quiz
-//       const attemptsByQuiz = {};
-//       response.data.forEach((attempt) => {
-//         if (!attemptsByQuiz[attempt.quizId]) {
-//           attemptsByQuiz[attempt.quizId] = {
-//             quizId: attempt.quizId,
-//             quizName: attempt.quizName || `Quiz ${attempt.quizId}`,
-//             activityId: attempt.activityId,
-//             attempts: [],
-//           };
-//         }
-//         // Include all attempt data including time spent
-//         attemptsByQuiz[attempt.quizId].attempts.push({
-//           ...attempt,
-//           attemptNumber: attempt.attemptNumber,
-//           score: attempt.score,
-//           timeTaken: attempt.timeSpentSeconds || attempt.timeTaken,
-//           startTime: attempt.startedAt || attempt.createdAt,
-//           completionTime: attempt.completedAt,
-//           passed: attempt.passed,
-//         });
-//       });
-
-//       // For each quiz, calculate the highest score and best time
-//       const quizSummaries = Object.values(attemptsByQuiz).map((quizData) => {
-//         const attempts = quizData.attempts;
-//         let highestScore = 0;
-//         let bestTimeForHighestScore = null;
-
-//         attempts.forEach((attempt) => {
-//           if (attempt.score > highestScore) {
-//             highestScore = attempt.score;
-//             bestTimeForHighestScore = attempt.timeTaken;
-//           }
-//         });
-
-//         return {
-//           quizId: quizData.quizId,
-//           quizName: quizData.quizName,
-//           activityId: quizData.activityId,
-//           highestScore,
-//           bestTime: bestTimeForHighestScore,
-//           attempts: attempts.sort(
-//             (a, b) =>
-//               new Date(b.completionTime || b.startTime) -
-//               new Date(a.completionTime || a.startTime)
-//           ),
-//         };
-//       });
-
-//       return quizSummaries;
-//     } catch (error) {
-//       console.error("Error fetching quiz attempts:", error);
-//       // Fallback to empty data
-//       return [];
-//     }
-//   },
-// };
-
 import axios from "axios";
 
 const API_URL = "/quizzes";
@@ -189,7 +18,7 @@ const getAuthHeader = () => {
 // Helper function to get current user ID from auth context
 const getCurrentUserId = () => {
   try {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = JSON.parse(localStorage.getItem("user"));
     console.log("[Auth] Current user data:", currentUser);
 
     // If we have user data in a different format, try to get the ID
@@ -222,19 +51,62 @@ export const leaderboardService = {
     return response.data;
   },
 
+  // getClassroomLeaderboard: async (classroomId) => {
+  //   console.log(
+  //     "[API] Fetching classroom leaderboard for classroom:",
+  //     classroomId
+  //   );
+  //   const response = await axios.get(
+  //     `${API_URL}/classroom/${classroomId}/leaderboard`,
+  //     getAuthHeader()
+  //   );
+  //   console.log("[API] Classroom leaderboard response:", response.data);
+  //   return response.data;
+  // },
+
   getClassroomLeaderboard: async (classroomId) => {
     console.log(
       "[API] Fetching classroom leaderboard for classroom:",
       classroomId
     );
-    const response = await axios.get(
-      `${API_URL}/classroom/${classroomId}/leaderboard`,
-      getAuthHeader()
-    );
-    console.log("[API] Classroom leaderboard response:", response.data);
-    return response.data;
-  },
+    try {
+      const response = await axios.get(
+        `${API_URL}/classroom/${classroomId}/leaderboard`,
+        getAuthHeader()
+      );
+      console.log("[API] Raw leaderboard response:", response.data);
 
+      // Transform the data to include rank from entry_rank while preserving existing fields
+      const transformedData = response.data.map((entry) => {
+        // Preserve the original studentId if it exists
+        const studentId = entry.studentId || entry.user_id;
+        console.log("Processing entry:", {
+          original: entry,
+          studentId,
+          entry_rank: entry.entry_rank,
+        });
+
+        return {
+          ...entry, // Keep all original fields
+          rank: entry.entry_rank || entry.rank || null, // Try both entry_rank and rank
+          studentId: studentId, // Use preserved studentId
+          // Only map these if they don't already exist
+          studentName: entry.studentName || entry.student_name,
+          highestScore: entry.highestScore || entry.highest_score,
+          formattedFastestTime:
+            entry.formattedFastestTime || entry.formatted_fastest_time,
+          totalQuizzesCompleted:
+            entry.totalQuizzesCompleted || entry.total_quizzes_completed,
+        };
+      });
+
+      console.log("[API] Transformed leaderboard data:", transformedData);
+      return transformedData;
+    } catch (error) {
+      console.error("[Error] Error fetching classroom leaderboard:", error);
+      throw error;
+    }
+  },
   getParticipationLeaderboard: async (classroomId) => {
     console.log(
       "[API] Fetching participation leaderboard for classroom:",

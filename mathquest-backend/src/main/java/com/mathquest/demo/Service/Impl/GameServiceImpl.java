@@ -190,6 +190,11 @@ public class GameServiceImpl implements GameService {
             throw new UnauthorizedException("You are not authorized to delete this game");
         }
 
+        // Set isDeleted to true in the associated Activity
+        Activity activity = game.getActivity();
+        activity.setIsDeleted(true);
+        activityRepository.save(activity);
+
         gameRepository.delete(game);
     }
 

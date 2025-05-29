@@ -5,22 +5,30 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const Leaderboard = ({ gameId, finalScore }) => {
-  const { currentUser, token } = useAuth();
+  const { currentUser, token, isTeacher } = useAuth();
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUserRank, setCurrentUserRank] = useState(null);
-
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
         const response = await api.get(`/games/${gameId}/leaderboard`);
         
-        const leaderboardData = response.data;
+        let leaderboardData = response.data;
+        
+        // Filter data based on user role
+        if (!isTeacher()) {
+          // For students, only show student entries
+          leaderboardData = leaderboardData.filter(entry => 
+            entry.role === 'ROLE_STUDENT' || !entry.role
+          );
+        }
+        
         setLeaderboard(leaderboardData);
         
-        // Find current user's position in the leaderboard
-        if (currentUser) {
+        // Find current user's position in the leaderboard (only for students)
+        if (currentUser && !isTeacher()) {
           const userIndex = leaderboardData.findIndex(entry => 
             entry.studentId === currentUser.id || entry.studentEmail === currentUser.email
           );
@@ -40,7 +48,7 @@ const Leaderboard = ({ gameId, finalScore }) => {
     if (gameId) {
       fetchLeaderboard();
     }
-  }, [gameId, token, currentUser, finalScore]);
+  }, [gameId, token, currentUser, finalScore, isTeacher]);
 
   if (loading) {
     return (
@@ -52,10 +60,12 @@ const Leaderboard = ({ gameId, finalScore }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-6 text-center">Game Leaderboard</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center">
+        {isTeacher() ? 'Student Game Leaderboard' : 'Game Leaderboard'}
+      </h2>
       
-      {finalScore !== null && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+      {!isTeacher() && finalScore !== null && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200" >
           <p className="text-center text-lg">
             <span className="font-bold">Your Score:</span> {finalScore}
           </p>
@@ -69,7 +79,11 @@ const Leaderboard = ({ gameId, finalScore }) => {
       
       {leaderboard.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <p>No scores recorded yet. Be the first to play!</p>
+          <p>
+            {isTeacher() 
+              ? "No students have played this game yet."
+              : "No scores recorded yet. Be the first to play!"}
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto">

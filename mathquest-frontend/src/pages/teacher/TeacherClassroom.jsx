@@ -46,13 +46,14 @@ const TeacherClassrooms = () => {
   useEffect(() => {
     const fetchClassrooms = async () => {
       try {
-        console.log("Fetching classrooms as teacher");
+     
         const classroomData = await ClassroomService.getTeacherClassrooms();
         
-        console.log("Retrieved classrooms:", classroomData);
+
+        
         setClassrooms(classroomData);
       } catch (err) {
-        console.error('Fetch classrooms error:', err);
+       
         setError(err.message || 'Failed to load classrooms');
       } finally {
         setLoading(false);
@@ -211,16 +212,24 @@ const TeacherClassrooms = () => {
     if (sortOption === 'alphabetical') {
       return a.name.localeCompare(b.name);
     } else if (sortOption === 'date') {
-      return new Date(a.createdDate) - new Date(b.createdDate);
+      // Log the entire classroom objects to see all available fields
+
+      
+      // Try different possible date field names
+      const dateA = new Date(a.createdDate || a.created_at || a.createdAt || a.created_date);
+      const dateB = new Date(b.createdDate || b.created_at || b.createdAt || b.created_date);
+
+      
+      return dateB - dateA; // Reverse the order to get newest first
     }
     return 0;
   });
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-10">
-        <div className="text-center">Loading classrooms...</div>
-      </div>
+      <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
     );
   }
 
@@ -259,7 +268,6 @@ const TeacherClassrooms = () => {
            >
              <AiOutlinePlusCircle className="w-5 h-5" />
                   Create Classroom
-             
               </Link>
         </div>
 
@@ -291,65 +299,78 @@ const TeacherClassrooms = () => {
             <p className="text-gray-600">No classrooms found for '{searchTerm}'</p>
           </div>
         ) : (
-          <div className="space-y-6"> {/* Changed from grid to vertical space */}
+          <div className="space-y-6">
             {sortedClassrooms.map(classroom => (
-              <div key={classroom.id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col sm:flex-row ">
-                {/* Classroom Image */}
-                <div className="sm:w-1/3 md:w-1/3 flex-shrink-0 ">
-                  {classroom.image ? (
-                    <img 
-                      src={`data:image/jpeg;base64,${classroom.image}`} 
-                      alt={classroom.name} 
-                      className="w-full h-[200px] object-cover "
-                    />
-                  ) : (
-                    <div className="w-full h-[200px] bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
-                      <span className="text-white font-medium text-lg lg:text-3xl">{classroom.shortCode || 'N/A'}</span>
+              <Link
+                key={classroom.id}
+                to={`/teacher/classrooms/${classroom.id}`}
+                className="block"
+              >
+                <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col sm:flex-row hover:shadow-lg transition-shadow duration-200">
+                  {/* Classroom Image */}
+                  <div className="sm:w-1/3 md:w-1/3 flex-shrink-0">
+                    {classroom.image ? (
+                      <img 
+                        src={`data:image/jpeg;base64,${classroom.image}`} 
+                        alt={classroom.name} 
+                        className="w-full h-[200px] object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-[200px] bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                        <span className="text-white font-medium text-lg lg:text-3xl">{classroom.shortCode || 'N/A'}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Classroom Details */}
+                  <div className="p-5 flex-grow sm:w-2/3 md:w-2/3">
+                    <p className="text-xs font-semibold text-secondary uppercase tracking-wide">{classroom.shortCode || 'N/A'}</p>
+                    <Header type="h2" fontSize="2xl" weight="bold" className="text-gray-800 mt-1 mb-1">
+                      {classroom.name}
+                    </Header>
+                    <p className="text-sm text-gray-500 italic mb-2">Join Code: {classroom.classCode || 'N/A'}</p>
+                    
+                    {classroom.description && (
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-3 sm:line-clamp-2 whitespace-normal">{classroom.description}</p>
+                    )}
+                    
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleViewStudents(classroom);
+                        }}
+                        className="font-medium text-gray-600 hover:text-gray-900"
+                      >
+                        All Students
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openAddStudentModal(classroom);
+                        }}
+                        className="font-medium text-gray-600 hover:text-gray-900"
+                      >
+                        Add Students
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteClassroom(classroom.id);
+                        }}
+                        className="font-medium text-red-600 hover:text-red-800"
+                      >
+                        Delete
+                      </button>
                     </div>
-                  )}
-                </div>
-                
-                {/* Classroom Details */}
-                <div className="p-5 flex-grow sm:w-2/3 md:w-2/3">
-                  <p className="text-xs font-semibold text-secondary uppercase tracking-wide">{classroom.shortCode || 'N/A'}</p>
-                  <Header type="h2" fontSize="2xl" weight="bold" className="text-gray-800 mt-1 mb-1">{classroom.name}</Header>
-                  <p className="text-sm text-gray-500 italic mb-2">Join Code: {classroom.classCode || 'N/A'}</p>
-                  
-                  {classroom.description && (
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-3 sm:line-clamp-2 whitespace-normal">{classroom.description}</p>
-                  )}
-                  
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                    <Link
-                      to={`/teacher/classrooms/${classroom.id}`}
-                      className="font-medium text-gray-600 hover:text-gray-900"
-                    >
-                      View
-                    </Link>
-                    <span className="text-gray-300">|</span>
-                    <button
-                      onClick={() => handleViewStudents(classroom)}
-                      className="font-medium text-gray-600 hover:text-gray-900"
-                    >
-                      All Students
-                    </button>
-                    <span className="text-gray-300">|</span>
-                    <button
-                      onClick={() => openAddStudentModal(classroom)}
-                       className="font-medium text-gray-600 hover:text-gray-900"
-                    >
-                      Add Students
-                    </button>
-                    <span className="text-gray-300">|</span>
-                    <button
-                      onClick={() => handleDeleteClassroom(classroom.id)}
-                      className="font-medium text-red-600 hover:text-red-800"
-                    >
-                      Delete
-                    </button>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

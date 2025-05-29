@@ -66,6 +66,9 @@ public class Activity {
     @UpdateTimestamp
     private LocalDateTime updatedDate;
 
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     public Activity(String title, String description, ActivityType type, String content, Integer orderIndex,
             Integer maxScore, Classroom classroom) {
         this.title = title;

@@ -6,10 +6,17 @@ const LessonSidebar = ({ lessons, currentLessonId, onSelectLesson }) => {
   if (!lessons?.length) {
     return (
       <aside className="lesson-sidebar">
-        <Header type="h2" size="2xl" className="text-white">
+        <Header
+          type="h2"
+          weight="bold"
+          size="2xl"
+          className="!text-2xl text-white mb-5"
+        >
           Contents
         </Header>
-        <p>No lessons available for this classroom.</p>
+        <p className="text-gray-800">
+          No lessons available for this classroom.
+        </p>
       </aside>
     );
   }

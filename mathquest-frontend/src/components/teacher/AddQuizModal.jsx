@@ -198,6 +198,17 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated,
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
   
+    // Special handling for repeatable checkbox
+    if (name === 'repeatable') {
+      setFormData((prevData) => ({
+        ...prevData,
+        repeatable: checked,
+        // Reset maxAttempts to 2 when enabling multiple attempts
+        maxAttempts: checked ? 2 : null
+      }));
+      return;
+    }
+  
     setFormData((prevData) => ({
       ...prevData,
       [name]: type === 'checkbox' ? checked : value,
@@ -214,6 +225,16 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated,
       return;
     }
 
+    // Validate max attempts
+    if (formData.repeatable) {
+      const attempts = parseInt(formData.maxAttempts, 10);
+      if (attempts < 2 || attempts > 5) {
+        toast.error('Maximum attempts must be between 2 and 5 when multiple attempts are allowed');
+        return;
+      }
+    }
+
+    // Validate dates
     if (new Date(formData.availableTo) <= new Date(formData.availableFrom)) {
       toast.error('Available To must be after Available From.');
       return;
@@ -461,11 +482,13 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated,
                           type="number"
                           name="maxAttempts"
                           value={formData.maxAttempts}
-                          min="1"
+                          min="2"
+                          max="5"
                           onChange={handleChange}
                           className="w-full p-2 border rounded"
                           required={formData.repeatable}
                         />
+                        <p className="text-xs text-gray-500 mt-1">Must be between 2 and 5 attempts</p>
                       </div>
                     )}
                   </div>
@@ -485,11 +508,24 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated,
                           Points:
                         </label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={question.points || 10}
-                          onChange={(e) => handleQuestionChange(qIndex, 'points', parseInt(e.target.value) || 1)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Only allow numbers
+                            if (/^\d*$/.test(value)) {
+                              const numValue = value === '' ? 1 : parseInt(value);
+                              handleQuestionChange(qIndex, 'points', numValue);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // Ensure minimum value of 1 on blur
+                            const value = parseInt(e.target.value) || 1;
+                            handleQuestionChange(qIndex, 'points', value);
+                          }}
                           className="w-16 p-1 border rounded text-center text-sm"
-                          min="1"
                           required
                         />
                       </div>
@@ -642,6 +678,9 @@ const AddQuizModal = ({ isOpen, onClose, activityId, classroomId, onQuizCreated,
 };
 
 export default AddQuizModal; 
+
+
+
 
 
 

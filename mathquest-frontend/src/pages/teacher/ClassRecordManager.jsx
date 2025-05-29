@@ -14,12 +14,202 @@ import classroomService from "../../services/classroomService";
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 // Calculate student ranks based on average score
-const calculateRanks = (students) => {
+const calculateRanks = (students, quizzes) => {
+  // Log quiz data for debugging
+  console.log("Raw quiz data:", JSON.stringify(quizzes, null, 2));
+  
+  // Calculate total possible points across all quizzes
+  const totalPossiblePoints = quizzes.reduce((sum, quiz) => {
+    // Use overallScore instead of overall_score
+    const quizPoints = Number(quiz.overallScore) || 0;
+    console.log(`Quiz ${quiz.id} (${quiz.quizName}): overallScore = ${quiz.overallScore}, parsed as ${quizPoints}`);
+    return sum + quizPoints;
+  }, 0);
+  
+  console.log("Total possible points across all quizzes:", totalPossiblePoints);
+
   return students
     .map((student, index) => ({ ...student, index }))
+    .map(student => {
+      // Calculate total score and check completion status
+      const totalScore = student.quizScores?.reduce((sum, score) => {
+        const scoreValue = Number(score) || 0;
+        console.log(`Adding score ${score} (parsed as ${scoreValue}) to total`);
+        return sum + scoreValue;
+      }, 0) || 0;
+      
+      console.log(`Student ${student.id} total score: ${totalScore}`);
+      
+      // Calculate average based on total possible points
+      const averageScore = totalPossiblePoints > 0 
+        ? ((totalScore / totalPossiblePoints) * 100).toFixed(2) 
+        : 0;
+      
+      console.log(`Student ${student.id} average score: ${averageScore}% (${totalScore}/${totalPossiblePoints})`);
+      
+      const isComplete = student.quizScores?.every(score => score !== null && score !== undefined);
+      
+      return {
+        ...student,
+        totalScore,
+        averageScore: parseFloat(averageScore),
+        status: isComplete ? 'Complete' : 'Incomplete'
+      };
+    })
     .sort((a, b) => b.averageScore - a.averageScore)
     .map((student, rank) => ({ ...student, rank: rank + 1 }))
     .sort((a, b) => a.index - b.index);
+};
+
+const calculateAnalytics = (quizData, quizAttempts) => {
+  if (!quizData?.quizzes || !quizAttempts?.attempts || !quizAttempts?.students) {
+    return null;
+  }
+
+  const { quizzes } = quizData;
+  const { attempts, students } = quizAttempts;
+
+  // Organize attempts by student and quiz, keeping only highest scores
+  const studentQuizScores = {};
+  const studentQuizPassStatus = {}; // Track pass/fail status for highest attempts
+
+  // Initialize student records
+  students.forEach(student => {
+    studentQuizScores[student.id] = {};
+    studentQuizPassStatus[student.id] = {};
+  });
+
+  // First pass: organize attempts and find highest scores
+  attempts.forEach(attempt => {
+    const studentId = attempt.studentId || attempt.user_id;
+    const quizId = attempt.quizId || attempt.quiz_id;
+    const score = attempt.score || 0;
+    const quiz = quizzes.find(q => q.id === quizId);
+    
+    if (!quiz) return; // Skip if quiz not found
+
+    if (!studentQuizScores[studentId]) {
+      studentQuizScores[studentId] = {};
+      studentQuizPassStatus[studentId] = {};
+    }
+
+    // Only update if this is a higher score than previous attempts
+    if (!studentQuizScores[studentId][quizId] || 
+        studentQuizScores[studentId][quizId] < score) {
+      studentQuizScores[studentId][quizId] = score;
+      // Update pass status based on the highest score
+      studentQuizPassStatus[studentId][quizId] = score >= quiz.passingScore;
+    }
+  });
+
+  // Calculate pass/fail counts - only count one result per student-quiz pair
+  let totalPassed = 0;
+  let totalFailed = 0;
+
+  // Count only one result per student-quiz pair
+  Object.entries(studentQuizPassStatus).forEach(([studentId, quizStatuses]) => {
+    Object.entries(quizStatuses).forEach(([quizId, passed]) => {
+      // Only count if the student has attempted this quiz
+      if (studentQuizScores[studentId][quizId] !== undefined) {
+        if (passed) {
+          totalPassed++;
+        } else {
+          totalFailed++;
+        }
+      }
+    });
+  });
+
+  // Calculate quiz performance metrics
+  const quizPerformance = quizzes.map(quiz => {
+    let totalStudents = 0;
+    let passedStudents = 0;
+    let totalScore = 0;
+
+    students.forEach(student => {
+      const score = studentQuizScores[student.id]?.[quiz.id];
+      if (score !== undefined) {
+        totalStudents++;
+        totalScore += score;
+        if (score >= quiz.passingScore) {
+          passedStudents++;
+        }
+      }
+    });
+
+    const passRate = totalStudents > 0 ? (passedStudents / totalStudents) * 100 : 0;
+    const failRate = totalStudents > 0 ? ((totalStudents - passedStudents) / totalStudents) * 100 : 0;
+    const quizAverage = totalStudents > 0 ? totalScore / totalStudents : 0;
+
+    return {
+      quizName: quiz.quizName,
+      passRate: parseFloat(passRate.toFixed(2)),
+      failRate: parseFloat(failRate.toFixed(2)),
+      averageScore: parseFloat(quizAverage.toFixed(2)),
+      totalStudents,
+      passedStudents
+    };
+  });
+
+  // Calculate global average score
+  let totalGlobalScore = 0;
+  let totalGlobalAttempts = 0;
+
+  Object.values(studentQuizScores).forEach(quizScores => {
+    Object.values(quizScores).forEach(score => {
+      totalGlobalScore += score;
+      totalGlobalAttempts++;
+    });
+  });
+
+  const globalAverageScore = totalGlobalAttempts > 0 
+    ? (totalGlobalScore / totalGlobalAttempts) 
+    : 0;
+
+  // Calculate score distribution
+  const scoreRanges = [
+    { min: 90, max: 100, label: 'A', count: 0 },
+    { min: 80, max: 89, label: 'B', count: 0 },
+    { min: 70, max: 79, label: 'C', count: 0 },
+    { min: 60, max: 69, label: 'D', count: 0 },
+    { min: 0, max: 59, label: 'F', count: 0 }
+  ];
+
+  Object.values(studentQuizScores).forEach(quizScores => {
+    Object.values(quizScores).forEach(score => {
+      const range = scoreRanges.find(r => score >= r.min && score <= r.max);
+      if (range) {
+        range.count++;
+      }
+    });
+  });
+
+  // Calculate median score
+  const allScores = [];
+  Object.values(studentQuizScores).forEach(quizScores => {
+    Object.values(quizScores).forEach(score => {
+      allScores.push(score);
+    });
+  });
+  
+  allScores.sort((a, b) => a - b);
+  const medianScore = allScores.length > 0
+    ? allScores.length % 2 === 0
+      ? (allScores[allScores.length / 2 - 1] + allScores[allScores.length / 2]) / 2
+      : allScores[Math.floor(allScores.length / 2)]
+    : 0;
+
+  return {
+    totalStudents: students.length,
+    totalQuizzes: quizzes.length,
+    uniqueQuizzesTaken: new Set(attempts.map(a => a.quizId || a.quiz_id)).size,
+    averageScore: parseFloat(globalAverageScore.toFixed(2)),
+    medianScore: parseFloat(medianScore.toFixed(2)),
+    quizPerformance,
+    scoreDistribution: scoreRanges.map(r => r.count),
+    totalQuizzesPassed: totalPassed,
+    totalQuizzesFailed: totalFailed
+  };
 };
 
 const ClassRecordManager = ({ classroomId }) => {
@@ -40,6 +230,7 @@ const ClassRecordManager = ({ classroomId }) => {
   const [quizAttempts, setQuizAttempts] = useState(null);
   const [quizDataLoading, setQuizDataLoading] = useState(true);
   const [classroom, setClassroom] = useState(null);
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for highest to lowest, 'asc' for lowest to highest
 
   useEffect(() => {
     if (!currentUser?.id) {
@@ -152,6 +343,12 @@ const ClassRecordManager = ({ classroomId }) => {
       setQuizData(quizDataResponse);
       setQuizAttempts(quizAttemptsResponse);
       
+      // Calculate analytics after fetching quiz data and attempts
+      if (quizData && quizAttempts) {
+        const calculatedAnalytics = calculateAnalytics(quizData, quizAttempts);
+        setAnalytics(calculatedAnalytics);
+      }
+
       setLoading(false);
       setAnalyticsLoading(false);
       setQuizDataLoading(false);
@@ -251,71 +448,68 @@ const ClassRecordManager = ({ classroomId }) => {
         }
       });
 
-      // Update student records for Excel to include rank and ensure totalPoints is calculated
-      const studentRecordsForExcel = calculateRanks(quizAttempts.students.map(student => {
+      // Update student records for Excel/CSV with new format
+      const studentRecordsForExcel = quizAttempts.students.map(student => {
         const studentAttempts = organizedAttempts[student.id] || {};
         const quizScores = {};
         let totalPoints = 0;
+        let completedQuizzes = 0;
         
+        // Calculate total possible points
+        const totalPossiblePoints = quizData.quizzes.reduce((sum, quiz) => {
+          return sum + (Number(quiz.overallScore) || 0);
+        }, 0);
+        
+        // Calculate scores for each quiz
         quizData.quizzes.forEach(quiz => {
           const attempt = studentAttempts[quiz.id];
-          const highestScore = attempt?.score ?? 0;
-          quizScores[`quiz_${quiz.id}`] = highestScore;
-          totalPoints += highestScore;
+          const score = attempt?.score ?? 0;
+          quizScores[`quiz_${quiz.id}`] = score;
+          totalPoints += score;
+          if (attempt) completedQuizzes++;
         });
         
-        const averageScore = (totalPoints / quizData.quizzes.length).toFixed(2);
+        // Calculate average score using total possible points
+        const averageScore = totalPossiblePoints > 0 
+          ? ((totalPoints / totalPossiblePoints) * 100).toFixed(2)
+          : 0;
         
+        const status = completedQuizzes === quizData.quizzes.length ? 'Complete' : 'Incomplete';
+        
+        // Create a single record with all fields
         return {
-          studentId: student.id,
-          studentName: `${student.firstName} ${student.lastName}`,
-          username: student.username,
+          rank: 0, // Will be set after sorting
+          studentName: `${student.lastName} ${student.firstName}`, // Changed from comma to space
           ...quizScores,
-          totalPoints: totalPoints,
-          averageScore: parseFloat(averageScore)
+          totalPoints,
+          averageScore: parseFloat(averageScore),
+          status
         };
+      })
+      // Sort by average score and assign ranks
+      .sort((a, b) => b.averageScore - a.averageScore)
+      .map((student, index) => ({
+        ...student,
+        rank: index + 1
       }));
 
-      // Update student records for CSV to include rank and ensure totalPoints is calculated
-      const studentRecordsForCsv = calculateRanks(quizAttempts.students.map(student => {
-        const studentAttempts = organizedAttempts[student.id] || {};
-        const quizScores = {};
-        let totalPoints = 0;
-        
-        quizData.quizzes.forEach(quiz => {
-          const attempt = studentAttempts[quiz.id];
-          const highestScore = attempt?.score ?? 0;
-          quizScores[`quiz_${quiz.id}`] = highestScore.toString(); // Convert score to string
-          totalPoints += highestScore;
-        });
-        
-        const averageScore = (totalPoints / quizData.quizzes.length).toFixed(2);
-        
-        return {
-          studentId: student.id ? student.id.toString() : '', // Convert ID to string
-          studentName: `${student.firstName} ${student.lastName}`,
-          username: student.username || '',
-          ...quizScores,
-          totalPoints: totalPoints.toString(), // Convert total points to string
-          averageScore: averageScore.toString(), // Convert average score to string
-          rank: student.rank ? student.rank.toString() : '' // Convert rank to string
-        };
-      }));
-
-      // Add rank to headers for Excel/CSV
+      // Update headers to include status and format quiz names
       const headers = [
         { key: "rank", label: "Rank" },
-        { key: "studentName", label: "Student Name" },
-        { key: "username", label: "Username" },
+        { key: "studentName", label: "Student Name" }, // Single column for full name
         ...quizData.quizzes.map(quiz => ({ 
           key: `quiz_${quiz.id}`, 
-          label: `${quiz.quizName} (Total: ${quiz.totalItems} Passing: ${quiz.passingScore})`
+          label: `${quiz.quizName} (Quiz Items: ${quiz.totalItems} | Overall Score: ${quiz.overallScore} | Passing: ${quiz.passingScore})`
         })),
-        { key: "totalPoints", label: "Total Points" },
-        { key: "averageScore", label: "Average Score (%)" }
+        { 
+          key: "totalPoints", 
+          label: `Total Points (Max: ${quizData.quizzes.reduce((sum, quiz) => sum + (Number(quiz.overallScore) || 0), 0)})`
+        },
+        { key: "averageScore", label: "Average Score (%)" },
+        { key: "status", label: "Status" }
       ];
 
-      const reportName = `${classroom.name || 'Class'} Record`;
+      // Update the report description to ensure proper data formatting
       const reportDescription = JSON.stringify({
         classroomId: classroom.id,
         classroomName: classroom.name,
@@ -325,9 +519,14 @@ const ClassRecordManager = ({ classroomId }) => {
           id: quiz.id,
           quizName: quiz.quizName,
           totalItems: quiz.totalItems,
-          passingScore: quiz.passingScore
+          passingScore: quiz.passingScore,
+          overallScore: Number(quiz.overallScore) || 0 // Ensure overallScore is included
         })),
-        students: studentRecordsForCsv, // Use CSV-specific records
+        students: studentRecordsForExcel.map(student => ({
+          ...student,
+          // Ensure averageScore is a number and properly formatted
+          averageScore: Number(student.averageScore).toFixed(2)
+        })),
         headers: headers,
         generatedAt: new Date().toISOString()
       });
@@ -426,6 +625,13 @@ const ClassRecordManager = ({ classroomId }) => {
     );
   };
 
+  const getSortedStudents = (students) => {
+    const sorted = [...students];
+    // Always sort by rank, just change the order
+    sorted.sort((a, b) => sortOrder === 'desc' ? a.rank - b.rank : b.rank - a.rank);
+    return sorted;
+  };
+
   const renderClassRecord = () => {
     if (quizDataLoading) {
       return (
@@ -456,117 +662,175 @@ const ClassRecordManager = ({ classroomId }) => {
     // Organize attempts by student
     const attemptsByStudent = {};
     attempts.forEach(attempt => {
-      // Check and log any potential prop name mismatches
       if (!attempt.studentId && attempt.user_id) {
-        console.log("Found attempt using user_id instead of studentId");
         attempt.studentId = attempt.user_id;
       }
       if (!attempt.quizId && attempt.quiz_id) {
-        console.log("Found attempt using quiz_id instead of quizId");
         attempt.quizId = attempt.quiz_id;
       }
 
       if (!attemptsByStudent[attempt.studentId]) {
         attemptsByStudent[attempt.studentId] = {};
       }
-      // Keep only the highest score attempt for each quiz
       if (!attemptsByStudent[attempt.studentId][attempt.quizId] || 
           attemptsByStudent[attempt.studentId][attempt.quizId].score < attempt.score) {
         attemptsByStudent[attempt.studentId][attempt.quizId] = attempt;
       }
     });
 
-    console.log("Organized attempts by student:", attemptsByStudent);
+    // Prepare student data with scores and status
+    const studentData = students.map(student => {
+      const studentAttempts = attemptsByStudent[student.id] || {};
+      const quizScores = quizzes.map(quiz => {
+        const attempt = studentAttempts[quiz.id];
+        console.log(`Student ${student.id} attempt for quiz ${quiz.id}:`, {
+          attempt,
+          quiz,
+          score: attempt?.score,
+          overallScore: quiz.overallScore
+        });
+        return attempt?.score || null;
+      });
+      
+      const totalScore = quizScores.reduce((sum, score) => {
+        const scoreValue = Number(score) || 0;
+        console.log(`Adding score ${score} (parsed as ${scoreValue}) to total`);
+        return sum + scoreValue;
+      }, 0);
+      
+      console.log(`Student ${student.id} total score: ${totalScore}`);
+      
+      const totalPossiblePoints = quizzes.reduce((sum, quiz) => {
+        const quizTotalPoints = Number(quiz.overallScore) || 0;
+        console.log(`Quiz ${quiz.id} (${quiz.quizName}): overallScore = ${quiz.overallScore}, parsed as ${quizTotalPoints}`);
+        return sum + quizTotalPoints;
+      }, 0);
+      
+      console.log(`Total possible points for student ${student.id}: ${totalPossiblePoints}`);
+      
+      const averageScore = totalPossiblePoints > 0 
+        ? ((totalScore / totalPossiblePoints) * 100).toFixed(2) 
+        : 0;
+      
+      console.log(`Student ${student.id} average score: ${averageScore}% (${totalScore}/${totalPossiblePoints})`);
+      
+      const isComplete = quizScores.every(score => score !== null && score !== undefined);
+
+      return {
+        ...student,
+        quizScores,
+        totalScore,
+        averageScore: parseFloat(averageScore),
+        status: isComplete ? 'Complete' : 'Incomplete'
+      };
+    });
+
+    // Calculate ranks with the new function
+    const rankedStudents = calculateRanks(studentData, quizzes);
+    const sortedStudents = getSortedStudents(rankedStudents);
 
     return (
       <div className="overflow-x-auto">
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+            className="px-3 py-2 border rounded-md flex items-center"
+          >
+            Sort: {sortOrder === 'desc' ? 'Highest Rank' : 'Lowest Rank'}
+            {sortOrder === 'desc' ? ' ↓' : ' ↑'}
+          </button>
+        </div>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Rank
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Rank {sortOrder === 'desc' ? '↓' : '↑'}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Student Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Username
               </th>
               {quizzes.map(quiz => (
                 <th key={quiz.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {quiz.quizName}
                   <div className="text-xxs font-normal normal-case text-gray-400">
-                    Total: {quiz.totalItems} | Passing: {quiz.passingScore}
+                    Quiz Items: {quiz.totalItems} | Overall Score: {quiz.overallScore} | Passing: {quiz.passingScore}
                   </div>
                 </th>
               ))}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Total Points
+                <div className="text-xxs font-normal normal-case text-gray-400">
+                  (Max: {quizzes.reduce((sum, quiz) => sum + (Number(quiz.overallScore) || 0), 0)})
+                </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Average Score
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {calculateRanks(students).map(student => {
-              const studentAttempts = attemptsByStudent[student.id] || {};
-              const scores = quizzes.map(quiz => studentAttempts[quiz.id]?.score || 0);
-              const totalPoints = scores.reduce((acc, score) => acc + score, 0);
-              const averageScore = (totalPoints / quizzes.length).toFixed(2);
-
-              return (
-                <tr key={student.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {student.rank}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {student.firstName} {student.lastName}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{student.username}</div>
-                  </td>
-                  {quizzes.map(quiz => {
-                    const attempt = studentAttempts[quiz.id];
-                    return (
-                      <td key={quiz.id} className="px-6 py-4 whitespace-nowrap">
-                        {attempt ? (
-                          <button
-                            onClick={() => handleAttemptClick(attempt)}
-                            className={`text-sm flex items-center ${
-                              attempt.passed ? 'text-green-600' : 'text-red-600'
-                            }`}
-                          >
-                            {attempt.score}
-                            <FaInfoCircle className="ml-1" />
-                          </button>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-gray-900">
-                      {totalPoints}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm font-medium ${
-                      parseFloat(averageScore) >= 60 
-                        ? 'text-green-600' 
-                        : 'text-red-600'
-                    }`}>
-                      {averageScore}%
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
+            {sortedStudents.map(student => (
+              <tr key={student.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {student.rank}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {student.lastName}, {student.firstName}
+                  </div>
+                </td>
+                {quizzes.map(quiz => {
+                  const attempt = attemptsByStudent[student.id]?.[quiz.id];
+                  return (
+                    <td key={quiz.id} className="px-6 py-4 whitespace-nowrap">
+                      {attempt ? (
+                        <button
+                          onClick={() => handleAttemptClick(attempt)}
+                          className={`text-sm flex items-center ${
+                            attempt.passed ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
+                          {attempt.score}
+                          <FaInfoCircle className="ml-1" />
+                        </button>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </td>
+                  );
+                })}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm font-medium text-gray-900">
+                    {student.totalScore}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`text-sm font-medium ${
+                    student.averageScore >= 60 
+                      ? 'text-green-600' 
+                      : 'text-red-600'
+                  }`}>
+                    {student.averageScore}%
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`text-sm font-medium ${
+                    student.status === 'Complete' 
+                      ? 'text-green-600' 
+                      : 'text-red-600'
+                  }`}>
+                    {student.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -602,19 +866,54 @@ const ClassRecordManager = ({ classroomId }) => {
     };
 
     const barData = {
-      labels: ['Total Students', 'Total Quizzes Taken'],
+      labels: ['Total Students', 'Total Quizzes', 'Quizzes Taken'],
       datasets: [
         {
           label: 'Classroom Statistics',
-          data: [analytics.totalStudents, analytics.totalQuizzesTaken],
-          backgroundColor: ['#2196F3', '#FF9800'],
+          data: [analytics.totalStudents, analytics.totalQuizzes, analytics.uniqueQuizzesTaken],
+          backgroundColor: ['#2196F3', '#9C27B0', '#FF9800'],
         },
       ],
     };
 
+    // Prepare quiz performance impact data
+    const quizPerformanceData = {
+      labels: analytics.quizPerformance?.map(q => q.quizName) || [],
+      datasets: [
+        {
+          label: 'Pass Rate (%)',
+          data: analytics.quizPerformance?.map(q => q.passRate) || [],
+          backgroundColor: '#4CAF50',
+        },
+        {
+          label: 'Fail Rate (%)',
+          data: analytics.quizPerformance?.map(q => q.failRate) || [],
+          backgroundColor: '#f44336',
+        }
+      ]
+    };
+
+    // Prepare score distribution data
+    const scoreDistributionData = {
+      labels: ['A (90-100)', 'B (80-89)', 'C (70-79)', 'D (60-69)', 'F (0-59)'],
+      datasets: [
+        {
+          label: 'Number of Students',
+          data: analytics.scoreDistribution || [0, 0, 0, 0, 0],
+          backgroundColor: [
+            '#4CAF50', // A - Green
+            '#8BC34A', // B - Light Green
+            '#FFC107', // C - Yellow
+            '#FF9800', // D - Orange
+            '#f44336'  // F - Red
+          ],
+        }
+      ]
+    };
+
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">Total Students</h3>
             <p className="text-3xl font-bold text-blue-600">{analytics.totalStudents}</p>
@@ -624,8 +923,14 @@ const ClassRecordManager = ({ classroomId }) => {
             <p className="text-3xl font-bold text-green-600">{analytics.averageScore?.toFixed(2)}%</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-2">Total Quizzes Taken</h3>
-            <p className="text-3xl font-bold text-orange-600">{analytics.totalQuizzesTaken}</p>
+            <h3 className="text-lg font-semibold mb-2">Median Score</h3>
+            <p className="text-3xl font-bold text-purple-600">{analytics.medianScore?.toFixed(2)}%</p>
+            <p className="text-sm text-gray-500 mt-1">Central performance indicator</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-2">Quizzes Taken</h3>
+            <p className="text-3xl font-bold text-orange-600">{analytics.uniqueQuizzesTaken}</p>
+            <p className="text-sm text-gray-500 mt-1">Unique quizzes attempted</p>
           </div>
         </div>
 
@@ -654,33 +959,65 @@ const ClassRecordManager = ({ classroomId }) => {
           </div>
         </div>
 
-        {analytics.topPerformers && analytics.topPerformers.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Top Performers</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Points</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {analytics.topPerformers.map((student, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap font-medium">{index + 1}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{student.studentName}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{student.averageQuizScore?.toFixed(2)}%</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{student.totalPoints}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <h3 className="text-lg font-semibold mb-4">Quiz Performance Impact</h3>
+            <div className="h-80">
+              <Bar 
+                data={quizPerformanceData}
+                options={{
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      max: 100,
+                      title: {
+                        display: true,
+                        text: 'Percentage (%)'
+                      }
+                    },
+                    x: {
+                      ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
+                      }
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      position: 'top'
+                    }
+                  }
+                }}
+              />
             </div>
           </div>
-        )}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Score Distribution</h3>
+            <div className="h-80">
+              <Bar 
+                data={scoreDistributionData}
+                options={{
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      title: {
+                        display: true,
+                        text: 'Number of Students'
+                      }
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      display: false
+                    }
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -803,4 +1140,5 @@ const ClassRecordManager = ({ classroomId }) => {
 };
 
 export default ClassRecordManager; 
+
 

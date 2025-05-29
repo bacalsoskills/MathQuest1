@@ -10,7 +10,9 @@ const ClassroomHeader = ({
   if (!classroomDetails) {
     return (
       <header className="classroom-header classroom-header-loading">
-        <h1>Loading Classroom...</h1>
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
       </header>
     );
   }

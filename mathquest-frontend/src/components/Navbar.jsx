@@ -14,6 +14,7 @@ import { MdOutlineAdminPanelSettings } from "react-icons/md";
 import UserService from '../services/userService';
 import { LiaSchoolSolid } from "react-icons/lia";
 import ClassroomService from '../services/classroomService';
+import { LuNotebookPen } from "react-icons/lu";
 
 // Helper function to get initials
 const getInitials = (firstName, lastName) => {
@@ -158,6 +159,7 @@ const Navbar = () => {
       icon: <BiGroup className="mr-3 text-xl" />, 
       name: 'Classrooms',
       subLinks: classrooms.map(classroom => ({
+        icon: <LuNotebookPen className="mr-3 text-xl" />,
         path: `/student/classrooms/${classroom.id}`,
         name: classroom.name
       }))
@@ -171,6 +173,7 @@ const Navbar = () => {
       icon: <BiGroup className="mr-3 text-xl" />, 
       name: 'Classrooms',
       subLinks: classrooms.map(classroom => ({
+        icon: <LuNotebookPen className="mr-3 text-xl" />,
         path: `/teacher/classrooms/${classroom.id}`,
         name: classroom.name
       }))
@@ -248,6 +251,9 @@ const Navbar = () => {
                             : 'text-gray-700 hover:bg-gray-100 hover:text-black' 
                         }`}
                       >
+                         <span className={`inline-block ${isActive(subLink.path) ? 'text-primary font-semibold' : 'text-gray-700 hover:bg-gray-100 hover:text-black'} group-hover:text-white `}> 
+                        {subLink.icon}
+                      </span>
                         {subLink.name}
                       </Link>
                     ))}

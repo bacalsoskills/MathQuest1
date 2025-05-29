@@ -4,6 +4,7 @@ import com.mathquest.demo.Model.Quiz;
 import com.mathquest.demo.Model.QuizAttempt;
 import com.mathquest.demo.Model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -34,4 +35,8 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
 
     @Query("SELECT qa FROM QuizAttempt qa WHERE qa.quiz.activity.classroom.id = :classroomId")
     List<QuizAttempt> findByClassroomId(Long classroomId);
+
+    @Modifying
+    @Query("DELETE FROM QuizAttempt qa WHERE qa.quiz = :quiz")
+    void deleteByQuiz(Quiz quiz);
 }

@@ -28,9 +28,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -464,6 +466,10 @@ public class ReportService {
                                                                 int value = student.getInt(key);
                                                                 cell.setCellValue(value);
                                                                 System.out.println("Added total points: " + value);
+                                                        } else if (key.equals("rank")) {
+                                                                int value = student.getInt(key);
+                                                                cell.setCellValue(value);
+                                                                System.out.println("Added rank: " + value);
                                                         } else {
                                                                 String value = student.getString(key);
                                                                 cell.setCellValue(value);
@@ -650,40 +656,93 @@ public class ReportService {
                 Classroom classroom = classroomRepository.findById(classroomId)
                                 .orElseThrow(() -> new RuntimeException("Classroom not found"));
 
-                // Get all student performances for this classroom
-                List<StudentPerformance> performances = studentPerformanceRepository
-                                .findByClassroomOrderByAverageQuizScoreDesc(classroom);
+                // Get all current quizzes for this classroom
+                List<Quiz> quizzes = quizRepository.findByActivity_Classroom(classroom);
+                int totalQuizzes = quizzes.size();
 
-                // Get top performers
-                List<StudentPerformanceDTO> topPerformers = studentPerformanceService.getTopPerformers(classroomId);
+                // Get all current quiz attempts for this classroom
+                List<QuizAttempt> allAttempts = quizAttemptRepository.findByClassroomId(classroomId);
 
-                // Get classroom average score
-                Double averageScore = studentPerformanceService.getClassroomAverageScore(classroomId);
+                // Calculate unique quizzes taken by each student
+                Map<Long, Set<Long>> studentQuizMap = new HashMap<>();
+                Map<Long, Double> studentTotalScores = new HashMap<>();
+                Map<Long, Integer> studentTotalPoints = new HashMap<>();
+                Map<Long, Integer> studentPassedQuizzes = new HashMap<>();
+                Map<Long, Integer> studentFailedQuizzes = new HashMap<>();
 
-                // Calculate metrics
-                int totalStudents = performances.size();
-                int totalQuizzesTaken = 0;
-                int totalQuizzesPassed = 0;
-                int totalQuizzesFailed = 0;
+                for (QuizAttempt attempt : allAttempts) {
+                        if (attempt.getStudent() != null && attempt.getQuiz() != null) {
+                                Long studentId = attempt.getStudent().getId();
+                                Long quizId = attempt.getQuiz().getId();
 
-                for (StudentPerformance perf : performances) {
-                        totalQuizzesTaken += perf.getTotalQuizzesTaken();
-                        totalQuizzesPassed += perf.getTotalQuizzesPassed();
-                        totalQuizzesFailed += perf.getTotalQuizzesFailed();
+                                // Add to unique quizzes set
+                                studentQuizMap.computeIfAbsent(studentId, k -> new HashSet<>())
+                                                .add(quizId);
+
+                                // Update scores and points
+                                if (attempt.getScore() != null) {
+                                        studentTotalScores.merge(studentId, (double) attempt.getScore(), Double::sum);
+                                        studentTotalPoints.merge(studentId, attempt.getScore(), Integer::sum);
+
+                                        // Update pass/fail counts
+                                        if (attempt.getPassed()) {
+                                                studentPassedQuizzes.merge(studentId, 1, Integer::sum);
+                                        } else {
+                                                studentFailedQuizzes.merge(studentId, 1, Integer::sum);
+                                        }
+                                }
+                        }
                 }
 
-                double passRate = totalQuizzesTaken > 0 ? (double) totalQuizzesPassed / totalQuizzesTaken * 100 : 0;
-                double failRate = totalQuizzesTaken > 0 ? (double) totalQuizzesFailed / totalQuizzesTaken * 100 : 0;
+                // Calculate total unique quizzes taken across all students
+                int uniqueQuizzesTaken = studentQuizMap.values().stream()
+                                .mapToInt(Set::size)
+                                .sum();
 
-                // Prepare return map
+                // Calculate total passed and failed quizzes
+                int totalQuizzesPassed = studentPassedQuizzes.values().stream().mapToInt(Integer::intValue).sum();
+                int totalQuizzesFailed = studentFailedQuizzes.values().stream().mapToInt(Integer::intValue).sum();
+
+                // Calculate classroom average score
+                double totalScore = studentTotalScores.values().stream().mapToDouble(Double::doubleValue).sum();
+                int totalAttempts = allAttempts.stream()
+                                .filter(a -> a.getScore() != null)
+                                .mapToInt(a -> 1)
+                                .sum();
+                Double averageScore = totalAttempts > 0 ? (totalScore / totalAttempts) : 0.0;
+
+                // Create top performers list from current data
+                List<StudentPerformanceDTO> topPerformers = new ArrayList<>();
+                for (Map.Entry<Long, Set<Long>> entry : studentQuizMap.entrySet()) {
+                        Long studentId = entry.getKey();
+                        int quizzesTaken = entry.getValue().size();
+                        if (quizzesTaken > 0) {
+                                User student = userRepository.findById(studentId).orElse(null);
+                                if (student != null) {
+                                        double avgScore = studentTotalScores.getOrDefault(studentId, 0.0)
+                                                        / quizzesTaken;
+                                        int totalPoints = studentTotalPoints.getOrDefault(studentId, 0);
+
+                                        StudentPerformanceDTO dto = new StudentPerformanceDTO();
+                                        dto.setStudentId(studentId);
+                                        dto.setStudentName(student.getFirstName() + " " + student.getLastName());
+                                        dto.setAverageQuizScore(avgScore);
+                                        dto.setTotalPoints(totalPoints);
+                                        topPerformers.add(dto);
+                                }
+                        }
+                }
+
+                // Sort top performers by average score
+                topPerformers.sort((a, b) -> Double.compare(b.getAverageQuizScore(), a.getAverageQuizScore()));
+
                 Map<String, Object> analytics = new HashMap<>();
-                analytics.put("totalStudents", totalStudents);
-                analytics.put("totalQuizzesTaken", totalQuizzesTaken);
+                analytics.put("totalStudents", classroom.getStudents().size());
+                analytics.put("totalQuizzes", totalQuizzes);
+                analytics.put("uniqueQuizzesTaken", uniqueQuizzesTaken);
                 analytics.put("totalQuizzesPassed", totalQuizzesPassed);
                 analytics.put("totalQuizzesFailed", totalQuizzesFailed);
-                analytics.put("averageScore", averageScore != null ? averageScore : 0.0);
-                analytics.put("passRate", passRate);
-                analytics.put("failRate", failRate);
+                analytics.put("averageScore", averageScore);
                 analytics.put("topPerformers", topPerformers);
 
                 return analytics;

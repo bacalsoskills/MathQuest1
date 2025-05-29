@@ -19,6 +19,7 @@ import { MdEdit } from "react-icons/md";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import activityService from "../../services/activityService";
+import { Button } from "../../ui/button";
 
 const TeacherClassroomPage = () => {
   const { classroomId, lessonId: initialLessonId } = useParams();
@@ -280,7 +281,11 @@ const TeacherClassroomPage = () => {
 
 
   if (loading && !error) {
-    return <div>Loading classroom...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (error) {
@@ -486,102 +491,80 @@ const TeacherClassroomPage = () => {
 
 
           {/* Right Side - Lesson Content */}
-          <div className="w-full md:w-2/3 bg-[#60B5FF]/20 p-4 rounded-lg shadow">
-            {loading && currentLessonId && !selectedLesson ? (
-              <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow">
+          <div className="w-full md:w-2/3 bg-[#60B5FF]/20 rounded-lg shadow h-[calc(100vh-300px)] flex flex-col">
+            {!lessons || lessons.length === 0 ? (
+              <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                <div className="text-center">
+                  <Header
+                    type="h1"
+                    weight="bold"
+                    size="3xl"
+                    className="!text-4xl text-gray-800 mb-4"
+                  >
+                    Add New Lesson
+                  </Header>
+                  <p className="text-gray-500 text-lg mb-4">This classroom currently has no lessons.</p>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex items-center gap-2 h-10"
+                    onClick={handleOpenAddModal}
+                  >
+                    Add Your First Lesson
+                  </Button>
+                </div>
+              </main>
+            ) : loading && currentLessonId && !selectedLesson ? (
+              <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
                 <p className="text-gray-500 text-lg">Loading lesson details...</p>
               </main>
             ) : selectedLesson ? (
-              <div className="lesson-content p-5">
-                <div className="flex justify-between items-center mb-5">
-                  <Header
-                    type="h2"
-                    weight="bold"
-                    size="3xl"
-                    className="!text-4xl text-black"
-                  >{selectedLesson.title}</Header>
-                  <button 
-                    onClick={handleOpenEditLessonModal}
-                    className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                    title="Edit lesson details"
-                  >
-                    <MdEdit className="w-6 h-6" />
-                  </button>
-                </div>
-
-                {/* Lesson Content from structured content */}
-                {selectedLesson.contentBlocks?.length > 0 ? (
-                  <div className="content-blocks">
-                    {selectedLesson.contentBlocks.map((block) => (
-                      <div key={block.id} className="content-block mb-8">
-                        <ContentBlockDisplay block={block} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No content has been added to this lesson yet.</p>
-                    <button
-                      onClick={handleOpenAddModal}
-                      className="mt-4 px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
+              <div className="flex flex-col h-full">
+                {/* Fixed Title Section */}
+                <div className="p-5 border-b border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <Header
+                      type="h2"
+                      weight="bold"
+                      size="3xl"
+                      className="!text-4xl text-black"
+                    >{selectedLesson.title}</Header>
+                    <button 
+                      onClick={handleOpenEditLessonModal}
+                      className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                      title="Edit lesson details"
                     >
-                      Add Content Block
+                      <MdEdit className="w-6 h-6" />
                     </button>
                   </div>
-                )}
+                </div>
 
-                <div className="mt-6">
-                  {/* <h3 className="text-xl font-semibold mb-4">Quizzes</h3> */}
-                  <div className="grid gap-4">
-                    {/* {quizzes.filter(quiz => quiz.lessonId === selectedLesson.id).map((quiz) => (
-                      <div
-                        key={quiz.id}
-                        className="bg-white p-4 rounded-lg shadow"
+                {/* Scrollable Content Section */}
+                <div className="flex-1 overflow-y-auto p-5">
+                  {selectedLesson.contentBlocks?.length > 0 ? (
+                    <div className="content-blocks">
+                      {selectedLesson.contentBlocks.map((block) => (
+                        <div key={block.id} className="content-block mb-8">
+                          <ContentBlockDisplay block={block} />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No content has been added to this lesson yet.</p>
+                      <button
+                        onClick={handleOpenAddModal}
+                        className="mt-4 px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
                       >
-                        <h4 className="font-semibold">{quiz.title}</h4>
-                        <p className="text-gray-600">{quiz.description}</p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          {quiz.questions.length} questions
-                        </p>
-                      </div>
-                    ))}
-                    {quizzes.filter(quiz => quiz.lessonId === selectedLesson.id).length === 0 && (
-                      <p className="text-gray-500">No quizzes available for this lesson.</p>
-                    )} */}
-
-                    {/* {quizzes.map((quiz) => (
-                      <div
-                        key={quiz.id}
-                        className="bg-white p-4 rounded-lg shadow"
-                      >
-                        <h4 className="font-semibold">{quiz.title}</h4>
-                        <p className="text-gray-600">{quiz.description}</p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          {quiz.questions?.length || 0} questions
-                        </p>
-                      </div>
-                    ))}
-                    {quizzes.length === 0 && (
-                      <p className="text-gray-500">No quizzes available yet.</p>
-                    )} */}
-                  </div>
+                        Add Content Block
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-            ) : lessons.length > 0 && !currentLessonId ? (
-              <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow">
-                <p className="text-gray-500 text-lg">Please select a lesson to view its details.</p>
-              </main>
             ) : (
-              <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow">
-                <div className="text-center">
-                  <p className="text-gray-500 text-lg mb-4">This classroom currently has no lessons.</p>
-                  <button
-                    onClick={handleOpenAddModal}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none"
-                  >
-                    Add Your First Lesson
-                  </button>
-                </div>
+              <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                <p className="text-gray-500 text-lg">Please select a lesson to view its details.</p>
               </main>
             )}
           </div>

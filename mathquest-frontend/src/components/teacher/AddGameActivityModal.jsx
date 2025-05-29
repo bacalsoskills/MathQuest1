@@ -68,7 +68,7 @@ const AddGameActivityModal = ({ isOpen, onClose, classroomId, activityId, onActi
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4" >
           <h2 className="text-xl font-bold text-gray-800">Add Game Activity</h2>
           <button
             onClick={onClose}

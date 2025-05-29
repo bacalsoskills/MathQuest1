@@ -5,6 +5,7 @@ import com.mathquest.demo.Model.LeaderboardEntry;
 import com.mathquest.demo.Model.Quiz;
 import com.mathquest.demo.Model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -59,4 +60,8 @@ public interface LeaderboardEntryRepository extends JpaRepository<LeaderboardEnt
                         "GROUP BY le.student.id, le.student.firstName, le.student.lastName " +
                         "ORDER BY totalQuizzes DESC")
         List<Object[]> findTop10StudentsByQuizParticipation(@Param("classroomId") Long classroomId);
+
+        @Modifying
+        @Query("DELETE FROM LeaderboardEntry le WHERE le.quiz = :quiz")
+        void deleteByQuiz(Quiz quiz);
 }

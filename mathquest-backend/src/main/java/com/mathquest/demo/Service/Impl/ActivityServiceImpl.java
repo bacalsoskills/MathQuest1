@@ -78,6 +78,11 @@ public class ActivityServiceImpl implements ActivityService {
     public ActivityDTO getActivityById(Long id) {
         Activity activity = activityRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found with id: " + id));
+
+        if (activity.getIsDeleted()) {
+            throw new EntityNotFoundException("Activity not found with id: " + id);
+        }
+
         return ActivityDTO.fromActivity(activity, getImageUrl(activity));
     }
 
@@ -162,7 +167,9 @@ public class ActivityServiceImpl implements ActivityService {
             throw new AccessDeniedException("You don't have permission to delete this activity");
         }
 
-        activityRepository.delete(activity);
+        // Soft delete by setting isDeleted to true
+        activity.setIsDeleted(true);
+        activityRepository.save(activity);
     }
 
     @Override

@@ -218,9 +218,7 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
               </Typography>
               
               <div className="mb-4">
-                <Typography variant="body2" gutterBottom>
-                  Rich Content Editor
-                </Typography>
+             
                 <div className="border border-gray-300 rounded">
                   <ReactQuill 
                     theme="snow"

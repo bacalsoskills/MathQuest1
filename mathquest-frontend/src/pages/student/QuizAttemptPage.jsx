@@ -41,8 +41,88 @@ const MultipleChoiceQuestion = ({ question, onAnswer, selectedAnswer }) => {
   );
 };
 
-const IdentificationQuestion = ({ question, onAnswer, currentAnswer }) => {
-  const [inputValue, setInputValue] = useState(currentAnswer || '');
+// Add new ReviewModal component
+const ReviewModal = ({ show, onHide, questions, answers, onSubmit }) => {
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col">
+        <div className="flex justify-between items-center border-b p-4">
+          <h3 className="text-xl font-semibold">Review Your Answers</h3>
+          <button 
+            onClick={onHide}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto flex-grow">
+          <div className="space-y-6">
+            {questions.map((question, index) => {
+              const questionId = question.id || `question_${index}`;
+              const userAnswer = answers[questionId];
+              const isAnswered = userAnswer !== undefined && 
+                               (Array.isArray(userAnswer) ? userAnswer.length > 0 : userAnswer !== '');
+
+              return (
+                <div key={questionId} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <span className="font-semibold text-gray-700 min-w-[2rem]">{index + 1}.</span>
+                    <div className="flex-grow">
+                      <p className="text-gray-800 mb-2">{question.questionText || question.question}</p>
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-gray-600">Your Answer:</p>
+                        {isAnswered ? (
+                          <div className="mt-1">
+                            {Array.isArray(userAnswer) ? (
+                              <ul className="list-disc list-inside">
+                                {userAnswer.map((ans, i) => (
+                                  <li key={i} className="text-gray-700">{ans}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-gray-700">{userAnswer}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-red-500 italic">Not answered</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="border-t p-4 flex justify-end space-x-3">
+          <button 
+            onClick={onHide}
+            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded text-gray-800"
+          >
+            Back to Quiz
+          </button>
+          <button 
+            onClick={onSubmit}
+            className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded text-white"
+          >
+            Submit Quiz
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modify IdentificationQuestion to reset on question change
+const IdentificationQuestion = ({ question, onAnswer, currentAnswer, questionId }) => {
+  const [inputValue, setInputValue] = useState('');
+
+  // Reset input when question changes
+  useEffect(() => {
+    setInputValue(currentAnswer || '');
+  }, [questionId, currentAnswer]);
 
   const handleChange = (e) => {
     setInputValue(e.target.value);
@@ -58,11 +138,6 @@ const IdentificationQuestion = ({ question, onAnswer, currentAnswer }) => {
         placeholder="Type your answer here"
         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
       />
-      {inputValue && (
-        <div className="mt-2 text-blue-600 text-sm">
-          Your answer: <span className="font-medium">{inputValue}</span>
-        </div>
-      )}
     </div>
   );
 };
@@ -127,11 +202,9 @@ const QuizResultModal = ({ show, onHide, result, onViewLeaderboard }) => {
                   <span className="text-red-600 font-semibold">Try Again</span>
                 }
               </div>
-              {result.pointsEarned !== undefined && (
-                <div className="mt-1 text-gray-600">
-                  Points: <span className="font-semibold">{result.pointsEarned || 0}</span> / <span>{result.totalPoints || 0}</span>
-                </div>
-              )}
+              <div className="mt-2 text-gray-600">
+                Points: <span className="font-semibold">{result.pointsEarned || 0}</span> / <span>{result.totalPoints || 0}</span>
+              </div>
             </div>
             
             <div className="bg-gray-100 p-4 rounded-lg mb-4">
@@ -194,6 +267,7 @@ const QuizAttemptPage =() => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [quizResult, setQuizResult] = useState(null);
   const [classroomId, setClassroomId] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   // Fetch quiz and attempt details
   useEffect(() => {
@@ -344,6 +418,7 @@ const QuizAttemptPage =() => {
             question={currentQuestion}
             onAnswer={handleAnswerSelect}
             currentAnswer={answers[currentQuestion.id]}
+            questionId={currentQuestion.id}
           />
         );
       case 'CHECKBOX':
@@ -438,7 +513,13 @@ const QuizAttemptPage =() => {
   };
 
   const handleSubmitQuiz = async () => {
-    let calculatedScore = null;
+    // Show review modal instead of direct submission
+    setShowReviewModal(true);
+  };
+
+  // Modify handleFinalSubmit to remove redundant toast
+  const handleFinalSubmit = async () => {
+    setShowReviewModal(false);
     let pointsEarned = 0;
     let totalPoints = 0;
     
@@ -452,10 +533,10 @@ const QuizAttemptPage =() => {
       
       console.log(`Answered ${answeredQuestions} out of ${totalQuestions} questions`);
       
-      // Calculate points and score
+      // Calculate points
       quizDetails.questions.forEach(question => {
         const questionId = question.id || `question_${question.index}`;
-        const points = question.points || 1;
+        const points = question.points || 1; // Default to 1 point per question
         totalPoints += points;
         
         const userAnswer = answers[questionId];
@@ -484,15 +565,15 @@ const QuizAttemptPage =() => {
         }
       });
       
-      // Calculate percentage score
-      calculatedScore = totalPoints > 0 ? Math.round((pointsEarned / totalPoints) * 100) : 0;
+      // Calculate percentage for display only
+      const percentageScore = totalPoints > 0 ? Math.round((pointsEarned / totalPoints) * 100) : 0;
       
-      console.log(`Calculated score: ${calculatedScore}%, Points: ${pointsEarned}/${totalPoints}`);
+      console.log(`Points earned: ${pointsEarned}/${totalPoints} (${percentageScore}%)`);
       
-      // Actually submit the quiz answers to the server
+      // Submit the quiz with points earned as score
       const result = await quizService.completeQuizAttempt(
         attemptId, 
-        calculatedScore, // Send calculated score to server
+        pointsEarned, // Always use pointsEarned for database
         JSON.stringify(answers)
       );
       
@@ -501,8 +582,10 @@ const QuizAttemptPage =() => {
       // Set result for modal with additional information
       setQuizResult({
         ...result,
+        score: percentageScore, // Use percentage for display only
         pointsEarned,
-        totalPoints
+        totalPoints,
+        passed: percentageScore >= 60 // Consider 60% as passing
       });
       setShowResultModal(true);
       
@@ -510,55 +593,101 @@ const QuizAttemptPage =() => {
       
     } catch (error) {
       console.error('Error submitting quiz:', error);
-      
-      // Extract the error message
       let errorMessage = 'Failed to submit quiz. Please try again.';
-      if (error.response && error.response.data && error.response.data.message) {
+      if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
       toast.error(errorMessage);
-      
-      // If the error was due to the leaderboard, try again without leaderboard
-      if (errorMessage.includes('leaderboard') || errorMessage.includes('Table') || error.response?.status === 500) {
-        console.log('Retrying submission without leaderboard updates...');
-        try {
-          // Try again after a brief delay
-          setTimeout(async () => {
-            const retryResult = await quizService.completeQuizAttempt(
-              attemptId, 
-              calculatedScore, // Use the score we calculated earlier
-              JSON.stringify(answers)
-            );
-            
-            setQuizResult({
-              ...retryResult,
-              pointsEarned,
-              totalPoints
-            });
-            setShowResultModal(true);
-            toast.success('Quiz submitted successfully on retry!');
-          }, 1000);
-        } catch (retryError) {
-          console.error('Error on retry:', retryError);
-          toast.error('Failed to submit quiz even after retry. Please try again later.');
-        }
-      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleExitQuiz = () => {
-    if (window.confirm("Are you sure you want to exit? Your progress might not be saved.")) {
-      if(classroomId) {
-        navigate(`/student/classrooms/${classroomId}`);
-      } else {
-        navigate('/student/classrooms'); // Fallback
-      }
-    }
+  // Modify handleExitQuiz to use consistent score calculation
+  const handleExitQuiz = async () => {
+    const confirmExit = () => {
+      toast((t) => (
+        <div className="flex flex-col items-center">
+          <p className="mb-2">Are you sure you want to exit? Your progress will be recorded.</p>
+          <div className="flex space-x-2">
+            <button
+              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+              onClick={async () => {
+                toast.dismiss(t.id);
+                try {
+                  // Calculate points earned consistently
+                  let pointsEarned = 0;
+                  let totalPoints = 0;
+                  
+                  quizDetails.questions.forEach(question => {
+                    const questionId = question.id || `question_${question.index}`;
+                    const points = question.points || 1;
+                    totalPoints += points;
+                    
+                    const userAnswer = answers[questionId];
+                    const correctAnswer = question.correctAnswer;
+                    
+                    if (userAnswer && correctAnswer) {
+                      let isCorrect = false;
+                      
+                      if (question.questionType === 'CHECKBOX') {
+                        if (Array.isArray(userAnswer) && Array.isArray(correctAnswer)) {
+                          isCorrect = userAnswer.length === correctAnswer.length && 
+                                     correctAnswer.every(item => userAnswer.includes(item)) &&
+                                     userAnswer.every(item => correctAnswer.includes(item));
+                        }
+                      } else if (question.questionType === 'IDENTIFICATION') {
+                        const formattedUserAnswer = (userAnswer || '').toLowerCase().trim();
+                        const formattedCorrectAnswer = (correctAnswer || '').toLowerCase().trim();
+                        isCorrect = formattedUserAnswer === formattedCorrectAnswer;
+                      } else {
+                        isCorrect = userAnswer === correctAnswer;
+                      }
+                      
+                      if (isCorrect) {
+                        pointsEarned += points;
+                      }
+                    }
+                  });
+
+                  // Submit with pointsEarned
+                  await quizService.completeQuizAttempt(
+                    attemptId,
+                    pointsEarned, // Always use pointsEarned for database
+                    JSON.stringify(answers)
+                  );
+                  
+                  toast.success('Quiz progress saved!');
+                  if(classroomId) {
+                    navigate(`/student/classrooms/${classroomId}`);
+                  } else {
+                    navigate('/student/classrooms');
+                  }
+                } catch (error) {
+                  console.error('Error saving quiz progress:', error);
+                  toast.error('Failed to save quiz progress');
+                }
+              }}
+            >
+              Yes, Exit
+            </button>
+            <button
+              className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ), {
+        duration: 5000,
+        position: 'top-center',
+      });
+    };
+
+    confirmExit();
   };
 
   const handleModalClose = () => {
@@ -694,6 +823,15 @@ const QuizAttemptPage =() => {
         onHide={handleModalClose}
         result={quizResult}
         onViewLeaderboard={handleViewLeaderboard}
+      />
+
+      {/* Add ReviewModal */}
+      <ReviewModal 
+        show={showReviewModal}
+        onHide={() => setShowReviewModal(false)}
+        questions={quizDetails?.questions || []}
+        answers={answers}
+        onSubmit={handleFinalSubmit}
       />
     </div>
   );
