@@ -139,7 +139,7 @@ const CreateClassroom = () => {
               <Header type="h2" fontSize="lg" weight="medium" className="text-green-800 mb-2">Classroom Created Successfully!</Header>
               <div className="mb-4">
                 <p className="text-green-700">Name: {createdClassroom.name}</p>
-                <p className="text-green-700">Class Code: <span className="font-bold">{createdClassroom.classCode}</span></p>
+                <p className="text-green-700">Join Code: <span className="font-bold">{createdClassroom.classCode}</span></p>
                 <p className="text-green-700">Short Code: <span className="font-bold">{createdClassroom.shortCode}</span></p>
                 <p className="text-sm text-green-600 mt-2">Share the Class Code with your students so they can join your classroom.</p>
               </div>

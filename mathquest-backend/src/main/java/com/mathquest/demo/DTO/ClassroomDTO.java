@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -28,11 +29,13 @@ public class ClassroomDTO {
 
     private UserSummaryDTO teacher;
 
+    private Long teacherId;
+
     private Set<UserSummaryDTO> students = new HashSet<>();
 
     private String shortCode;
 
-    private java.time.LocalDateTime createdDate;
+    private LocalDateTime createdDate;
 
     public void setShortCode(String shortCode) {
         this.shortCode = shortCode;

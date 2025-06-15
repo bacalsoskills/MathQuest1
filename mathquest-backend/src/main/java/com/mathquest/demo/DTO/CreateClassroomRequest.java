@@ -23,4 +23,6 @@ public class CreateClassroomRequest {
 
     @Size(max = 10, message = "Short code must be less than 10 characters")
     private String shortCode;
+
+    private Long teacherId;
 }

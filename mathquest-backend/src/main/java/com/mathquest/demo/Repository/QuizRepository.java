@@ -2,6 +2,7 @@ package com.mathquest.demo.Repository;
 
 import com.mathquest.demo.Model.Activity;
 import com.mathquest.demo.Model.Classroom;
+import com.mathquest.demo.Model.Lesson;
 import com.mathquest.demo.Model.Quiz;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,4 +27,6 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
                         "AND (q.availableFrom IS NULL OR q.availableFrom <= :now) " +
                         "AND (q.availableTo IS NULL OR q.availableTo >= :now)")
         List<Quiz> findAvailableQuizzes(Classroom classroom, LocalDateTime now);
+
+        List<Quiz> findByLesson(Lesson lesson);
 }

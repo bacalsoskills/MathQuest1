@@ -338,8 +338,18 @@ const activityService = {
   },
 
   updateActivity: async (activityId, formData) => {
-    const response = await api.put(`/activities/${activityId}`, formData);
-    return response.data;
+    try {
+      console.log("Updating activity with data:", formData);
+      const response = await api.put(`/activities/${activityId}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error updating activity:", error);
+      throw error;
+    }
   },
 
   deleteActivity: async (activityId) => {

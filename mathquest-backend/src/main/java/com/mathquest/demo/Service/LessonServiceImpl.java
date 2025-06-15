@@ -3,7 +3,14 @@ package com.mathquest.demo.Service;
 import com.mathquest.demo.DTO.ActivitySummaryDTO;
 import com.mathquest.demo.DTO.ContentBlockDTO;
 import com.mathquest.demo.DTO.LessonDTO;
+import com.mathquest.demo.DTO.LessonCompletionDTO;
 import com.mathquest.demo.DTO.Request.CreateLessonRequest;
+import com.mathquest.demo.Exception.ResourceNotFoundException;
+import com.mathquest.demo.Model.*;
+import com.mathquest.demo.Repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.mathquest.demo.Model.Activity;
 import com.mathquest.demo.Model.ActivityCompletion;
 import com.mathquest.demo.Model.Classroom;
@@ -15,19 +22,27 @@ import com.mathquest.demo.Repository.ActivityRepository;
 import com.mathquest.demo.Repository.ClassroomRepository;
 import com.mathquest.demo.Repository.ContentBlockRepository;
 import com.mathquest.demo.Repository.LessonRepository;
+import com.mathquest.demo.Repository.LessonCompletionRepository;
+import com.mathquest.demo.Repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class LessonServiceImpl implements LessonService {
 
     @Autowired
@@ -44,6 +59,17 @@ public class LessonServiceImpl implements LessonService {
 
     @Autowired
     private ActivityCompletionRepository activityCompletionRepository;
+
+    @Autowired
+    private LessonCompletionRepository lessonCompletionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private QuizRepository quizRepository;
+
+    private static final Logger logger = LoggerFactory.getLogger(LessonServiceImpl.class);
 
     private String getImageUrl(Lesson lesson) {
         if (lesson.getImage() != null) {
@@ -123,17 +149,16 @@ public class LessonServiceImpl implements LessonService {
                 .collect(Collectors.toList());
         lessonDTO.setContentBlocks(contentBlockDTOs);
 
-        // Add activities from the classroom
-        List<Activity> activities = activityRepository
-                .findByClassroomIdOrderByOrderIndexAsc(lesson.getClassroom().getId());
+        // Add activities associated with this lesson's quizzes
+        List<Activity> activities = lesson.getQuizzes().stream()
+                .map(Quiz::getActivity)
+                .collect(Collectors.toList());
         List<ActivitySummaryDTO> activitySummaryDTOs = activities.stream()
                 .map(activity -> {
                     String imageUrl = null;
                     if (activity.getImage() != null) {
                         imageUrl = "/files/activity-images/" + activity.getId();
                     }
-
-                    // For now, we don't have user context, so we can't determine completion status
                     return ActivitySummaryDTO.fromActivity(activity, imageUrl, false, null);
                 })
                 .collect(Collectors.toList());
@@ -263,6 +288,8 @@ public class LessonServiceImpl implements LessonService {
     @Override
     @Transactional
     public void deleteLesson(Long id, User teacher) {
+        logger.info("Starting deletion of lesson {}", id);
+
         Lesson lesson = lessonRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Lesson not found with id: " + id));
 
@@ -271,7 +298,114 @@ public class LessonServiceImpl implements LessonService {
             throw new AccessDeniedException("You don't have permission to delete this lesson");
         }
 
-        // Delete related content blocks and activities (should be handled by cascade)
+        // Find all quizzes associated with this lesson
+        List<Quiz> quizzes = quizRepository.findByLesson(lesson);
+        logger.info("Found {} quizzes associated with lesson {}", quizzes.size(), id);
+
+        // For each quiz, mark its activity as deleted
+        for (Quiz quiz : quizzes) {
+            Activity activity = quiz.getActivity();
+            if (activity != null) {
+                logger.info("Marking activity {} as deleted for quiz {}", activity.getId(), quiz.getId());
+                activity.setIsDeleted(true);
+                activityRepository.save(activity);
+            }
+        }
+
+        // Delete the lesson (this will cascade delete content blocks)
+        logger.info("Deleting lesson {}", id);
         lessonRepository.delete(lesson);
+        logger.info("Successfully deleted lesson {} and all related data", id);
+    }
+
+    @Override
+    @Transactional
+    public void markLessonContentAsRead(Long lessonId, Long studentId) {
+        logger.info("Marking lesson {} content as read for student {}", lessonId, studentId);
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new EntityNotFoundException("Lesson not found"));
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student not found"));
+
+        LessonCompletion completion = lessonCompletionRepository.findByLessonAndStudent(lesson, student)
+                .orElse(new LessonCompletion(lesson, student));
+
+        completion.markContentAsRead();
+        lessonCompletionRepository.save(completion);
+        logger.info("Successfully marked lesson {} content as read for student {}", lessonId, studentId);
+    }
+
+    @Override
+    @Transactional
+    public void markLessonQuizAsCompleted(Long lessonId, Long studentId, Integer score) {
+        logger.info("Marking lesson {} quiz as completed for student {} with score {}", lessonId, studentId, score);
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new EntityNotFoundException("Lesson not found"));
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student not found"));
+
+        LessonCompletion completion = lessonCompletionRepository.findByLessonAndStudent(lesson, student)
+                .orElse(new LessonCompletion(lesson, student));
+
+        completion.completeQuiz(score);
+        lessonCompletionRepository.save(completion);
+        logger.info("Successfully marked lesson {} quiz as completed for student {}", lessonId, studentId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getLessonCompletionStats(Long lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
+
+        // Get total number of students in the classroom
+        long totalStudents = userRepository.countByClassroomIdAndRole(lesson.getClassroom().getId(),
+                ERole.ROLE_STUDENT);
+
+        // Get lesson completion stats
+        List<LessonCompletion> completions = lessonCompletionRepository.findByLessonId(lessonId);
+        long studentsRead = completions.stream().filter(completion -> completion.getContentRead()).count();
+        long studentsCompletedQuiz = completions.stream().filter(completion -> completion.getQuizCompleted()).count();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalStudents", totalStudents);
+        stats.put("studentsRead", studentsRead);
+        stats.put("studentsCompletedQuiz", studentsCompletedQuiz);
+        stats.put("readPercentage", totalStudents > 0 ? (studentsRead * 100.0 / totalStudents) : 0);
+        stats.put("quizCompletionPercentage", totalStudents > 0 ? (studentsCompletedQuiz * 100.0 / totalStudents) : 0);
+
+        logger.info("Retrieved completion stats for lesson {}: {} students read, {} completed quiz",
+                lessonId, studentsRead, studentsCompletedQuiz);
+
+        return stats;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LessonCompletionDTO getLessonCompletionStatus(Long lessonId, Long studentId) {
+        logger.info("Getting completion status for lesson {} and student {}", lessonId, studentId);
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new EntityNotFoundException("Lesson not found"));
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student not found"));
+
+        LessonCompletion completion = lessonCompletionRepository.findByLessonAndStudent(lesson, student)
+                .orElse(new LessonCompletion(lesson, student));
+
+        return LessonCompletionDTO.fromLessonCompletion(completion);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> getStudentsWhoReadLesson(Long lessonId) {
+        logger.info("Getting students who read lesson {}", lessonId);
+        // Verify lesson exists
+        if (!lessonRepository.existsById(lessonId)) {
+            throw new EntityNotFoundException("Lesson not found with id: " + lessonId);
+        }
+
+        List<User> studentsWhoRead = lessonCompletionRepository.findStudentsWhoReadLesson(lessonId);
+        logger.info("Found {} students who read lesson {}", studentsWhoRead.size(), lessonId);
+        return studentsWhoRead;
     }
 }

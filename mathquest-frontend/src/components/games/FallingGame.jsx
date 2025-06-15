@@ -27,6 +27,22 @@ const PROBLEMS_PER_LEVEL = 5;
 const MAX_LIVES = 5;
 const TOTAL_PROBLEMS = 50;
 
+// Add these constants at the top with other constants
+const BASE_FALL_TIME = 20000; // 20 seconds for level 1
+const FALL_TIME_DECREASE_PER_LEVEL = 3000; // 3 seconds faster each level (gentler curve)
+const BASE_ACTIVE_PROBLEMS = 2; // Start with 2 problems at level 1
+const MAX_ACTIVE_PROBLEMS = 4;  // Maximum 4 problems at highest level
+const MIN_VERTICAL_GAP = 30; // Minimum vertical gap between items (in percentage)
+const MIN_HORIZONTAL_GAP = 20; // Minimum horizontal gap between items (in percentage)
+const SPAWN_DELAY = 1000; // Delay between spawning new items (in milliseconds)
+
+// Update getMinFallTime to never go below 4s and use a gentler curve
+function getMinFallTime(level) {
+  if (level >= 9) return 4000; // 4s for level 9-10
+  if (level >= 7) return 5000; // 5s for level 7-8
+  if (level >= 4) return 6000; // 6s for level 4-6
+  return 7000; // 7s for level 1-3
+}
 
 const FallingGame = ({ game, onGameComplete }) => {
   const { currentUser, token } = useAuth();
@@ -44,6 +60,9 @@ const FallingGame = ({ game, onGameComplete }) => {
   const lastSpawnTimeRef = useRef(0);
   const solvedProblemsRef = useRef(new Set()); // Track solved problems to prevent repetition
   const usedProblemsRef = useRef([]); // Track used problems for the current level
+  const [currentSequenceIndex, setCurrentSequenceIndex] = useState(0); // Add sequence tracking
+  const [deductedProblems, setDeductedProblems] = useState(new Set()); // Track problems that have caused life deduction
+  const [lastDeductionTime, setLastDeductionTime] = useState(0); // Track last deduction time
 
   // New states
   const [isPaused, setIsPaused] = useState(false);
@@ -69,6 +88,9 @@ const FallingGame = ({ game, onGameComplete }) => {
   // Add new state for showing level selector
   const [showLevelSelector, setShowLevelSelector] = useState(false);
   
+  // Add new state for processing falling items
+  const processedItemsRef = useRef(new Set());
+
   // Cache validation function
   const isCacheValid = useCallback((topic, level) => {
     const cacheKey = `${topic}-${level}`;
@@ -373,11 +395,15 @@ const FallingGame = ({ game, onGameComplete }) => {
       const cacheKey = `${topicLower}-all`;
       solvedProblemsRef.current = new Set();
       usedProblemsRef.current = [];
+      setDeductedProblems(new Set()); // Reset deducted problems
+      setCurrentSequenceIndex(0); // Reset sequence index
+      
       if (isCacheValid(topicLower, 'all')) {
         const cached = apiState.problemsCache.get(cacheKey);
         setProblems(cached.problems);
         return;
       }
+      
       // Try Groq API
       const problems = await callGroqApi(game.topic, problemCount);
       if (Array.isArray(problems) && problems.length > 0) {
@@ -398,7 +424,8 @@ const FallingGame = ({ game, onGameComplete }) => {
           y: -10 - (Math.random() * 20),
           speed: 0.3 + (0.1 * currentLevel),
           status: 'normal',
-          level: Math.floor(idx / PROBLEMS_PER_LEVEL) + 1 // Distribute by level
+          level: Math.floor(idx / PROBLEMS_PER_LEVEL) + 1,
+          sequenceIndex: idx // Add sequence index
         }));
         apiState.problemsCache.set(cacheKey, {
           problems: formattedProblems,
@@ -457,21 +484,104 @@ const FallingGame = ({ game, onGameComplete }) => {
     }
   }, [game, currentLevel, isCacheValid, callGroqApi, getDifficultyRanges]);
 
+  // Improved function to get non-overlapping positions for a batch
+  function getNonOverlappingPositions(count, minXGap, minYGap) {
+    // For 2-5 items, use fixed, evenly spaced X positions (randomized order)
+    const fixedXSets = {
+      2: [30, 70],
+      3: [20, 50, 80],
+      4: [15, 40, 65, 85],
+      5: [10, 30, 55, 75, 90]
+    };
+    if (fixedXSets[count]) {
+      // Shuffle the array to randomize order
+      const shuffled = fixedXSets[count].slice().sort(() => Math.random() - 0.5);
+      return shuffled.map((x, i) => ({ x, y: -20 - i * minYGap }));
+    }
+    // Fallback to random/grid for more than 5
+    const positions = [];
+    let attempts = 0;
+    const maxAttempts = 100;
+    while (positions.length < count && attempts < maxAttempts) {
+      const x = Math.random() * 80 + 10;
+      const y = -20 - Math.random() * 30;
+      if (positions.every(pos => Math.abs(pos.x - x) >= minXGap && Math.abs(pos.y - y) >= minYGap)) {
+        positions.push({ x, y });
+      }
+      attempts++;
+    }
+    // If not enough positions found, use even grid
+    if (positions.length < count) {
+      positions.length = 0;
+      const xStep = (80 - (count - 1) * minXGap) / count;
+      for (let i = 0; i < count; i++) {
+        const x = 10 + i * (minXGap + xStep);
+        const y = -20 - i * minYGap;
+        positions.push({ x, y });
+      }
+    }
+    return positions;
+  }
+
   // Helper to get a non-overlapping Y (vertical gap)
   const getNonOverlappingY = (existingY) => {
     let newY;
     let attempts = 0;
-    const minGap = 20; // Increased minimum gap to 20% of screen height
-    const yRange = 40; // Increased range for better distribution
+    const maxAttempts = 20;
     
     do {
-      newY = -10 - (Math.random() * yRange); // Start above the screen with larger range
+      // Start higher up for higher levels to give more time
+      const startHeight = -20 - (currentLevel * 2);
+      const range = 30 + (currentLevel * 2);
+      newY = startHeight - (Math.random() * range);
       attempts++;
-      // Check if there's sufficient vertical gap from existing items
-    } while (existingY.some(y => Math.abs(y - newY) < minGap) && attempts < 15);
+    } while (
+      existingY.some(y => Math.abs(y - newY) < MIN_VERTICAL_GAP) && 
+      attempts < maxAttempts
+    );
     
     return newY;
   };
+
+  // Define the getNonOverlappingX function
+  const getNonOverlappingX = (existingX) => {
+    let newX;
+    let attempts = 0;
+    const maxAttempts = 20;
+    
+    do {
+      newX = Math.random() * 80 + 10; // Random x position between 10% and 90%
+      attempts++;
+    } while (
+      existingX.some(x => Math.abs(x - newX) < MIN_HORIZONTAL_GAP) && 
+      attempts < maxAttempts
+    );
+    
+    return newX;
+  };
+
+  // Update calculateLevelTiming to use dynamic min fall time
+  const calculateLevelTiming = useCallback((level) => {
+    const minFallTime = getMinFallTime(level);
+    const fallTime = Math.max(
+      minFallTime,
+      BASE_FALL_TIME - (FALL_TIME_DECREASE_PER_LEVEL * (level - 1))
+    );
+    const activeProblems = Math.min(
+      MAX_ACTIVE_PROBLEMS,
+      BASE_ACTIVE_PROBLEMS + Math.floor((level - 1) / 2)
+    );
+    const speed = 100 / (fallTime / 16.67); // Convert fall time to speed
+    console.log('[FallingGame] Level Timing Details:', {
+      level,
+      fallTime: `${fallTime/1000}s`,
+      activeProblems,
+      speed: `${speed.toFixed(2)} units/frame`,
+      baseFallTime: `${BASE_FALL_TIME/1000}s`,
+      minFallTime: `${minFallTime/1000}s`
+    });
+    return { fallTime, activeProblems, speed };
+  }, []);
 
   useEffect(() => {
     if (!gameStarted || gameOver || isPaused) {
@@ -479,183 +589,100 @@ const FallingGame = ({ game, onGameComplete }) => {
       return;
     }
     
-    // Check if there are any problems available for the current level
-    const levelProblems = problems.filter(p => 
-      // Include problems directly at current level OR shift problems from higher levels if needed
-      (p.level === currentLevel || p.level > currentLevel) && 
-      !solvedProblemsRef.current.has(p.id) && 
-      !usedProblemsRef.current.includes(p.id)
-    );
-    
-    // If no problems available at current level, reassign problems to ensure continuity
-    if (levelProblems.length === 0 && problems.length > 0) {
-      // Find problems that haven't been solved yet from any level
-      const availableProblems = problems.filter(p => 
-        !solvedProblemsRef.current.has(p.id) && 
-        !usedProblemsRef.current.includes(p.id)
-      );
-      
-      if (availableProblems.length > 0) {
-        // Reassign some available problems to current level
-        const updatedProblems = [...problems];
-        const numToReassign = Math.min(5, availableProblems.length);
-        
-        for (let i = 0; i < numToReassign; i++) {
-          const index = problems.findIndex(p => p.id === availableProblems[i].id);
-          if (index !== -1) {
-            updatedProblems[index] = {
-              ...updatedProblems[index],
-              level: currentLevel
-            };
-          }
-        }
-        
-        setProblems(updatedProblems);
-        console.log(`[FallingGame] Reassigned ${numToReassign} problems to level ${currentLevel}`);
-        return; // Exit and let the next effect cycle handle the updated problems
-      }
-    }
-    
-    // Level 1: always 2 items, 5s gap, 15s to fall. Level 2-3: 2 items, 4s gap, 13s to fall. Level 4-5: 3 items, 3s gap, 10s to fall. Level 6+: up to 5 items, 2s gap, 7s to fall.
-    let maxActiveProblems = 2;
-    let spawnGap = 5000;
-    let fallTime = 15000;
-    if (currentLevel >= 6) {
-      maxActiveProblems = 5;
-      spawnGap = 2000;
-      fallTime = 7000;
-    } else if (currentLevel >= 4) {
-      maxActiveProblems = 3;
-      spawnGap = 3000;
-      fallTime = 10000;
-    } else if (currentLevel >= 2) {
-      maxActiveProblems = 2;
-      spawnGap = 4000;
-      fallTime = 13000;
-    }
-    
-    // Debug logs
-    console.log('[FallingGame] Level:', currentLevel, 'Active:', activeProblems.length, 'MaxActive:', maxActiveProblems, 'LevelProblems:', levelProblems.length, 'Available Problems:', problems.length, 'GameOver:', gameOver, 'isPaused:', isPaused);
-    
-    // Fill up activeProblems if needed
-    if (activeProblems.length < maxActiveProblems && levelProblems.length > 0) {
-      const needed = maxActiveProblems - activeProblems.length;
-      const existingX = activeProblems.map(p => p.x);
-      const existingY = activeProblems.map(p => p.y);
-      const toAdd = levelProblems.slice(0, needed).map((p, idx) => {
-        const newX = getNonOverlappingX([...existingX]);
-        const newY = getNonOverlappingY([...existingY]);
-        existingX.push(newX);
-        existingY.push(newY);
-        return {
-          ...p,
-          y: newY,
-          status: 'normal',
-          x: newX,
-          speed: 100 / (fallTime / 16.67)
-        };
-      });
-      console.log('[FallingGame] Spawning new problems:', toAdd.map(p => p.question));
-      setActiveProblems(prev => [...prev, ...toAdd]);
-      usedProblemsRef.current.push(...toAdd.map(p => p.id));
-    }
+    const { fallTime, activeProblems: maxActiveProblems, speed } = calculateLevelTiming(currentLevel);
     
     // Animation loop
     const gameLoop = (timestamp) => {
       if (isPaused || gameOver || !gameStarted) return;
+      
       setActiveProblems(prevActive => {
         const updated = prevActive.map(p => {
-          const newY = p.y + p.speed;
+          const newY = p.y + speed;
           let status = p.status;
           if (newY >= 80 && status === 'normal') status = 'warning';
           return { ...p, y: newY, status };
         }).filter(p => {
           if (p.y >= 100) {
-            setLives(l => {
-              const newLives = l - 1;
-              if (newLives <= 0) {
-                setGameOver(true);
-                submitScore();
-                return 0;
-              }
-              return newLives;
-            });
+            if (!processedItemsRef.current.has(p.id) && !deductedProblems.has(p.id)) {
+              processedItemsRef.current.add(p.id);
+              setDeductedProblems(prev => {
+                const newSet = new Set(prev);
+                newSet.add(p.id);
+                return newSet;
+              });
+              
+              setLives(l => {
+                const newLives = l - 1;
+                if (newLives <= 0) {
+                  setGameOver(true);
+                  submitScore();
+                  return 0;
+                }
+                return newLives;
+              });
+              
+              setLastDeductionTime(Date.now());
+            }
             return false;
           }
           return true;
         });
-        console.log('[FallingGame] ActiveProblems after move:', updated.map(p => ({ q: p.question, y: p.y, status: p.status })));
         return updated;
       });
       
-      // Always try to spawn new items if possible
-      if (!gameOver && gameStarted && !isPaused) {
-        // Get fresh problems for current level after potential reassignment
-        const currentLevelProblems = problems.filter(p => 
-          p.level === currentLevel && 
-          !solvedProblemsRef.current.has(p.id) && 
-          !usedProblemsRef.current.includes(p.id)
-        );
+      // Check if we need to spawn new problems
+      if (activeProblems.length < maxActiveProblems) {
+        const currentTime = performance.now();
+        const timeSinceLastSpawn = currentTime - lastSpawnTimeRef.current;
         
-        if (activeProblems.length < maxActiveProblems && currentLevelProblems.length > 0) {
-          const needed = maxActiveProblems - activeProblems.length;
-          const existingX = activeProblems.map(p => p.x);
-          const existingY = activeProblems.map(p => p.y);
-          const toAdd = currentLevelProblems.slice(0, needed).map((p, idx) => {
-            const newX = getNonOverlappingX([...existingX]);
-            const newY = getNonOverlappingY([...existingY]);
-            existingX.push(newX);
-            existingY.push(newY);
-            return {
-              ...p,
-              y: newY,
-              status: 'normal',
-              x: newX,
-              speed: 100 / (fallTime / 16.67)
-            };
-          });
-          console.log('[FallingGame] Spawning new problems (loop):', toAdd.map(p => p.question));
-          setActiveProblems(prev => [...prev, ...toAdd]);
-          usedProblemsRef.current.push(...toAdd.map(p => p.id));
-        } 
-        // If we're out of problems for this level, but have more in general, reassign some
-        else if (activeProblems.length < maxActiveProblems && currentLevelProblems.length === 0) {
-          const availableProblems = problems.filter(p => 
+        if (timeSinceLastSpawn >= SPAWN_DELAY) {
+          const currentLevelProblems = problems.filter(p => 
+            p.level === currentLevel && 
             !solvedProblemsRef.current.has(p.id) && 
             !usedProblemsRef.current.includes(p.id)
           );
           
-          if (availableProblems.length > 0) {
-            const updatedProblems = [...problems];
-            const numToReassign = Math.min(5, availableProblems.length);
-            
-            for (let i = 0; i < numToReassign; i++) {
-              const index = problems.findIndex(p => p.id === availableProblems[i].id);
-              if (index !== -1) {
-                updatedProblems[index] = {
-                  ...updatedProblems[index],
-                  level: currentLevel
-                };
-              }
-            }
-            
-            setProblems(updatedProblems);
-            console.log(`[FallingGame] Reassigned ${numToReassign} problems to level ${currentLevel} (during gameplay)`);
+          if (currentLevelProblems.length > 0) {
+            const needed = maxActiveProblems - activeProblems.length;
+            // Use improved non-overlapping batch placement
+            const positions = getNonOverlappingPositions(needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
+            const toAdd = currentLevelProblems.slice(0, needed).map((p, idx) => {
+              return {
+                ...p,
+                y: positions[idx].y,
+                status: 'normal',
+                x: positions[idx].x,
+                speed: speed
+              };
+            });
+            console.log('[FallingGame] Spawning New Items:', {
+              level: currentLevel,
+              currentActiveCount: activeProblems.length,
+              maxActiveCount: maxActiveProblems,
+              spawningCount: toAdd.length,
+              items: toAdd.map(item => ({
+                id: item.id,
+                question: item.question,
+                startY: item.y,
+                x: item.x,
+                speed: item.speed
+              }))
+            });
+            setActiveProblems(prev => [...prev, ...toAdd]);
+            usedProblemsRef.current.push(...toAdd.map(p => p.id));
+            lastSpawnTimeRef.current = currentTime;
           }
         }
-        
-        animationFrameRef.current = requestAnimationFrame(gameLoop);
       }
       
-      setGameTime(prevTime => prevTime + (timestamp - lastSpawnTimeRef.current) / 1000);
-      lastSpawnTimeRef.current = timestamp;
+      animationFrameRef.current = requestAnimationFrame(gameLoop);
     };
     
     animationFrameRef.current = requestAnimationFrame(gameLoop);
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [gameStarted, gameOver, problems, speedMultiplier, lives, isPaused, currentLevel, activeProblems.length, submitScore, generateProblems, isLoadingProblems]);
+  }, [gameStarted, gameOver, problems, currentLevel, activeProblems.length, isPaused, submitScore, calculateLevelTiming]);
 
   const levelUp = useCallback(() => {
     if (currentLevel >= MAX_LEVEL) {
@@ -717,6 +744,8 @@ const FallingGame = ({ game, onGameComplete }) => {
     setIsPaused(false);
     setUserAnswer('');
     setGameTime(0);
+    processedItemsRef.current = new Set(); // Reset processed items ref
+    setDeductedProblems(new Set()); // Reset deducted problems
     initialProblemGenerationDone.current = false;
     apiState.isGenerating = false;
     solvedProblemsRef.current = new Set();
@@ -746,7 +775,21 @@ const FallingGame = ({ game, onGameComplete }) => {
     submitted = true;
     setTimeout(() => { submitted = false; }, 500);
     if (!userAnswer.trim() || isPaused || gameOver) return;
+    
     const normalizedAnswer = userAnswer.trim().replace(/\s+/g, '');
+    
+    // Add detailed logging for answer matching
+    console.log('[FallingGame] Answer submission details:', {
+      userAnswer: normalizedAnswer,
+      activeProblems: activeProblems.map(p => ({
+        id: p.id,
+        question: p.question,
+        answer: p.answer,
+        sequenceIndex: p.sequenceIndex,
+        currentSequenceIndex
+      }))
+    });
+
     const matchIndex = activeProblems.findIndex(problem => {
       const problemAnswer = problem.answer.replace(/\s+/g, '');
       const normalizeNumber = (str) => {
@@ -761,10 +804,36 @@ const FallingGame = ({ game, onGameComplete }) => {
         if (str.includes('.')) return parseFloat(str).toString();
         return str;
       };
-      return normalizeNumber(normalizedAnswer) === normalizeNumber(problemAnswer);
+
+      const normalizedUserAnswer = normalizeNumber(normalizedAnswer);
+      const normalizedProblemAnswer = normalizeNumber(problemAnswer);
+      
+      // Add logging for answer normalization
+      console.log('[FallingGame] Answer normalization:', {
+        problemId: problem.id,
+        originalUserAnswer: normalizedAnswer,
+        normalizedUserAnswer,
+        originalProblemAnswer: problemAnswer,
+        normalizedProblemAnswer,
+        isMatch: normalizedUserAnswer === normalizedProblemAnswer
+      });
+
+      return normalizedUserAnswer === normalizedProblemAnswer;
     });
+
     if (matchIndex !== -1) {
       const solvedProblem = activeProblems[matchIndex];
+      console.log('[FallingGame] Answer submitted:', {
+        problemId: solvedProblem.id,
+        problemSequenceIndex: solvedProblem.sequenceIndex,
+        currentSequenceIndex,
+        question: solvedProblem.question,
+        userAnswer: normalizedAnswer,
+        correctAnswer: solvedProblem.answer
+      });
+
+      // Accept any correct answer
+      console.log('[FallingGame] Correct answer');
       solvedProblemsRef.current.add(solvedProblem.id);
       setScore(prev => prev + (10 * currentLevel));
       setActiveProblems(prev => prev.map((p, idx) => idx === matchIndex ? { ...p, status: 'correct' } : p));
@@ -779,24 +848,78 @@ const FallingGame = ({ game, onGameComplete }) => {
         }
         return newSolvedCount;
       });
+      setCurrentSequenceIndex(prev => prev + 1); // Still increment sequence index for tracking
     } else {
+      // Wrong answer - deduct life only if not already deducted
+      const wrongProblem = activeProblems.find(p => !deductedProblems.has(p.id));
+      console.log('[FallingGame] Wrong answer submitted:', {
+        wrongProblemId: wrongProblem?.id,
+        wrongProblemSequenceIndex: wrongProblem?.sequenceIndex,
+        currentSequenceIndex,
+        timeSinceLastDeduction: Date.now() - lastDeductionTime,
+        alreadyDeducted: wrongProblem ? deductedProblems.has(wrongProblem.id) : false,
+        userAnswer: normalizedAnswer,
+        availableAnswers: activeProblems.map(p => p.answer)
+      });
+
+      if (wrongProblem) {
+        console.log('[FallingGame] Deducting life for wrong answer');
+        // Add to deducted problems immediately
+        setDeductedProblems(prev => {
+          const newSet = new Set(prev);
+          newSet.add(wrongProblem.id);
+          return newSet;
+        });
+        
+        setLives(l => {
+          const newLives = l - 1;
+          console.log('[FallingGame] Life deducted from wrong answer. New lives:', newLives);
+          if (newLives <= 0) {
+            setGameOver(true);
+            submitScore();
+            return 0;
+          }
+          return newLives;
+        });
+        
+        setLastDeductionTime(Date.now());
+      } else {
+        console.log('[FallingGame] Skipped life deduction for wrong answer: No undeducted problems available');
+      }
+      
       setActiveProblems(prev => prev.map(p => ({ ...p, status: 'incorrect' })));
       setTimeout(() => {
         setActiveProblems(prev => prev.map(p => ({ ...p, status: p.status === 'incorrect' ? 'normal' : p.status })));
       }, 300);
-      
-      // Reintroduce life deduction for wrong answers (separate from falling off screen)
-      setLives(l => {
-        const newLives = l - 1;
-        if (newLives <= 0) {
-          setGameOver(true);
-          submitScore();
-          return 0;
-        }
-        return newLives;
-      });
     }
     setUserAnswer('');
+
+    setTimeout(() => {
+      setActiveProblems(prev => {
+        if (prev.length < calculateLevelTiming(currentLevel).activeProblems) {
+          // Try to spawn more if available
+          const currentLevelProblems = problems.filter(p => 
+            p.level === currentLevel && 
+            !solvedProblemsRef.current.has(p.id) && 
+            !usedProblemsRef.current.includes(p.id)
+          );
+          const needed = calculateLevelTiming(currentLevel).activeProblems - prev.length;
+          if (currentLevelProblems.length > 0 && needed > 0) {
+            const positions = getNonOverlappingPositions(needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
+            const toAdd = currentLevelProblems.slice(0, needed).map((p, idx) => ({
+              ...p,
+              y: positions[idx].y,
+              status: 'normal',
+              x: positions[idx].x,
+              speed: calculateLevelTiming(currentLevel).speed
+            }));
+            usedProblemsRef.current.push(...toAdd.map(p => p.id));
+            return [...prev, ...toAdd];
+          }
+        }
+        return prev;
+      });
+    }, 350);
   };
   
   const togglePause = () => {
@@ -823,20 +946,6 @@ const FallingGame = ({ game, onGameComplete }) => {
 
   const isMultiplicationOrDivision = game?.topic?.toLowerCase().includes('multiply') || game?.topic?.toLowerCase().includes('division');
 
-  // Define the getNonOverlappingX function
-  const getNonOverlappingX = (existingX) => {
-    let newX;
-    let attempts = 0;
-    const minGap = 15; // Increased minimum horizontal gap
-    
-    do {
-      newX = Math.random() * 80 + 10; // Random x position between 10% and 90%
-      attempts++;
-    } while (existingX.some(x => Math.abs(x - newX) < minGap) && attempts < 15);
-    
-    return newX;
-  };
-
   // Music state and ref
   const [musicVolume, setMusicVolume] = useState(0.5);
   const audioRef = useRef(null);
@@ -854,11 +963,21 @@ const FallingGame = ({ game, onGameComplete }) => {
     setLastScoreData(null);
   };
 
-  // Add handleLevelSelect function
+  // Update the handleLevelSelect function
   const handleLevelSelect = (selectedLevel) => {
+    console.log('[FallingGame] Manual Level Change:', {
+      fromLevel: currentLevel,
+      toLevel: selectedLevel,
+      timestamp: new Date().toISOString()
+    });
+    
     setCurrentLevel(selectedLevel);
     setProblemsSolvedThisLevel(0);
     setActiveProblems([]);
+    processedItemsRef.current = new Set();
+    setDeductedProblems(new Set());
+    lastSpawnTimeRef.current = performance.now();
+    
     generateProblems().then(() => {
       setGameStarted(true);
       setGameOver(false);
@@ -868,7 +987,6 @@ const FallingGame = ({ game, onGameComplete }) => {
       setUserAnswer('');
       setGameTime(0);
       setIsPaused(false);
-      lastSpawnTimeRef.current = performance.now();
     });
   };
 
@@ -980,7 +1098,7 @@ const FallingGame = ({ game, onGameComplete }) => {
                 let bgColor = "from-pink-500 to-purple-600";
                 let borderColor = "border-pink-300";
                 
-                // Visual feedback based on status
+                // Visual feedback based on status and sequence
                 if (problem.status === 'correct') {
                   bgColor = "from-green-500 to-green-600";
                   borderColor = "border-green-300";
@@ -990,6 +1108,10 @@ const FallingGame = ({ game, onGameComplete }) => {
                 } else if (problem.status === 'warning') {
                   bgColor = "from-orange-500 to-orange-600";
                   borderColor = "border-orange-300";
+                } else if (problem.sequenceIndex === currentSequenceIndex) {
+                  // Highlight current sequence problem
+                  bgColor = "from-blue-500 to-blue-600";
+                  borderColor = "border-blue-300";
                 }
                 
                 return (

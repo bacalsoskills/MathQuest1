@@ -25,13 +25,8 @@ public class UpdateProfileRequest {
     @Email
     private String email;
 
-    private String currentPassword;
-
-    @Size(min = 6, max = 40)
-    private String newPassword;
-
-    @Size(min = 6, max = 40)
-    private String confirmPassword;
+    @Size(max = 120)
+    private String password;
 
     private MultipartFile profileImage;
 }

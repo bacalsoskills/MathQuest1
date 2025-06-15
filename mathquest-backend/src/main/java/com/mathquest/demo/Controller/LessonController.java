@@ -1,8 +1,10 @@
 package com.mathquest.demo.Controller;
 
 import com.mathquest.demo.DTO.LessonDTO;
+import com.mathquest.demo.DTO.LessonCompletionDTO;
 import com.mathquest.demo.DTO.Request.CreateLessonRequest;
 import com.mathquest.demo.Model.User;
+import com.mathquest.demo.Model.LessonCompletion;
 import com.mathquest.demo.Repository.UserRepository;
 import com.mathquest.demo.Security.services.UserDetailsImpl;
 import com.mathquest.demo.Service.LessonService;
@@ -17,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = "http://localhost:3000", maxAge = 3600, allowedHeaders = { "Authorization", "Content-Type",
         "Accept" }, methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
@@ -108,5 +111,57 @@ public class LessonController {
 
         lessonService.deleteLesson(id, currentUser);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{lessonId}/mark-read")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Void> markLessonAsRead(
+            @PathVariable Long lessonId,
+            @RequestBody Map<String, Long> request) {
+        Long studentId = request.get("studentId");
+        if (studentId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        lessonService.markLessonContentAsRead(lessonId, studentId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{lessonId}/mark-quiz-completed")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Void> markQuizAsCompleted(
+            @PathVariable Long lessonId,
+            @RequestBody Map<String, Object> request) {
+        Long studentId = ((Number) request.get("studentId")).longValue();
+        Integer score = ((Number) request.get("score")).intValue();
+
+        if (studentId == null || score == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        lessonService.markLessonQuizAsCompleted(lessonId, studentId, score);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{lessonId}/completion-stats")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Map<String, Object>> getLessonCompletionStats(@PathVariable Long lessonId) {
+        Map<String, Object> stats = lessonService.getLessonCompletionStats(lessonId);
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/{lessonId}/completion-status/{studentId}")
+    public ResponseEntity<LessonCompletionDTO> getLessonCompletionStatus(
+            @PathVariable Long lessonId,
+            @PathVariable Long studentId) {
+        LessonCompletionDTO status = lessonService.getLessonCompletionStatus(lessonId, studentId);
+        return ResponseEntity.ok(status);
+    }
+
+    @GetMapping("/{lessonId}/students-read")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<User>> getStudentsWhoReadLesson(@PathVariable Long lessonId) {
+        List<User> students = lessonService.getStudentsWhoReadLesson(lessonId);
+        return ResponseEntity.ok(students);
     }
 }

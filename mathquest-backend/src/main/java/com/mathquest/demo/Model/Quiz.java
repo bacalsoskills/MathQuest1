@@ -54,10 +54,19 @@ public class Quiz {
     @Column(name = "max_attempts")
     private Integer maxAttempts;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quiz_type", nullable = false)
+    private QuizType quizType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lesson_id")
+    @JsonIgnoreProperties({ "quizzes", "classroom" })
+    private Lesson lesson;
+
     public Quiz(Activity activity, String quizName, String description, Boolean repeatable,
             Integer totalItems, Integer passingScore, Integer overallScore,
             LocalDateTime availableFrom, LocalDateTime availableTo, Integer timeLimitMinutes,
-            String quizContent, Integer maxAttempts) {
+            String quizContent, Integer maxAttempts, QuizType quizType, Lesson lesson) {
         this.activity = activity;
         this.quizName = quizName;
         this.description = description;
@@ -70,5 +79,7 @@ public class Quiz {
         this.timeLimitMinutes = timeLimitMinutes;
         this.quizContent = quizContent;
         this.maxAttempts = maxAttempts;
+        this.quizType = quizType;
+        this.lesson = lesson;
     }
 }

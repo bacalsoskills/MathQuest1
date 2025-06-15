@@ -4,6 +4,7 @@ import com.mathquest.demo.DTO.StudentPerformanceDTO;
 import com.mathquest.demo.Model.Classroom;
 import com.mathquest.demo.Model.QuizAttempt;
 import com.mathquest.demo.Model.StudentPerformance;
+import com.mathquest.demo.Model.User;
 import com.mathquest.demo.Repository.ClassroomRepository;
 import com.mathquest.demo.Repository.StudentPerformanceRepository;
 import com.mathquest.demo.Repository.UserRepository;
@@ -71,13 +72,17 @@ public class StudentPerformanceService {
         Classroom classroom = classroomRepository.findById(classroomId)
                 .orElseThrow(() -> new RuntimeException("Classroom not found"));
 
-        // Create a User object with just the ID set
-        com.mathquest.demo.Model.User student = new com.mathquest.demo.Model.User();
-        student.setId(studentId);
+        // Get the full student object
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
 
+        // Find or create performance record
         StudentPerformance performance = studentPerformanceRepository
                 .findByStudentAndClassroom(student, classroom)
-                .orElseThrow(() -> new RuntimeException("Student performance not found"));
+                .orElseGet(() -> {
+                    StudentPerformance newPerformance = new StudentPerformance(student, classroom);
+                    return studentPerformanceRepository.save(newPerformance);
+                });
 
         return convertToDTO(performance);
     }

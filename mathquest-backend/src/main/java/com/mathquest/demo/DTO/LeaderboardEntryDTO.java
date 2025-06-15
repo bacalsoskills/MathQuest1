@@ -20,4 +20,9 @@ public class LeaderboardEntryDTO {
     private Integer bestAttemptNumber;
     private Integer totalQuizzesCompleted;
     private Integer rank;
+    private Integer attempts;
+    private Integer totalScores;
+    private Double finalScore; // Average score across all attempts
+    private double averageScore;
+    private double totalScore;
 }

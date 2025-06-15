@@ -1,10 +1,12 @@
 package com.mathquest.demo.Controller;
 
 import com.mathquest.demo.DTO.Request.UpdateProfileRequest;
+import com.mathquest.demo.DTO.Request.ChangePasswordRequest;
 import com.mathquest.demo.DTO.Response.MessageResponse;
 import com.mathquest.demo.Model.User;
 import com.mathquest.demo.Security.services.UserDetailsImpl;
 import com.mathquest.demo.Service.UserService;
+import com.mathquest.demo.Service.EmailService;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @CrossOrigin(origins = "http://localhost:3000", allowedHeaders = { "Authorization", "Content-Type",
         "Accept" }, methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
@@ -29,6 +33,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private EmailService emailService;
 
     @GetMapping("/profile")
     @PreAuthorize("hasRole('STUDENT') or hasRole('TEACHER') or hasRole('ADMIN')")
@@ -116,34 +123,79 @@ public class UserController {
         return updateUserProfileWithJson(updateRequest);
     }
 
+    @PostMapping("/resend-verification")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> resendVerificationEmail() {
+        try {
+            // Get the current authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            User user = userService.getUserById(userDetails.getId());
+
+            // Check if user needs verification
+            if (!user.isEmailVerified() && user.isEmailVerificationRequired()) {
+                // Generate new verification token
+                String newToken = UUID.randomUUID().toString();
+                user.setVerificationToken(newToken);
+                userService.updateUser(user);
+
+                // Send new verification email
+                emailService.sendVerificationEmail(user.getEmail(), newToken);
+                return ResponseEntity
+                        .ok(new MessageResponse("Verification email has been resent. Please check your inbox."));
+            } else {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Email verification is not required for this account."));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Failed to resend verification email: " + e.getMessage()));
+        }
+    }
+
     @GetMapping("/verify-email")
     @PreAuthorize("permitAll()")
     public ResponseEntity<?> verifyEmailUpdate(@RequestParam String token) {
         try {
-            User user = userService.verifyEmailUpdate(token);
+            // Find user by pending email token instead of verification token
+            User user = userService.findByPendingEmailToken(token);
 
-            // Return a success message when token is valid and not expired
-            return ResponseEntity.ok(new MessageResponse("Email verified successfully! You can now log in."));
-        } catch (RuntimeException e) {
-            // Log the error
-            System.err.println("Email verification error: " + e.getMessage());
-
-            // Return a specific error message based on the exception
-            String errorMsg = e.getMessage();
-            if (errorMsg.contains("expired")) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new MessageResponse(errorMsg));
-            } else if (errorMsg.contains("already been used")) {
-                // For already used tokens, show a different message indicating it was already
-                // verified
-                return ResponseEntity.status(HttpStatus.ALREADY_REPORTED)
-                        .body(new MessageResponse(
-                                "This email has already been verified. No further action is needed."));
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new MessageResponse(
-                                "We couldn't verify your email. Please try again or contact support."));
+            // Add delay before returning invalid token response
+            if (user == null) {
+                try {
+                    Thread.sleep(3000); // Wait for 3 seconds
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Invalid verification token."));
             }
+
+            // Check if there's a pending email
+            if (user.getPendingEmail() == null) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("No pending email update found."));
+            }
+
+            // Update the email
+            user.setEmail(user.getPendingEmail());
+            user.setPendingEmail(null);
+            user.setPendingEmailToken(null);
+            user.setPendingEmailTokenExpiry(null);
+
+            // Save the changes
+            User updatedUser = userService.updateUser(user);
+
+            if (updatedUser == null) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Failed to update email."));
+            }
+
+            return ResponseEntity.ok(
+                    new MessageResponse("Email updated successfully! You can now log in with your new email address."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Failed to verify email: " + e.getMessage()));
         }
     }
 
@@ -282,12 +334,30 @@ public class UserController {
 
     @PostMapping("/change-password")
     @PreAuthorize("hasRole('STUDENT') or hasRole('TEACHER') or hasRole('ADMIN')")
-    public ResponseEntity<?> changePassword(@Valid @RequestBody UpdateProfileRequest passwordRequest) {
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest passwordRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
         try {
-            User updatedUser = userService.updateUserProfile(userDetails.getId(), passwordRequest);
+            // Check if the request is from an admin
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            // Check if current password matches new password
+            if (passwordRequest.getCurrentPassword().equals(passwordRequest.getNewPassword())) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("New password must be different from current password."));
+            }
+
+            User updatedUser = userService.changePassword(userDetails.getId(), passwordRequest, isAdmin);
+
+            // If user had a temporary password, set it to false after successful change
+            if (updatedUser.isTemporaryPassword()) {
+                updatedUser.setTemporaryPassword(false);
+                updatedUser.setTemporaryPasswordExpiry(null);
+                userService.updateUser(updatedUser);
+            }
+
             return ResponseEntity.ok(new MessageResponse("Password changed successfully"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));

@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
@@ -23,6 +25,19 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .orElseGet(() -> userRepository.findByEmail(usernameOrEmail)
                         .orElseThrow(() -> new UsernameNotFoundException(
                                 "User Not Found")));
+
+        // Check if user is deleted
+        if (user.isDeleted()) {
+            throw new UsernameNotFoundException("User account has been deleted");
+        }
+
+        // Check if temporary password has expired
+        if (user.isTemporaryPassword() && user.getTemporaryPasswordExpiry() != null) {
+            if (LocalDateTime.now().isAfter(user.getTemporaryPasswordExpiry())) {
+                throw new UsernameNotFoundException(
+                        "Temporary password has expired. Please contact your administrator.");
+            }
+        }
 
         return UserDetailsImpl.build(user);
     }

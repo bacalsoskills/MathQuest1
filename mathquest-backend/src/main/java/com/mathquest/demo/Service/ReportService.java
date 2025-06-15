@@ -7,6 +7,7 @@ import com.mathquest.demo.Model.Report;
 import com.mathquest.demo.Model.StudentPerformance;
 import com.mathquest.demo.Model.User;
 import com.mathquest.demo.Model.Quiz;
+import com.mathquest.demo.Model.QuizType;
 import com.mathquest.demo.Model.QuizAttempt;
 import com.mathquest.demo.Repository.ClassroomRepository;
 import com.mathquest.demo.Repository.ReportRepository;
@@ -401,97 +402,31 @@ public class ReportService {
                                                         : "No students"));
 
                         Workbook workbook = new XSSFWorkbook();
-                        Sheet sheet = workbook.createSheet("Class Record");
 
                         // Create styles
                         CellStyle headerStyle = workbook.createCellStyle();
                         Font headerFont = workbook.createFont();
                         headerFont.setBold(true);
+                        headerFont.setColor(IndexedColors.BLACK.getIndex());
                         headerStyle.setFont(headerFont);
-                        headerStyle.setFillForegroundColor(IndexedColors.LIGHT_BLUE.getIndex());
+                        headerStyle.setFillForegroundColor(IndexedColors.SKY_BLUE.getIndex());
                         headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
                         // Create score style
                         CellStyle scoreStyle = workbook.createCellStyle();
                         scoreStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
 
-                        // Add class info
-                        Row infoRow1 = sheet.createRow(0);
-                        infoRow1.createCell(0).setCellValue("Classroom:");
-                        infoRow1.createCell(1).setCellValue(classroom.getName());
+                        // Create main class record sheet
+                        Sheet mainSheet = workbook.createSheet("Class Record");
+                        createClassRecordSheet(mainSheet, studentRecords, headers, classroom, teacher, headerStyle,
+                                        scoreStyle);
 
-                        Row infoRow2 = sheet.createRow(1);
-                        infoRow2.createCell(0).setCellValue("Teacher:");
-                        infoRow2.createCell(1).setCellValue(teacher.getFirstName() + " " + teacher.getLastName());
-
-                        Row infoRow3 = sheet.createRow(2);
-                        infoRow3.createCell(0).setCellValue("Generated:");
-                        infoRow3.createCell(1).setCellValue(
-                                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-
-                        // Empty row
-                        sheet.createRow(3);
-
-                        // Create header row
-                        Row headerRow = sheet.createRow(4);
-                        for (int i = 0; i < headers.length(); i++) {
-                                JSONObject header = headers.getJSONObject(i);
-                                Cell cell = headerRow.createCell(i);
-                                cell.setCellValue(header.getString("label"));
-                                cell.setCellStyle(headerStyle);
-                        }
-
-                        // Data rows
-                        int rowNum = 5;
-                        for (int i = 0; i < studentRecords.length(); i++) {
-                                JSONObject student = studentRecords.getJSONObject(i);
-                                Row row = sheet.createRow(rowNum++);
-                                System.out.println("\nProcessing student: " + student.toString(2));
-
-                                // Add data for each column based on headers
-                                for (int j = 0; j < headers.length(); j++) {
-                                        JSONObject header = headers.getJSONObject(j);
-                                        String key = header.getString("key");
-                                        Cell cell = row.createCell(j);
-
-                                        try {
-                                                if (student.has(key) && !student.isNull(key)) {
-                                                        if (key.equals("averageScore") || key.startsWith("quiz_")) {
-                                                                double value = student.getDouble(key);
-                                                                cell.setCellValue(value);
-                                                                cell.setCellStyle(scoreStyle);
-                                                                System.out.println("Added score for " + key + ": "
-                                                                                + value);
-                                                        } else if (key.equals("totalPoints")) {
-                                                                int value = student.getInt(key);
-                                                                cell.setCellValue(value);
-                                                                System.out.println("Added total points: " + value);
-                                                        } else if (key.equals("rank")) {
-                                                                int value = student.getInt(key);
-                                                                cell.setCellValue(value);
-                                                                System.out.println("Added rank: " + value);
-                                                        } else {
-                                                                String value = student.getString(key);
-                                                                cell.setCellValue(value);
-                                                                System.out.println("Added string value for " + key
-                                                                                + ": " + value);
-                                                        }
-                                                } else {
-                                                        cell.setCellValue("N/A");
-                                                        System.out.println("No value found for " + key + ", using N/A");
-                                                }
-                                        } catch (Exception e) {
-                                                System.err.println("Error processing cell - key: " + key + ", header: "
-                                                                + header.toString(2));
-                                                e.printStackTrace();
-                                                cell.setCellValue("Error");
-                                        }
-                                }
-                        }
-
-                        // Auto-size columns
-                        for (int i = 0; i < headers.length(); i++) {
-                                sheet.autoSizeColumn(i);
+                        // Create sheets for each quiz type
+                        for (QuizType quizType : QuizType.values()) {
+                                String sheetName = quizType.name().replace("_", " ");
+                                Sheet typeSheet = workbook.createSheet(sheetName);
+                                createQuizTypeSheet(typeSheet, studentRecords, headers, classroom, teacher, headerStyle,
+                                                scoreStyle, quizType);
                         }
 
                         // Write to byte array
@@ -520,15 +455,262 @@ public class ReportService {
                 }
         }
 
+        private void createClassRecordSheet(Sheet sheet, JSONArray studentRecords, JSONArray headers,
+                        Classroom classroom, User teacher, CellStyle headerStyle, CellStyle scoreStyle) {
+                // Add class info
+                Row infoRow1 = sheet.createRow(0);
+                infoRow1.createCell(0).setCellValue("Classroom:");
+                infoRow1.createCell(1).setCellValue(classroom.getName());
+
+                Row infoRow2 = sheet.createRow(1);
+                infoRow2.createCell(0).setCellValue("Teacher:");
+                infoRow2.createCell(1).setCellValue(teacher.getFirstName() + " " + teacher.getLastName());
+
+                Row infoRow3 = sheet.createRow(2);
+                infoRow3.createCell(0).setCellValue("Generated:");
+                infoRow3.createCell(1).setCellValue(
+                                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+                // Empty row
+                sheet.createRow(3);
+
+                // Create header row
+                Row headerRow = sheet.createRow(4);
+                for (int i = 0; i < headers.length(); i++) {
+                        JSONObject header = headers.getJSONObject(i);
+                        Cell cell = headerRow.createCell(i);
+                        cell.setCellValue(header.getString("label"));
+                        cell.setCellStyle(headerStyle);
+                }
+
+                // Data rows
+                int rowNum = 5;
+                for (int i = 0; i < studentRecords.length(); i++) {
+                        JSONObject student = studentRecords.getJSONObject(i);
+                        Row row = sheet.createRow(rowNum++);
+                        System.out.println("\nProcessing student: " + student.toString(2));
+
+                        // Add data for each column based on headers
+                        for (int j = 0; j < headers.length(); j++) {
+                                JSONObject header = headers.getJSONObject(j);
+                                String key = header.getString("key");
+                                Cell cell = row.createCell(j);
+
+                                try {
+                                        if (student.has(key) && !student.isNull(key)) {
+                                                if (key.equals("averageScore") || key.startsWith("quiz_")) {
+                                                        double value = student.getDouble(key);
+                                                        cell.setCellValue(value);
+                                                        cell.setCellStyle(scoreStyle);
+                                                        System.out.println("Added score for " + key + ": " + value);
+                                                } else if (key.equals("totalPoints")) {
+                                                        double value = student.getDouble(key);
+                                                        cell.setCellValue(value);
+                                                        cell.setCellStyle(scoreStyle);
+                                                        System.out.println("Added total points: " + value);
+                                                } else if (key.equals("rank")) {
+                                                        int value = student.getInt(key);
+                                                        cell.setCellValue(value);
+                                                        System.out.println("Added rank: " + value);
+                                                } else {
+                                                        String value = student.getString(key);
+                                                        cell.setCellValue(value);
+                                                        System.out.println(
+                                                                        "Added string value for " + key + ": " + value);
+                                                }
+                                        } else {
+                                                cell.setCellValue("N/A");
+                                                System.out.println("No value found for " + key + ", using N/A");
+                                        }
+                                } catch (Exception e) {
+                                        System.err.println("Error processing cell - key: " + key + ", header: "
+                                                        + header.toString(2));
+                                        e.printStackTrace();
+                                        cell.setCellValue("Error");
+                                }
+                        }
+                }
+
+                // Auto-size columns
+                for (int i = 0; i < headers.length(); i++) {
+                        sheet.autoSizeColumn(i);
+                }
+        }
+
+        private void createQuizTypeSheet(Sheet sheet, JSONArray studentRecords, JSONArray headers,
+                        Classroom classroom, User teacher, CellStyle headerStyle, CellStyle scoreStyle,
+                        QuizType quizType) {
+                // Add class info
+                Row infoRow1 = sheet.createRow(0);
+                infoRow1.createCell(0).setCellValue("Classroom:");
+                infoRow1.createCell(1).setCellValue(classroom.getName());
+
+                Row infoRow2 = sheet.createRow(1);
+                infoRow2.createCell(0).setCellValue("Teacher:");
+                infoRow2.createCell(1).setCellValue(teacher.getFirstName() + " " + teacher.getLastName());
+
+                Row infoRow3 = sheet.createRow(2);
+                infoRow3.createCell(0).setCellValue("Quiz Type:");
+                infoRow3.createCell(1).setCellValue(quizType.name().replace("_", " "));
+
+                // Empty row
+                sheet.createRow(3);
+
+                // Get all quizzes of this type for the classroom
+                List<Quiz> typeQuizzes = quizRepository.findByActivity_Classroom(classroom).stream()
+                                .filter(quiz -> quiz.getQuizType().name().equals(quizType.name()))
+                                .collect(Collectors.toList());
+
+                if (typeQuizzes.isEmpty()) {
+                        // If no quizzes of this type, add a note
+                        Row noteRow = sheet.createRow(4);
+                        noteRow.createCell(0).setCellValue("No Quizzes for this Quiz Type");
+                        sheet.autoSizeColumn(0);
+                        return;
+                }
+
+                // Create header row
+                Row headerRow = sheet.createRow(4);
+                int colIndex = 0;
+
+                // Add rank column
+                Cell rankCell = headerRow.createCell(colIndex++);
+                rankCell.setCellValue("Rank");
+                rankCell.setCellStyle(headerStyle);
+
+                // Add student name columns
+                Cell lastNameCell = headerRow.createCell(colIndex++);
+                lastNameCell.setCellValue("Last Name");
+                lastNameCell.setCellStyle(headerStyle);
+
+                Cell firstNameCell = headerRow.createCell(colIndex++);
+                firstNameCell.setCellValue("First Name");
+                firstNameCell.setCellStyle(headerStyle);
+
+                // Add quiz columns with details
+                for (Quiz quiz : typeQuizzes) {
+                        Cell quizCell = headerRow.createCell(colIndex++);
+                        quizCell.setCellValue(String.format("%s (Quiz Items: %d | Overall Score: %d | Passing: %d)",
+                                        quiz.getQuizName(),
+                                        quiz.getTotalItems(),
+                                        quiz.getOverallScore(),
+                                        quiz.getPassingScore()));
+                        quizCell.setCellStyle(headerStyle);
+                }
+
+                // Add summary columns
+                Cell totalPointsCell = headerRow.createCell(colIndex++);
+                totalPointsCell.setCellValue("Total Points");
+                totalPointsCell.setCellStyle(headerStyle);
+
+                Cell averageCell = headerRow.createCell(colIndex++);
+                averageCell.setCellValue("Average Score (%)");
+                averageCell.setCellStyle(headerStyle);
+
+                Cell statusCell = headerRow.createCell(colIndex++);
+                statusCell.setCellValue("Status");
+                statusCell.setCellStyle(headerStyle);
+
+                // Calculate total points for each student and prepare for ranking
+                List<Map<String, Object>> studentScores = new ArrayList<>();
+                for (int i = 0; i < studentRecords.length(); i++) {
+                        JSONObject student = studentRecords.getJSONObject(i);
+                        double totalPoints = 0;
+                        int completedQuizzes = 0;
+
+                        for (Quiz quiz : typeQuizzes) {
+                                String quizKey = "quiz_" + quiz.getId();
+                                if (student.has(quizKey) && !student.isNull(quizKey)) {
+                                        totalPoints += student.getDouble(quizKey);
+                                        completedQuizzes++;
+                                }
+                        }
+
+                        Map<String, Object> studentData = new HashMap<>();
+                        studentData.put("student", student);
+                        studentData.put("totalPoints", totalPoints);
+                        studentData.put("completedQuizzes", completedQuizzes);
+                        studentData.put("average", completedQuizzes > 0 ? totalPoints / completedQuizzes : 0);
+                        studentScores.add(studentData);
+                }
+
+                // Sort students by total points (descending)
+                studentScores.sort((a, b) -> Double.compare(
+                                (double) b.get("totalPoints"),
+                                (double) a.get("totalPoints")));
+
+                // Data rows
+                int rowNum = 5;
+                int currentRank = 1;
+                double previousScore = -1;
+                int sameRankCount = 0;
+
+                for (Map<String, Object> studentData : studentScores) {
+                        JSONObject student = (JSONObject) studentData.get("student");
+                        double totalPoints = (double) studentData.get("totalPoints");
+                        int completedQuizzes = (int) studentData.get("completedQuizzes");
+                        double average = (double) studentData.get("average");
+
+                        Row row = sheet.createRow(rowNum++);
+                        colIndex = 0;
+
+                        // Add rank
+                        if (totalPoints != previousScore) {
+                                currentRank += sameRankCount;
+                                sameRankCount = 0;
+                        }
+                        sameRankCount++;
+                        previousScore = totalPoints;
+
+                        Cell rankCell2 = row.createCell(colIndex++);
+                        rankCell2.setCellValue(currentRank);
+
+                        // Add student name
+                        row.createCell(colIndex++).setCellValue(student.getString("lastName"));
+                        row.createCell(colIndex++).setCellValue(student.getString("firstName"));
+
+                        // Add quiz scores
+                        for (Quiz quiz : typeQuizzes) {
+                                String quizKey = "quiz_" + quiz.getId();
+                                Cell scoreCell = row.createCell(colIndex++);
+
+                                if (student.has(quizKey) && !student.isNull(quizKey)) {
+                                        double score = student.getDouble(quizKey);
+                                        scoreCell.setCellValue(score);
+                                        scoreCell.setCellStyle(scoreStyle);
+                                } else {
+                                        scoreCell.setCellValue("N/A");
+                                }
+                        }
+
+                        // Add total points
+                        Cell totalCell = row.createCell(colIndex++);
+                        totalCell.setCellValue(totalPoints);
+                        totalCell.setCellStyle(scoreStyle);
+
+                        // Add average score
+                        Cell avgCell = row.createCell(colIndex++);
+                        avgCell.setCellValue(average);
+                        avgCell.setCellStyle(scoreStyle);
+
+                        // Add status
+                        Cell statusCell2 = row.createCell(colIndex++);
+                        statusCell2.setCellValue(completedQuizzes == typeQuizzes.size() ? "Complete" : "Incomplete");
+                }
+
+                // Auto-size columns
+                for (int i = 0; i < colIndex; i++) {
+                        sheet.autoSizeColumn(i);
+                }
+        }
+
         /**
          * Generate CSV data for class record using frontend data
          */
         private byte[] generateCSVData(JSONArray studentRecords, JSONArray headers, Classroom classroom, User teacher) {
                 try {
-                        System.out.println("Starting CSV generation");
                         StringBuilder csv = new StringBuilder();
 
-                        // Add class info
                         csv.append("Classroom:,").append(classroom.getName()).append("\n");
                         csv.append("Teacher:,").append(teacher.getFirstName()).append(" ").append(teacher.getLastName())
                                         .append("\n");
@@ -537,7 +719,6 @@ public class ReportService {
                                                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                                         .append("\n\n");
 
-                        // Add headers
                         for (int i = 0; i < headers.length(); i++) {
                                 JSONObject header = headers.getJSONObject(i);
                                 if (i > 0)
@@ -546,11 +727,9 @@ public class ReportService {
                         }
                         csv.append("\n");
 
-                        // Add data rows
                         for (int i = 0; i < studentRecords.length(); i++) {
                                 JSONObject student = studentRecords.getJSONObject(i);
 
-                                // Add data for each column based on headers
                                 for (int j = 0; j < headers.length(); j++) {
                                         JSONObject header = headers.getJSONObject(j);
                                         String key = header.getString("key");
@@ -562,7 +741,7 @@ public class ReportService {
                                                 if (key.equals("averageScore") || key.startsWith("quiz_")) {
                                                         csv.append(String.format("%.2f", student.getDouble(key)));
                                                 } else if (key.equals("totalPoints")) {
-                                                        csv.append(student.getInt(key));
+                                                        csv.append(String.format("%.2f", student.getDouble(key)));
                                                 } else {
                                                         csv.append(student.get(key).toString());
                                                 }
@@ -573,7 +752,6 @@ public class ReportService {
                                 csv.append("\n");
                         }
 
-                        System.out.println("CSV generation complete");
                         return csv.toString().getBytes();
                 } catch (Exception e) {
                         System.err.println("Error generating CSV data: " + e.getMessage());

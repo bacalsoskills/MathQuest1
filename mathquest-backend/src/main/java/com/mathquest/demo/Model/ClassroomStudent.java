@@ -32,9 +32,21 @@ public class ClassroomStudent {
     @Column(name = "is_active")
     private boolean isActive = true;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @PrePersist
+    @PreUpdate
+    public void updateUserId() {
+        if (student != null && userId == null) {
+            this.userId = student.getId();
+        }
+    }
+
     public ClassroomStudent(Classroom classroom, User student) {
         this.classroom = classroom;
         this.student = student;
+        this.userId = student.getId();
         this.isActive = true;
     }
 }

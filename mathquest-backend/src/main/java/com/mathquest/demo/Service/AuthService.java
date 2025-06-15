@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
@@ -62,6 +63,18 @@ public class AuthService {
         if (!user.isEnabled()) {
             throw new RuntimeException("Account not verified. Please check your email to verify your account.");
         }
+
+        // Ensure all required fields are set
+        if (!user.isCreatedByAdmin()) {
+            user.setCreatedByAdmin(false);
+        }
+        if (!user.isEmailVerified()) {
+            user.setEmailVerified(false);
+        }
+        if (!user.isEmailVerificationRequired()) {
+            user.setEmailVerificationRequired(true);
+        }
+        userRepository.save(user);
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
@@ -155,6 +168,7 @@ public class AuthService {
 
         user.setRoles(roles);
         user.setEnabled(enabled);
+        user.setCreatedByAdmin(false); // Explicitly set to false for self-registered users
         user.setVerificationToken(verificationToken);
 
         return userRepository.save(user);

@@ -182,7 +182,7 @@ public class EmailService {
         }
     }
 
-    private void sendEmail(String to, String subject, String content) {
+    public void sendEmail(String to, String subject, String content) {
         if (developmentMode || client == null) {
             // In development mode, just log the email content
             logger.info("==================================================================================");

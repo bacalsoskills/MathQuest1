@@ -7,6 +7,7 @@ import com.mathquest.demo.Model.Quiz;
 import com.mathquest.demo.Model.QuizAttempt;
 import com.mathquest.demo.Repository.LeaderboardEntryRepository;
 import com.mathquest.demo.Repository.QuizRepository;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +25,63 @@ import java.util.stream.Collectors;
 public class LeaderboardService {
 
     private static final Logger logger = LoggerFactory.getLogger(LeaderboardService.class);
+    private static final int MAX_TIME_MINUTES = 70;
+    private static final int MAX_ATTEMPTS = 3;
 
     @Autowired
     private LeaderboardEntryRepository leaderboardEntryRepository;
 
     @Autowired
     private QuizRepository quizRepository;
+
+    @PostConstruct
+    public void initialize() {
+        updateAllFinalScores();
+    }
+
+    /**
+     * Update final scores for all existing leaderboard entries
+     */
+    @Transactional
+    public void updateAllFinalScores() {
+        logger.info("Updating final scores for all leaderboard entries");
+        try {
+            List<LeaderboardEntry> entries = leaderboardEntryRepository.findAll();
+            for (LeaderboardEntry entry : entries) {
+                if (entry.getTotalQuizzesCompleted() > 0) {
+                    entry.setFinalScore((double) entry.getHighestScore() / entry.getTotalQuizzesCompleted());
+                    leaderboardEntryRepository.save(entry);
+                }
+            }
+            logger.info("Successfully updated final scores for {} entries", entries.size());
+        } catch (Exception e) {
+            logger.error("Failed to update final scores: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Calculate final score based on the new formula:
+     * Final Score = Average Score + Time Bonus + Attempt Bonus
+     * where:
+     * - Time Bonus = MAX_TIME_MINUTES - time taken (in minutes)
+     * - Attempt Bonus = MAX_ATTEMPTS - number of attempts
+     * 
+     * @param avgScore    Average score
+     * @param timeMinutes Time taken in minutes
+     * @param attempts    Number of attempts
+     * @return Final score
+     */
+    private double calculateFinalScore(double avgScore, double timeMinutes, int attempts) {
+        // Calculate time bonus (max time - actual time)
+        double timeBonus = Math.max(0, MAX_TIME_MINUTES - timeMinutes);
+
+        // Calculate attempt bonus (max attempts - actual attempts)
+        double attemptBonus = Math.max(0, MAX_ATTEMPTS - attempts);
+
+        // Calculate final score
+        return avgScore + timeBonus + attemptBonus;
+    }
 
     /**
      * Update leaderboard based on a quiz attempt
@@ -70,7 +122,27 @@ public class LeaderboardService {
                 LeaderboardEntry entry = existingEntry.get();
                 logger.info("[LEADERBOARD] Found existing entry id={} for studentId={}, quizId={}",
                         entry.getId(), entry.getStudent().getId(), entry.getQuiz().getId());
-                entry.updateScore(attempt.getScore(), attempt.getTimeSpentSeconds(), attempt.getAttemptNumber());
+
+                // Update highest score if new score is better
+                if (attempt.getScore() > entry.getHighestScore()) {
+                    entry.setHighestScore(attempt.getScore());
+                    entry.setBestAttemptNumber(attempt.getAttemptNumber());
+                }
+
+                // Update fastest time if new time is better
+                if (attempt.getTimeSpentSeconds() < entry.getFastestTimeSeconds()
+                        || entry.getFastestTimeSeconds() == null) {
+                    entry.setFastestTimeSeconds(attempt.getTimeSpentSeconds());
+                }
+
+                // Update attempts and total scores
+                entry.setAttempts(entry.getAttempts() != null ? entry.getAttempts() + 1 : 1);
+                entry.setTotalScores(entry.getTotalScores() != null ? entry.getTotalScores() + attempt.getScore()
+                        : attempt.getScore());
+
+                // Calculate final score as average of all attempts
+                entry.setFinalScore((double) entry.getTotalScores() / entry.getAttempts());
+
                 leaderboardEntryRepository.save(entry);
                 logger.info("[LEADERBOARD] Updated leaderboard entry id={}", entry.getId());
             } else {
@@ -87,6 +159,9 @@ public class LeaderboardService {
                         attempt.getAttemptNumber(),
                         999 // Temporary rank
                 );
+                newEntry.setAttempts(1);
+                newEntry.setTotalScores(attempt.getScore());
+                newEntry.setFinalScore((double) attempt.getScore());
                 LeaderboardEntry savedEntry = leaderboardEntryRepository.save(newEntry);
                 logger.info("[LEADERBOARD] Created new leaderboard entry with id={}", savedEntry.getId());
             }
@@ -116,10 +191,10 @@ public class LeaderboardService {
             List<LeaderboardEntry> entries = leaderboardEntryRepository.findByQuiz(quiz);
             logger.info("Found {} leaderboard entries to rank", entries.size());
 
-            // Sort entries based on: higher score first, then faster time, then fewer
+            // Sort entries based on: higher final score first, then faster time, then fewer
             // attempts
             Comparator<LeaderboardEntry> rankComparator = Comparator
-                    .comparing(LeaderboardEntry::getHighestScore, Comparator.reverseOrder())
+                    .comparing(LeaderboardEntry::getFinalScore, Comparator.reverseOrder())
                     .thenComparing(LeaderboardEntry::getFastestTimeSeconds,
                             Comparator.nullsLast(Comparator.naturalOrder()))
                     .thenComparing(LeaderboardEntry::getBestAttemptNumber,
@@ -134,8 +209,8 @@ public class LeaderboardService {
             for (LeaderboardEntry entry : sortedEntries) {
                 // Only log if rank changed
                 if (entry.getRank() == null || !entry.getRank().equals(rank)) {
-                    logger.debug("Updating rank for student {} from {} to {} (score: {})",
-                            entry.getStudent().getId(), entry.getRank(), rank, entry.getHighestScore());
+                    logger.debug("Updating rank for student {} from {} to {} (final score: {})",
+                            entry.getStudent().getId(), entry.getRank(), rank, entry.getFinalScore());
                 }
                 entry.setRank(rank++);
                 leaderboardEntryRepository.save(entry);
@@ -148,70 +223,128 @@ public class LeaderboardService {
     }
 
     /**
-     * Get leaderboard for a quiz
-     * 
-     * @param quizId The quiz ID
-     * @return List of leaderboard entries
-     */
-    public List<LeaderboardEntryDTO> getLeaderboardByQuiz(Long quizId) {
-        Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
-
-        List<LeaderboardEntry> entries = leaderboardEntryRepository.findByQuizOrderByRankAsc(quiz);
-
-        return entries.stream()
-                .limit(10)
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get leaderboard for a classroom
-     * 
-     * @param classroomId The classroom ID
-     * @return List of leaderboard entries
+     * Get leaderboard for a classroom (overall ranking)
      */
     public List<LeaderboardEntryDTO> getLeaderboardByClassroom(Long classroomId) {
-        // Validate classroomId is not null
         if (classroomId == null) {
             logger.error("getLeaderboardByClassroom called with null classroomId");
             throw new IllegalArgumentException("Classroom ID cannot be null");
         }
 
-        logger.info("Getting leaderboard for classroom ID: {}", classroomId);
+        logger.info("Getting overall leaderboard for classroom ID: {}", classroomId);
 
         try {
             List<Object[]> results = leaderboardEntryRepository
-                    .findTop10StudentsByTotalScoreInClassroom(classroomId);
+                    .findStudentPerformanceByClassroom(classroomId);
 
-            logger.info("Found {} entries for classroom leaderboard", results.size());
+            if (results == null || results.isEmpty()) {
+                logger.info("No leaderboard entries found for classroom ID: {}", classroomId);
+                return new ArrayList<>();
+            }
+
+            logger.debug("Found {} leaderboard entries for classroom ID: {}", results.size(), classroomId);
 
             return results.stream()
-                    .limit(10)
                     .map(result -> {
-                        LeaderboardEntryDTO dto = new LeaderboardEntryDTO();
-                        dto.setStudentId((Long) result[0]);
-                        dto.setStudentName(result[1] + " " + result[2]); // firstName + lastName
-                        dto.setHighestScore(((Number) result[3]).intValue()); // totalScore
+                        try {
+                            LeaderboardEntryDTO dto = new LeaderboardEntryDTO();
+                            dto.setStudentId((Long) result[0]);
+                            dto.setStudentName(result[1] + " " + result[2]); // firstName + lastName
 
-                        // Handle null fastestTimeSeconds
-                        Integer bestTime = result[4] != null ? ((Number) result[4]).intValue() : null;
-                        dto.setFastestTimeSeconds(bestTime);
+                            // Get total score
+                            double totalScore = ((Number) result[3]).doubleValue();
+                            dto.setTotalScore(totalScore);
 
-                        // Format time if available
-                        if (bestTime != null) {
-                            int minutes = bestTime / 60;
-                            int seconds = bestTime % 60;
-                            dto.setFormattedFastestTime(minutes + "m " + seconds + "s");
+                            // Get total quizzes completed
+                            int totalQuizzes = ((Number) result[4]).intValue();
+                            dto.setTotalQuizzesCompleted(totalQuizzes);
+
+                            // Get best time
+                            Integer bestTime = result[5] != null ? ((Number) result[5]).intValue() : null;
+                            dto.setFastestTimeSeconds(bestTime);
+
+                            // Get attempts count
+                            int attempts = ((Number) result[6]).intValue();
+                            dto.setAttempts(attempts);
+
+                            // Get average score percentage
+                            double averageScore = ((Number) result[7]).doubleValue();
+                            dto.setAverageScore(averageScore);
+
+                            // Set final score as average score for ranking
+                            dto.setFinalScore(averageScore);
+
+                            return dto;
+                        } catch (Exception e) {
+                            logger.error("Error processing leaderboard entry: {}", e.getMessage(), e);
+                            return null;
                         }
-
-                        dto.setTotalQuizzesCompleted(((Number) result[5]).intValue()); // totalQuizzes
-                        return dto;
                     })
+                    .filter(dto -> dto != null)
+                    .sorted(Comparator.comparing(LeaderboardEntryDTO::getFinalScore).reversed())
+                    .limit(10)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             logger.error("Error retrieving classroom leaderboard: {}", e.getMessage(), e);
-            throw e;
+            throw new RuntimeException("Failed to retrieve classroom leaderboard: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get leaderboard for a specific quiz
+     */
+    public List<LeaderboardEntryDTO> getLeaderboardByQuiz(Long quizId) {
+        logger.info("Getting leaderboard for quiz ID: {}", quizId);
+        try {
+            Quiz quiz = quizRepository.findById(quizId)
+                    .orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+            List<Object[]> results = leaderboardEntryRepository
+                    .findStudentPerformanceByQuiz(quizId);
+
+            if (results == null || results.isEmpty()) {
+                logger.info("No leaderboard entries found for quiz ID: {}", quizId);
+                return new ArrayList<>();
+            }
+
+            logger.debug("Found {} leaderboard entries for quiz ID: {}", results.size(), quizId);
+
+            return results.stream()
+                    .map(result -> {
+                        try {
+                            LeaderboardEntryDTO dto = new LeaderboardEntryDTO();
+                            dto.setStudentId((Long) result[0]);
+                            dto.setStudentName(result[1] + " " + result[2]); // firstName + lastName
+
+                            // Get total score
+                            Integer totalScores = ((Number) result[3]).intValue();
+                            dto.setTotalScores(totalScores);
+
+                            // Get attempts count
+                            Integer attempts = ((Number) result[4]).intValue();
+                            dto.setAttempts(attempts);
+
+                            // Get best time
+                            Integer bestTime = result[5] != null ? ((Number) result[5]).intValue() : null;
+                            dto.setFastestTimeSeconds(bestTime);
+
+                            // Get final score directly from the database
+                            Double finalScore = ((Number) result[6]).doubleValue();
+                            dto.setFinalScore(finalScore);
+
+                            return dto;
+                        } catch (Exception e) {
+                            logger.error("Error processing leaderboard entry: {}", e.getMessage(), e);
+                            return null;
+                        }
+                    })
+                    .filter(dto -> dto != null)
+                    .sorted(Comparator.comparing(LeaderboardEntryDTO::getFinalScore).reversed())
+                    .limit(10)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error retrieving quiz leaderboard: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to retrieve quiz leaderboard: " + e.getMessage(), e);
         }
     }
 
@@ -242,6 +375,8 @@ public class LeaderboardService {
                         int minutes = bestTime / 60;
                         int seconds = bestTime % 60;
                         dto.setFormattedFastestTime(minutes + "m " + seconds + "s");
+                    } else {
+                        dto.setFormattedFastestTime("N/A");
                     }
 
                     dto.setTotalQuizzesCompleted(((Number) result[5]).intValue()); // totalQuizzes

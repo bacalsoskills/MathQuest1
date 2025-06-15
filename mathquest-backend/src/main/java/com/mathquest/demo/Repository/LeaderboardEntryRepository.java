@@ -15,53 +15,70 @@ import java.util.Optional;
 
 @Repository
 public interface LeaderboardEntryRepository extends JpaRepository<LeaderboardEntry, Long> {
-        Optional<LeaderboardEntry> findByStudentAndQuiz(User student, Quiz quiz);
+    Optional<LeaderboardEntry> findByStudentAndQuiz(User student, Quiz quiz);
 
-        List<LeaderboardEntry> findByQuiz(Quiz quiz);
+    List<LeaderboardEntry> findByQuiz(Quiz quiz);
 
-        List<LeaderboardEntry> findByQuizOrderByRankAsc(Quiz quiz);
+    List<LeaderboardEntry> findTop10ByQuizOrderByHighestScoreDescFastestTimeSecondsAsc(Quiz quiz);
 
-        List<LeaderboardEntry> findTop10ByQuizOrderByHighestScoreDescFastestTimeSecondsAsc(Quiz quiz);
+    List<LeaderboardEntry> findByClassroomOrderByHighestScoreDesc(Classroom classroom);
 
-        List<LeaderboardEntry> findByClassroomOrderByHighestScoreDesc(Classroom classroom);
+    @Query("""
+            SELECT
+                u.id as studentId,
+                u.firstName,
+                u.lastName,
+                COALESCE(SUM(l.highestScore), 0) as totalScore,
+                COUNT(DISTINCT l.quiz) as totalQuizzes,
+                MIN(l.fastestTimeSeconds) as bestTime,
+                COUNT(l) as attempts,
+                COALESCE(SUM(l.highestScore) * 100.0 / (
+                    SELECT COALESCE(SUM(q.passingScore), 0)
+                    FROM Quiz q
+                    WHERE q.activity.classroom.id = :classroomId
+                ), 0) as averageScore
+            FROM LeaderboardEntry l
+            JOIN l.student u
+            WHERE l.classroom.id = :classroomId
+            GROUP BY u.id, u.firstName, u.lastName
+            ORDER BY averageScore DESC, bestTime ASC
+            """)
+    List<Object[]> findStudentPerformanceByClassroom(@Param("classroomId") Long classroomId);
 
-        /**
-         * Find top 10 students by total score in a classroom
-         * 
-         * @param classroom The classroom
-         * @return List of top 10 students by total score
-         */
-        @Query("SELECT le.student.id as studentId, " +
-                        "le.student.firstName as firstName, " +
-                        "le.student.lastName as lastName, " +
-                        "SUM(le.highestScore) as totalScore, " +
-                        "MIN(le.fastestTimeSeconds) as bestTime, " +
-                        "COUNT(le.id) as totalQuizzes " +
-                        "FROM LeaderboardEntry le " +
-                        "WHERE le.classroom.id = :classroomId " +
-                        "GROUP BY le.student.id, le.student.firstName, le.student.lastName " +
-                        "ORDER BY totalScore DESC")
-        List<Object[]> findTop10StudentsByTotalScoreInClassroom(@Param("classroomId") Long classroomId);
+    @Query("""
+            SELECT
+                u.id as studentId,
+                u.firstName,
+                u.lastName,
+                COALESCE(l.totalScores, 0) as totalScore,
+                COALESCE(l.attempts, 0) as attempts,
+                l.fastestTimeSeconds as bestTime,
+                COALESCE(l.finalScore, 0.0) as finalScore
+            FROM LeaderboardEntry l
+            JOIN l.student u
+            WHERE l.quiz.id = :quizId
+            ORDER BY l.finalScore DESC NULLS LAST, l.fastestTimeSeconds ASC NULLS LAST
+            """)
+    List<Object[]> findStudentPerformanceByQuiz(@Param("quizId") Long quizId);
 
-        /**
-         * Find top 10 students by quiz participation in a classroom
-         * 
-         * @param classroomId The classroom ID
-         * @return List of top 10 students by quiz participation
-         */
-        @Query("SELECT le.student.id as studentId, " +
-                        "le.student.firstName as firstName, " +
-                        "le.student.lastName as lastName, " +
-                        "SUM(le.highestScore) as totalScore, " +
-                        "MIN(le.fastestTimeSeconds) as bestTime, " +
-                        "COUNT(le.id) as totalQuizzes " +
-                        "FROM LeaderboardEntry le " +
-                        "WHERE le.classroom.id = :classroomId " +
-                        "GROUP BY le.student.id, le.student.firstName, le.student.lastName " +
-                        "ORDER BY totalQuizzes DESC")
-        List<Object[]> findTop10StudentsByQuizParticipation(@Param("classroomId") Long classroomId);
+    @Query("""
+            SELECT
+                u.id as studentId,
+                u.firstName,
+                u.lastName,
+                COALESCE(SUM(l.highestScore), 0) as totalScore,
+                COUNT(l) as attempts,
+                MIN(l.fastestTimeSeconds) as bestTime,
+                COUNT(DISTINCT l.quiz) as totalQuizzes
+            FROM LeaderboardEntry l
+            JOIN l.student u
+            WHERE l.classroom.id = :classroomId
+            GROUP BY u.id, u.firstName, u.lastName
+            ORDER BY totalQuizzes DESC
+            """)
+    List<Object[]> findTop10StudentsByQuizParticipation(@Param("classroomId") Long classroomId);
 
-        @Modifying
-        @Query("DELETE FROM LeaderboardEntry le WHERE le.quiz = :quiz")
-        void deleteByQuiz(Quiz quiz);
+    @Modifying
+    @Query("DELETE FROM LeaderboardEntry le WHERE le.quiz = :quiz")
+    void deleteByQuiz(Quiz quiz);
 }

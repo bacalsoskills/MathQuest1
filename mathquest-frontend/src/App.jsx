@@ -41,21 +41,59 @@ import GameAnalytics from './components/teacher/GameAnalytics';
 import QuizPage from './pages/QuizPage';
 import ReportsPage from './pages/ReportsPage';
 import QuizAttemptPage from './pages/student/QuizAttemptPage';
+import SystemSettings from './pages/admin/SystemSettings';
+import UserManagement from './pages/admin/UserManagement';
+import FeedbackPage from './pages/FeedbackPage';
+import AdminFeedbackPage from './pages/admin/AdminFeedbackPage';
+import FeedbackTicketPage from './pages/admin/FeedbackTicketPage';
+
+// Root redirect component to handle role-based redirection
+const RootRedirect = () => {
+  const { isAdmin, isTeacher, isStudent } = useAuth();
+  
+  if (isAdmin()) return <Navigate to="/admin/users" />;
+  if (isTeacher()) return <Navigate to="/teacher/classrooms" />;
+  if (isStudent()) return <Navigate to="/student/classrooms" />;
+  return <HomePage />;
+};
 
 // Protected Route component to handle role-based access
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { currentUser, isTeacher, isStudent } = useAuth();
+  const { currentUser, isTeacher, isStudent, isAdmin } = useAuth();
 
   if (!currentUser) {
     return <Navigate to="/login" />;
   }
 
+  // If user is logged in but trying to access a route they don't have permission for
+  if (allowedRoles.includes('admin') && !isAdmin()) {
+    if (isTeacher()) {
+      return <Navigate to="/teacher/classrooms" />;
+    }
+    if (isStudent()) {
+      return <Navigate to="/student/classrooms" />;
+    }
+    return <Navigate to="/" />;
+  }
+
   if (allowedRoles.includes('teacher') && !isTeacher()) {
-    return <Navigate to="/student/classrooms" />;
+    if (isAdmin()) {
+      return <Navigate to="/admin/users" />;
+    }
+    if (isStudent()) {
+      return <Navigate to="/student/classrooms" />;
+    }
+    return <Navigate to="/" />;
   }
 
   if (allowedRoles.includes('student') && !isStudent()) {
-    return <Navigate to="/teacher/classrooms" />;
+    if (isAdmin()) {
+      return <Navigate to="/admin/users" />;
+    }
+    if (isTeacher()) {
+      return <Navigate to="/teacher/classrooms" />;
+    }
+    return <Navigate to="/" />;
   }
 
   return children;
@@ -108,7 +146,11 @@ function App() {
                   {/* Routes with Navbar */}
                   <Route element={<NavbarLayout />}>
                     {/* Public Routes */}
-                    <Route path="/" element={<HomePage />} />
+                    <Route path="/" element={
+                      <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
+                        <RootRedirect />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
@@ -206,6 +248,11 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
+                    <Route path="/student/feedback" element={
+                      <ProtectedRoute allowedRoles={['STUDENT']}>
+                        <FeedbackPage />
+                      </ProtectedRoute>
+                    } />
                     
                     {/* Teacher Routes */}
                     <Route path="/teacher" element={<Navigate to="/teacher/classrooms" />} />
@@ -273,6 +320,12 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
+
+                  <Route path="/teacher/feedback" element={
+                      <ProtectedRoute allowedRoles={['TEACHER']}>
+                        <FeedbackPage />
+                      </ProtectedRoute>
+                    } />
                     
                     {/* Redirect old paths to new role-based paths */}
                     <Route path="/game" element={<Navigate to="/student/game" />} />
@@ -298,15 +351,15 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/admin/classrooms" 
+                      path="/admin/users" 
                       element={
                         <ProtectedRoute allowedRoles={['admin']}>
-                          <ClassroomSection />
+                          <UserManagement />
                         </ProtectedRoute>
                       } 
                     />
                     <Route 
-                      path="/admin/teachers" 
+                      path="/admin/users/teachers" 
                       element={
                         <ProtectedRoute allowedRoles={['admin']}>
                           <TeachersSection />
@@ -314,10 +367,18 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/admin/students" 
+                      path="/admin/users/students" 
                       element={
                         <ProtectedRoute allowedRoles={['admin']}>
                           <StudentsSection />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin/classrooms" 
+                      element={
+                        <ProtectedRoute allowedRoles={['admin']}>
+                          <ClassroomSection />
                         </ProtectedRoute>
                       } 
                     />
@@ -345,6 +406,14 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
+                         <Route 
+                      path="/admin/settings" 
+                      element={
+                        <ProtectedRoute allowedRoles={['admin']}>
+                          <SystemSettings />
+                        </ProtectedRoute>
+                      } 
+                    />
                     <Route 
                       path="/admin/properties" 
                       element={
@@ -369,6 +438,18 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
+                     <Route path="/admin/feedback" 
+                     element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminFeedbackPage />
+                      </ProtectedRoute>
+                    }
+                     />
+                       <Route path="/admin/feedback/:ticketNumber" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <FeedbackTicketPage />
+                      </ProtectedRoute>
+                    } />
                   </Route>
 
                    {/* Quiz Routes */}

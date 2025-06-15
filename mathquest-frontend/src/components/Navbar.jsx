@@ -15,6 +15,9 @@ import UserService from '../services/userService';
 import { LiaSchoolSolid } from "react-icons/lia";
 import ClassroomService from '../services/classroomService';
 import { LuNotebookPen } from "react-icons/lu";
+import SystemSettingsService from '../services/systemSettingsService';
+import { BsPersonFillCheck } from "react-icons/bs";
+import { MdOutlineFeedback } from "react-icons/md";
 
 // Helper function to get initials
 const getInitials = (firstName, lastName) => {
@@ -43,6 +46,7 @@ const Navbar = () => {
   const [profileImageSrc, setProfileImageSrc] = useState('');
   const [imageLoaded, setImageLoaded] = useState(false);
   const [classrooms, setClassrooms] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   
   const { currentUser, logout, isAdmin, isTeacher, isStudent } = useAuth();
 
@@ -88,6 +92,7 @@ const Navbar = () => {
       
       // Fetch classrooms when component mounts
       fetchClassrooms();
+      loadAnnouncements();
     }
   }, [currentUser, isTeacher, isStudent]);
 
@@ -118,6 +123,56 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const loadAnnouncements = async () => {
+    try {
+      console.log("\n=== Navbar Announcement Loading ===");
+      console.log("1. User Details:");
+      console.log("- Is Admin:", isAdmin());
+      console.log("- Is Teacher:", isTeacher());
+      console.log("- Is Student:", isStudent());
+      
+      const userRole = isAdmin() ? 'ADMIN' : isTeacher() ? 'TEACHERS' : 'STUDENTS';
+      console.log("- Selected User Role:", userRole);
+      
+      console.log("\n2. Current Time Details:");
+      const now = new Date();
+      console.log("- Local Time:", now.toLocaleString());
+      console.log("- UTC Time:", now.toISOString());
+      console.log("- Timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
+      
+      console.log("\n3. Fetching Announcements...");
+      const announcements = await SystemSettingsService.getActiveAnnouncements(userRole);
+      
+      console.log("\n4. Received Announcements:");
+      console.log("- Count:", announcements?.length || 0);
+      if (announcements && announcements.length > 0) {
+        announcements.forEach((announcement, index) => {
+          console.log(`\nAnnouncement ${index + 1}:`);
+          console.log("- ID:", announcement.id);
+          console.log("- Message:", announcement.message);
+          console.log("- Start Date (UTC):", announcement.startDate);
+          console.log("- Start Date (Local):", new Date(announcement.startDate).toLocaleString());
+          console.log("- End Date (UTC):", announcement.endDate);
+          console.log("- End Date (Local):", new Date(announcement.endDate).toLocaleString());
+          console.log("- Visibility:", announcement.visibility);
+          console.log("- Is Active:", announcement.isActive);
+        });
+      } else {
+        console.log("- No announcements received");
+      }
+
+      if (announcements) {
+        setAnnouncements(announcements);
+      }
+    } catch (error) {
+      console.error('Failed to load announcements:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
   };
 
   // If user is not logged in, show basic navbar
@@ -164,6 +219,7 @@ const Navbar = () => {
         name: classroom.name
       }))
     },
+    { path: '/student/feedback', icon: <MdOutlineFeedback className="mr-3 text-xl" />, name: 'Send Feedback' },
   ];
 
   const teacherLinks = [
@@ -177,19 +233,21 @@ const Navbar = () => {
         path: `/teacher/classrooms/${classroom.id}`,
         name: classroom.name
       }))
-    }
+    },
+    { path: '/teacher/feedback', icon: <MdOutlineFeedback className="mr-3 text-xl" />, name: 'Send Feedback' },
   ];
 
   const adminLinks = [
     { path: '/admin/profile', icon: <CgProfile className="mr-3 text-xl" />, name: 'Profile' },
-    { path: '/admin/reports', icon: <BiGroup className="mr-3 text-xl" />, name: 'Profile Management',
+    { path: '/admin/users', icon: <BiGroup className="mr-3 text-xl" />, name: 'User Management',
       subLinks: [
-        { path: '/admin/teachers', name: 'Teachers' },
-        { path: '/admin/students', name: 'Students' },
+        { path: '/admin/users/teachers', icon: <BsPersonFillCheck className="mr-3 text-xl" />, name: 'Teachers' },
+        { path: '/admin/users/students', icon: <BsPersonFillCheck className="mr-3 text-xl" />, name: 'Students' },
       ]
     },
     { path: '/admin/classrooms', icon: <LiaSchoolSolid className="mr-3 text-xl" />, name: 'Classrooms' },
-    { path: '/admin/controls', icon: <MdOutlineAdminPanelSettings className="mr-3 text-xl" />, name: 'Controls' },
+    { path: '/admin/feedback', icon: <MdOutlineFeedback className="mr-3 text-xl" />, name: 'Feedback Management' },
+    { path: '/admin/settings', icon: <MdOutlineAdminPanelSettings className="mr-3 text-xl" />, name: 'System Settings' },
   ];
 
   let linksToShow = [];
@@ -280,6 +338,45 @@ const Navbar = () => {
       </div>
 
       <div className="flex-1 flex flex-col ml-64">
+      {announcements.length > 0 && !isAdmin() && (
+          <div className="space-y-2 p-4">
+            {announcements.map((announcement) => (
+              <div key={announcement.id} className="bg-blue-100 border-l-4 border-blue-500 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <IoMdNotificationsOutline className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div className="ml-3">
+                    <div 
+                      className="text-sm text-blue-700"
+                      dangerouslySetInnerHTML={{ __html: announcement.message }}
+                    />
+                    <p className="text-xs text-blue-600 mt-1">
+                      {announcement.startDate && `From: ${new Date(announcement.startDate).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                      })}`}
+                      {announcement.endDate && ` To: ${new Date(announcement.endDate).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                      })}`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="bg-white shadow-md p-4 flex justify-between items-center w-full z-20">
           <div className="text-gray-600"> 
             Welcome {currentUser?.firstName || currentUser?.username || currentUser?.email}!

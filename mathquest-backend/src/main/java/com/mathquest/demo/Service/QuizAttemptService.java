@@ -1,10 +1,18 @@
 package com.mathquest.demo.Service;
 
 import com.mathquest.demo.DTO.QuizAttemptDTO;
-import com.mathquest.demo.Model.*;
+import com.mathquest.demo.Model.Quiz;
+import com.mathquest.demo.Model.QuizAttempt;
+import com.mathquest.demo.Model.User;
+import com.mathquest.demo.Model.Classroom;
+import com.mathquest.demo.Model.LeaderboardEntry;
 import com.mathquest.demo.Repository.QuizAttemptRepository;
 import com.mathquest.demo.Repository.QuizRepository;
 import com.mathquest.demo.Repository.UserRepository;
+import com.mathquest.demo.Repository.LeaderboardEntryRepository;
+import com.mathquest.demo.Service.LeaderboardService;
+import com.mathquest.demo.Service.LessonService;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +24,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class QuizAttemptService {
@@ -37,6 +46,12 @@ public class QuizAttemptService {
     @Autowired
     private StudentPerformanceService studentPerformanceService;
 
+    @Autowired
+    private LessonService lessonService;
+
+    @Autowired
+    private LeaderboardEntryRepository leaderboardEntryRepository;
+
     /**
      * Start a new quiz attempt
      * 
@@ -46,41 +61,52 @@ public class QuizAttemptService {
      */
     @Transactional
     public QuizAttemptDTO startQuizAttempt(Long quizId, Long studentId) {
+        logger.info("Starting quiz attempt creation - quizId: {}, studentId: {}", quizId, studentId);
+
         Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+                .orElseThrow(() -> {
+                    logger.error("Quiz not found with id: {}", quizId);
+                    return new EntityNotFoundException("Quiz not found");
+                });
+        logger.info("Found quiz: {} (repeatable: {}, maxAttempts: {})",
+                quiz.getQuizName(), quiz.getRepeatable(), quiz.getMaxAttempts());
 
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> {
+                    logger.error("Student not found with id: {}", studentId);
+                    return new EntityNotFoundException("Student not found");
+                });
+        logger.info("Found student: {} {}", student.getFirstName(), student.getLastName());
 
-        // Check if quiz is available
-        LocalDateTime now = LocalDateTime.now();
-        if (quiz.getAvailableFrom() != null && now.isBefore(quiz.getAvailableFrom())) {
-            throw new RuntimeException("Quiz is not yet available");
-        }
-        if (quiz.getAvailableTo() != null && now.isAfter(quiz.getAvailableTo())) {
-            throw new RuntimeException("Quiz is no longer available");
-        }
+        // Check if student has reached max attempts
+        List<QuizAttempt> existingAttempts = quizAttemptRepository.findByQuizAndStudent(quiz, student);
+        logger.info("Current attempts for student: {} (count: {})",
+                existingAttempts.stream().map(a -> a.getAttemptNumber()).collect(Collectors.toList()),
+                existingAttempts.size());
 
-        // Check if student can attempt the quiz again
-        int attempts = quizAttemptRepository.countAttemptsByQuizAndStudent(quiz, student);
         if (!quiz.getRepeatable()) {
-            if (attempts > 0) {
-                throw new RuntimeException("This quiz cannot be attempted more than once");
+            if (!existingAttempts.isEmpty()) {
+                logger.error("Quiz is not repeatable and student has already attempted it");
+                throw new IllegalStateException("This quiz cannot be retaken");
             }
-        } else if (quiz.getMaxAttempts() != null && quiz.getMaxAttempts() > 0) {
-            if (attempts >= quiz.getMaxAttempts()) {
-                throw new RuntimeException("You have reached the maximum number of attempts for this quiz ("
-                        + quiz.getMaxAttempts() + ")");
+        } else if (quiz.getMaxAttempts() != null) {
+            if (existingAttempts.size() >= quiz.getMaxAttempts()) {
+                logger.error("Student has reached maximum attempts (max: {}, current: {})",
+                        quiz.getMaxAttempts(), existingAttempts.size());
+                throw new IllegalStateException("Maximum attempts reached for this quiz");
             }
         }
 
-        // Get next attempt number
-        List<QuizAttempt> previousAttempts = quizAttemptRepository.findByQuizAndStudentOrderByAttemptNumberDesc(quiz,
-                student);
-        int attemptNumber = previousAttempts.isEmpty() ? 1 : previousAttempts.get(0).getAttemptNumber() + 1;
+        // Create new attempt
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setQuiz(quiz);
+        attempt.setStudent(student);
+        attempt.setStartedAt(LocalDateTime.now());
+        attempt.setAttemptNumber(existingAttempts.size() + 1);
+        logger.info("Creating new attempt with number: {}", attempt.getAttemptNumber());
 
-        QuizAttempt attempt = new QuizAttempt(quiz, student, attemptNumber);
         attempt = quizAttemptRepository.save(attempt);
+        logger.info("Successfully created quiz attempt with id: {}", attempt.getId());
 
         return convertToDTO(attempt);
     }
@@ -120,47 +146,38 @@ public class QuizAttemptService {
         attempt = quizAttemptRepository.save(attempt);
         logger.info("Attempt saved successfully with ID: {}", attempt.getId());
 
+        // Update leaderboard and get rank
+        leaderboardService.updateLeaderboard(attempt);
+        leaderboardService.updateRankings(attempt.getQuiz().getId());
+
+        // Get the updated leaderboard entry to get the rank
+        Optional<LeaderboardEntry> leaderboardEntry = leaderboardEntryRepository.findByStudentAndQuiz(
+                attempt.getStudent(), attempt.getQuiz());
+
         // Create a DTO to return
-        QuizAttemptDTO attemptDTO = convertToDTO(attempt);
+        QuizAttemptDTO dto = convertToDTO(attempt);
 
-        // Try to update leaderboard in a new transaction
-        try {
-            logger.info("Attempting to update leaderboard...");
-            // Ensure we have all required data
-            if (attempt.getQuiz() != null &&
-                    attempt.getQuiz().getActivity() != null &&
-                    attempt.getQuiz().getActivity().getClassroom() != null) {
+        // Add rank from leaderboard entry if available
+        if (leaderboardEntry.isPresent()) {
+            dto.setRank(leaderboardEntry.get().getRank());
+        }
 
-                logger.debug("Quiz ID: {}", attempt.getQuiz().getId());
-                logger.debug("Student ID: {}", attempt.getStudent().getId());
-                logger.debug("Classroom ID: {}", attempt.getQuiz().getActivity().getClassroom().getId());
-                logger.debug("Score: {}", attempt.getScore());
-
-                updateLeaderboard(attempt);
-                logger.info("Leaderboard update initiated successfully");
-            } else {
-                logger.error("Missing required data for leaderboard update:");
-                if (attempt.getQuiz() == null)
-                    logger.error("Quiz is null");
-                else if (attempt.getQuiz().getActivity() == null)
-                    logger.error("Activity is null");
-                else if (attempt.getQuiz().getActivity().getClassroom() == null)
-                    logger.error("Classroom is null");
+        // If this quiz is associated with a lesson, update the lesson completion
+        if (attempt.getQuiz().getLesson() != null) {
+            logger.info("Updating lesson completion for lesson: {}", attempt.getQuiz().getLesson().getId());
+            try {
+                lessonService.markLessonQuizAsCompleted(
+                        attempt.getQuiz().getLesson().getId(),
+                        attempt.getStudent().getId(),
+                        score);
+                logger.info("Successfully updated lesson completion");
+            } catch (Exception e) {
+                logger.error("Failed to update lesson completion: {}", e.getMessage(), e);
+                // Don't throw the error as the quiz attempt was already saved
             }
-        } catch (Exception e) {
-            logger.error("Error updating leaderboard: {}", e.getMessage(), e);
         }
 
-        // Try to update student performance in a new transaction
-        try {
-            logger.info("Attempting to update student performance...");
-            updateStudentPerformance(attempt);
-            logger.info("Student performance update completed");
-        } catch (Exception e) {
-            logger.error("Error updating student performance: {}", e.getMessage(), e);
-        }
-
-        return attemptDTO;
+        return dto;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

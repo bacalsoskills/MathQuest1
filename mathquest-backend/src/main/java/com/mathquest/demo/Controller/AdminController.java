@@ -2,16 +2,23 @@ package com.mathquest.demo.Controller;
 
 import com.mathquest.demo.DTO.ClassroomDTO;
 import com.mathquest.demo.DTO.UserSummaryDTO;
+import com.mathquest.demo.DTO.Request.UpdateProfileRequest;
+import com.mathquest.demo.DTO.Request.CreateUserRequest;
+import com.mathquest.demo.DTO.CreateClassroomRequest;
+import com.mathquest.demo.DTO.Response.MessageResponse;
 import com.mathquest.demo.Model.User;
 import com.mathquest.demo.Service.ClassroomService;
 import com.mathquest.demo.Service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:3000", maxAge = 3600)
 @RestController
 @RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
@@ -22,6 +29,13 @@ public class AdminController {
 
     @Autowired
     private UserService userService;
+
+    // Endpoint for admins to create a new classroom
+    @PostMapping("/classrooms")
+    public ResponseEntity<ClassroomDTO> createClassroom(@Valid @ModelAttribute CreateClassroomRequest request) {
+        ClassroomDTO createdClassroom = classroomService.createClassroom(request, null);
+        return new ResponseEntity<>(createdClassroom, HttpStatus.CREATED);
+    }
 
     // Endpoint for admins to get all classrooms
     @GetMapping("/classrooms")
@@ -69,18 +83,24 @@ public class AdminController {
         return ResponseEntity.ok(users);
     }
 
+    @PostMapping("/users")
+    public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequest createRequest) {
+        User user = userService.createUserByAdmin(createRequest);
+        return ResponseEntity.ok(user);
+    }
+
     // Endpoint for admins to update a user
     @PutMapping("/users/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        User updatedUser = userService.updateUserProfile(id, userDetails);
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateProfileRequest updateRequest) {
+        User updatedUser = userService.updateUserByAdmin(id, updateRequest);
         return ResponseEntity.ok(updatedUser);
     }
 
-    // Endpoint for admins to delete a user
+    // Endpoint for admins to delete a user (soft delete)
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUserById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        userService.deleteUserByAdmin(id);
+        return ResponseEntity.ok(new MessageResponse("User deleted successfully"));
     }
 
     // Endpoint for admins to update a classroom

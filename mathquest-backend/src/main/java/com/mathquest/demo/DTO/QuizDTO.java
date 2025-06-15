@@ -29,4 +29,6 @@ public class QuizDTO {
 
     private Integer timeLimitMinutes;
     private String quizContent; // JSON string containing quiz questions, options, and answers
+    private String quizType; // PRACTICE_QUIZ, MAJOR_EXAMS, POP_QUIZ, DIAGNOSTIC_QUIZ, ACTIVITY
+    private Long lessonId;
 }

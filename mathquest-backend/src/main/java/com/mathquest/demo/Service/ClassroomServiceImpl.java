@@ -3,12 +3,8 @@ package com.mathquest.demo.Service;
 import com.mathquest.demo.DTO.ClassroomDTO;
 import com.mathquest.demo.DTO.CreateClassroomRequest;
 import com.mathquest.demo.DTO.UserSummaryDTO;
-import com.mathquest.demo.Model.Classroom;
-import com.mathquest.demo.Model.ClassroomStudent;
-import com.mathquest.demo.Model.User;
-import com.mathquest.demo.Repository.ClassroomRepository;
-import com.mathquest.demo.Repository.ClassroomStudentRepository;
-import com.mathquest.demo.Repository.UserRepository;
+import com.mathquest.demo.Model.*;
+import com.mathquest.demo.Repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +32,34 @@ public class ClassroomServiceImpl implements ClassroomService {
     private ClassroomRepository classroomRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private ClassroomStudentRepository classroomStudentRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private QuizRepository quizRepository;
+
+    @Autowired
+    private QuizAttemptRepository quizAttemptRepository;
+
+    @Autowired
+    private ActivityRepository activityRepository;
+
+    @Autowired
+    private LeaderboardEntryRepository leaderboardEntryRepository;
+
+    @Autowired
+    private GameRepository gameRepository;
+
+    @Autowired
+    private StudentPerformanceRepository studentPerformanceRepository;
+
+    @Autowired
+    private LessonRepository lessonRepository;
+
+    @Autowired
+    private ReportRepository reportRepository;
 
     @Override
     @Transactional
@@ -70,45 +90,32 @@ public class ClassroomServiceImpl implements ClassroomService {
             classCode = generateUniqueClassCode();
         }
 
-        Classroom classroom;
+        Classroom classroom = new Classroom();
+        classroom.setName(request.getName());
+        classroom.setDescription(request.getDescription());
+        classroom.setClassCode(classCode);
+        classroom.setShortCode(shortCode);
 
-        try {
-            // Check if image is provided
-            if (request.getImage() != null && !request.getImage().isEmpty()) {
-                byte[] imageData = request.getImage().getBytes();
+        // If teacher is provided, use it; otherwise, find the teacher by ID from the
+        // request
+        if (teacher != null) {
+            classroom.setTeacher(teacher);
+        } else {
+            // For admin creating a classroom, find the teacher by ID
+            User selectedTeacher = userRepository.findById(request.getTeacherId())
+                    .orElseThrow(
+                            () -> new EntityNotFoundException("Teacher not found with id: " + request.getTeacherId()));
+            classroom.setTeacher(selectedTeacher);
+        }
 
-                // Log image size
-                logger.info("Image uploaded with size: {} bytes for classroom: {}",
-                        imageData.length, request.getName());
-
-                // Check if the image is too large (over 5MB)
-                if (imageData.length > 5 * 1024 * 1024) {
-                    logger.warn("Image is too large ({}MB), consider compressing images before upload",
-                            imageData.length / (1024 * 1024));
-                }
-
-                classroom = new Classroom(
-                        request.getName(),
-                        request.getDescription(),
-                        classCode,
-                        shortCode,
-                        imageData,
-                        teacher);
-
-                // CreationTimestamp annotation will automatically set the date
-                logger.info("Classroom created with image: {}", classroom.getImage() != null);
-            } else {
-                logger.warn("No image provided for classroom: {}", request.getName());
-                classroom = new Classroom(
-                        request.getName(),
-                        request.getDescription(),
-                        classCode,
-                        shortCode,
-                        teacher);
+        // Handle image upload if provided
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            try {
+                classroom.setImage(request.getImage().getBytes());
+            } catch (IOException e) {
+                logger.error("Failed to process image upload: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to process image upload: " + e.getMessage());
             }
-        } catch (IOException e) {
-            logger.error("Failed to process image upload: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to process image upload: " + e.getMessage());
         }
 
         try {
@@ -220,8 +227,9 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     @Transactional(readOnly = true)
     public List<UserSummaryDTO> searchStudents(String searchTerm, Long classroomId) {
-        // Get all students with ROLE_STUDENT
-        List<User> allStudents = userRepository.findAllByRolesName(com.mathquest.demo.Model.ERole.ROLE_STUDENT);
+        // Get all students with ROLE_STUDENT and not deleted
+        List<User> allStudents = userRepository
+                .findAllByRolesNameAndIsDeletedFalse(com.mathquest.demo.Model.ERole.ROLE_STUDENT);
 
         // If classroomId is provided, get the classroom and its students
         List<User> studentsInClassroom = new ArrayList<>();
@@ -327,19 +335,42 @@ public class ClassroomServiceImpl implements ClassroomService {
                 });
 
         try {
-
-            // Fetch ALL student enrollments (active or inactive) for this classroom
-            List<ClassroomStudent> enrollments = classroom.getStudents().stream().toList(); // Or query repo if lazy
-
-            List<ClassroomStudent> allEnrollments = classroomStudentRepository.findAllByClassroom(classroom);
-            if (!allEnrollments.isEmpty()) {
-                logger.debug("Deleting {} associated student enrollments for classroom ID: {}", allEnrollments.size(),
-                        classroomId);
-                classroomStudentRepository.deleteAllInBatch(allEnrollments); // More efficient for multiple deletes
-
+            // 1. First, delete all quiz attempts for this classroom
+            List<Quiz> quizzes = quizRepository.findByActivity_Classroom(classroom);
+            for (Quiz quiz : quizzes) {
+                // Delete leaderboard entries for this quiz
+                leaderboardEntryRepository.deleteByQuiz(quiz);
+                // Delete quiz attempts for this quiz
+                quizAttemptRepository.deleteByQuiz(quiz);
             }
 
-            // delete the classroom itself
+            // 2. Delete all quizzes
+            quizRepository.deleteAll(quizzes);
+
+            // 3. Delete all games for this classroom
+            List<Game> games = gameRepository.findByActivityClassroomId(classroomId);
+            gameRepository.deleteAll(games);
+
+            // 4. Delete all activities
+            activityRepository.deleteByClassroomId(classroomId);
+
+            // 5. Delete all lessons for this classroom
+            List<Lesson> lessons = lessonRepository.findByClassroom(classroom);
+            lessonRepository.deleteAll(lessons);
+
+            // 6. Delete all reports for this classroom
+            reportRepository.deleteByClassroomId(classroomId);
+
+            // 7. Delete all student enrollments
+            List<ClassroomStudent> enrollments = classroomStudentRepository.findAllByClassroom(classroom);
+            if (!enrollments.isEmpty()) {
+                classroomStudentRepository.deleteAllInBatch(enrollments);
+            }
+
+            // 8. Delete all student performance records
+            studentPerformanceRepository.deleteByClassroomId(classroomId);
+
+            // 9. Finally, delete the classroom itself
             classroomRepository.delete(classroom);
             logger.info("Successfully deleted classroom with ID: {}", classroomId);
         } catch (Exception e) {
@@ -417,6 +448,12 @@ public class ClassroomServiceImpl implements ClassroomService {
         if (classroomDetails.getShortCode() != null) {
             classroom.setShortCode(classroomDetails.getShortCode());
         }
+        if (classroomDetails.getTeacherId() != null) {
+            User newTeacher = userRepository.findById(classroomDetails.getTeacherId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Teacher not found with id: " + classroomDetails.getTeacherId()));
+            classroom.setTeacher(newTeacher);
+        }
 
         Classroom updatedClassroom = classroomRepository.save(classroom);
         return convertToDTO(updatedClassroom);
@@ -470,10 +507,29 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     @Transactional
     public void deleteClassroomById(Long classroomId) {
-        if (!classroomRepository.existsById(classroomId)) {
-            throw new EntityNotFoundException("Classroom not found with id: " + classroomId);
+        logger.info("Attempting to delete classroom with ID: {}", classroomId);
+        Classroom classroom = classroomRepository.findById(classroomId)
+                .orElseThrow(() -> {
+                    logger.error("Classroom not found for deletion with ID: {}", classroomId);
+                    return new EntityNotFoundException("Classroom not found with id: " + classroomId);
+                });
+
+        try {
+            // First, delete all student enrollments for this classroom
+            List<ClassroomStudent> enrollments = classroomStudentRepository.findAllByClassroom(classroom);
+            if (!enrollments.isEmpty()) {
+                logger.debug("Deleting {} associated student enrollments for classroom ID: {}", enrollments.size(),
+                        classroomId);
+                classroomStudentRepository.deleteAllInBatch(enrollments);
+            }
+
+            // Now delete the classroom
+            classroomRepository.delete(classroom);
+            logger.info("Successfully deleted classroom with ID: {}", classroomId);
+        } catch (Exception e) {
+            logger.error("Error occurred while deleting classroom with ID: {}: {}", classroomId, e.getMessage(), e);
+            throw new RuntimeException("Could not delete classroom with ID: " + classroomId, e);
         }
-        classroomRepository.deleteById(classroomId);
     }
 
     private String generateUniqueClassCode() {
@@ -517,6 +573,7 @@ public class ClassroomServiceImpl implements ClassroomService {
 
         UserSummaryDTO teacherDTO = convertToUserSummaryDTO(classroom.getTeacher());
         dto.setTeacher(teacherDTO);
+        dto.setTeacherId(classroom.getTeacher().getId());
 
         // Only include active students in the DTO
         Set<UserSummaryDTO> studentDTOs = classroom.getStudents().stream()

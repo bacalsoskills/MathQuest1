@@ -20,6 +20,7 @@ public class QuizAttemptDTO {
     private Integer score;
     private Boolean passed;
     private String answers;
+    private Integer rank;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startedAt;

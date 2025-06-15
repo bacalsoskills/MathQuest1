@@ -7,11 +7,15 @@ import com.mathquest.demo.DTO.Request.ResetPasswordRequest;
 import com.mathquest.demo.DTO.Response.JwtResponse;
 import com.mathquest.demo.DTO.Response.MessageResponse;
 import com.mathquest.demo.Service.AuthService;
+import com.mathquest.demo.Service.UserService;
+import com.mathquest.demo.Model.User;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @CrossOrigin(origins = "http://localhost:3000", maxAge = 3600)
 @RestController
@@ -20,6 +24,9 @@ public class AuthController {
 
     @Autowired
     AuthService authService;
+
+    @Autowired
+    UserService userService;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -31,9 +38,47 @@ public class AuthController {
         return ResponseEntity.ok(authService.registerUser(signUpRequest));
     }
 
-    @RequestMapping(value = "/verify", method = { RequestMethod.GET, RequestMethod.POST })
+    @GetMapping("/verify")
     public ResponseEntity<?> verifyEmail(@RequestParam String token) {
-        return ResponseEntity.ok(authService.verifyEmail(token));
+        try {
+            // Find user by verification token
+            User user = userService.findByVerificationToken(token);
+
+            // Add delay before returning invalid token response
+            if (user == null) {
+                try {
+                    Thread.sleep(2500); // Wait for 5 seconds
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Invalid verification token."));
+            }
+
+            // Check if email is already verified
+            if (user.isEmailVerified()) {
+                return ResponseEntity.ok(new MessageResponse("Email already verified. You can log in."));
+            }
+
+            // Verify the email
+            user.setEmailVerified(true);
+            user.setEmailVerificationRequired(false);
+            user.setVerificationToken(null); // Clear the token
+            user.setEnabled(true); // Enable the user account
+
+            // Save the changes
+            User updatedUser = userService.updateUser(user);
+
+            if (updatedUser == null) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Failed to update user verification status."));
+            }
+
+            return ResponseEntity.ok(new MessageResponse("Email verified successfully! You can now log in."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Failed to verify email: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/forgot-password")

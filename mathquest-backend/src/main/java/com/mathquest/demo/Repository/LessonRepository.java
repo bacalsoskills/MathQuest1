@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
-    List<Lesson> findByClassroomOrderByOrderIndexAsc(Classroom classroom);
+    List<Lesson> findByClassroom(Classroom classroom);
 
     List<Lesson> findByClassroomIdOrderByOrderIndexAsc(Long classroomId);
 

@@ -39,4 +39,9 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
     @Modifying
     @Query("DELETE FROM QuizAttempt qa WHERE qa.quiz = :quiz")
     void deleteByQuiz(Quiz quiz);
+
+    List<QuizAttempt> findByQuizAndStudent(Quiz quiz, User student);
+
+    @Query("SELECT COUNT(qa) FROM QuizAttempt qa WHERE qa.quiz = :quiz AND qa.student = :student")
+    int countByQuizAndStudent(Quiz quiz, User student);
 }

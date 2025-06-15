@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "leaderboard_entries")
+@EntityListeners(LeaderboardEntry.LeaderboardEntryListener.class)
 public class LeaderboardEntry {
 
     @Id
@@ -43,6 +44,15 @@ public class LeaderboardEntry {
     @Column(name = "entry_rank")
     private Integer rank;
 
+    @Column(name = "final_score")
+    private Double finalScore;
+
+    @Column(name = "attempts")
+    private Integer attempts;
+
+    @Column(name = "total_scores")
+    private Integer totalScores;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -62,6 +72,9 @@ public class LeaderboardEntry {
         this.bestAttemptNumber = bestAttemptNumber;
         this.rank = rank;
         this.totalQuizzesCompleted = 1;
+        this.attempts = 1;
+        this.totalScores = highestScore;
+        calculateFinalScore();
     }
 
     // Constructor for aggregated classroom leaderboard
@@ -74,6 +87,9 @@ public class LeaderboardEntry {
         this.fastestTimeSeconds = bestTime;
         this.totalQuizzesCompleted = totalQuizzes.intValue();
         this.rank = 0; // Will be set after sorting
+        this.attempts = 1;
+        this.totalScores = totalScore;
+        calculateFinalScore();
     }
 
     public void updateScore(Integer score, Integer timeSeconds, Integer attemptNumber) {
@@ -87,5 +103,30 @@ public class LeaderboardEntry {
         }
 
         this.totalQuizzesCompleted++;
+        this.attempts++;
+        this.totalScores = (this.totalScores != null ? this.totalScores : 0) + score;
+        calculateFinalScore();
+    }
+
+    private void calculateFinalScore() {
+        if (this.attempts != null && this.attempts > 0 && this.totalScores != null) {
+            this.finalScore = (double) this.totalScores / this.attempts;
+        } else {
+            this.finalScore = (double) this.highestScore;
+        }
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void onPrePersist() {
+        calculateFinalScore();
+    }
+
+    public static class LeaderboardEntryListener {
+        @PrePersist
+        @PreUpdate
+        public void onPrePersist(LeaderboardEntry entry) {
+            entry.calculateFinalScore();
+        }
     }
 }

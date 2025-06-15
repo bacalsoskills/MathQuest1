@@ -42,6 +42,12 @@ public class Lesson {
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ContentBlock> contentBlocks = new ArrayList<>();
 
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Quiz> quizzes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<LessonCompletion> lessonCompletions = new ArrayList<>();
+
     private Integer orderIndex;
 
     @Temporal(TemporalType.TIMESTAMP)
