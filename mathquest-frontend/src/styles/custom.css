@@ -1,3 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap');
+
+body {
+  font-family: "Open Sans", sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Montserrat", sans-serif;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {
@@ -62,4 +72,132 @@ html, body {
   .quiz-button {
     padding: 0.75rem 1rem;
   }
+}
+
+/* Fullscreen mode styles - only remove MainLayout margins/padding */
+.fullscreen-mode {
+  overflow: hidden;
+}
+
+/* Hide navigation elements in fullscreen */
+.fullscreen-mode nav,
+.fullscreen-mode aside,
+.fullscreen-mode header,
+.fullscreen-mode footer {
+  display: none !important;
+}
+
+.fullscreen-mode .sidebar,
+.fullscreen-mode .navbar,
+.fullscreen-mode [class*="sidebar"],
+.fullscreen-mode [class*="navbar"],
+.fullscreen-mode [class*="header"],
+.fullscreen-mode [class*="footer"] {
+  display: none !important;
+}
+
+/* Only override MainLayout to remove margins and padding */
+.fullscreen-mode main {
+  margin-left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  padding: 0 !important;
+  max-width: none !important;
+}
+
+.fullscreen-mode main > div {
+  padding: 0 !important;
+  min-height: 100vh !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  max-width: none !important;
+}
+
+/* Ensure game layout works properly in fullscreen */
+.fullscreen-mode .game-container {
+
+  margin: 0 !important;
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.fullscreen-mode .game-container > div {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure the flex layout for game area and controls works */
+.fullscreen-mode .game-container .flex.w-full.gap-6 {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  gap: 20px !important;
+}
+
+/* Game area (left side) */
+.fullscreen-mode .game-container .w-3\/4 {
+  width: 75% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Game controls (right side) */
+.fullscreen-mode .game-container .w-1\/4 {
+  width: 25% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+/* Ensure the game area container is visible */
+.fullscreen-mode .game-container .relative.w-full {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+/* Ensure the answer input form is visible and properly positioned */
+.fullscreen-mode .game-container form.flex {
+  width: 100% !important;
+  margin-top: 20px !important;
+  display: flex !important;
+  gap: 0 !important;
+}
+
+.fullscreen-mode .game-container form input {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.fullscreen-mode .game-container form button {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure all buttons in game controls are visible */
+.fullscreen-mode .game-container .w-1\/4 button {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  margin-bottom: 8px !important;
+}
+
+/* Ensure the game controls panel is visible */
+.fullscreen-mode .game-container .w-1\/4 .bg-gray-800 {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
 } 

@@ -4,8 +4,12 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import MultiplicationTable from './MultiplicationTable';
 import { FaPlay, FaPause, FaCog, FaRedo, FaTable, FaVolumeUp, FaVolumeMute, FaStar } from 'react-icons/fa';
+import { BsFullscreen } from "react-icons/bs";
 import gameService from "../../services/gameService";
 import LevelProgressionModal from "./LevelProgressionModal";
+import Modal from '../../ui/modal';
+import { Button } from '../../ui/button';
+import { Header } from '../../ui/heading';
 
 // Groq API configuration with rate limiting
 const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
@@ -91,6 +95,43 @@ const FallingGame = ({ game, onGameComplete }) => {
   // Add new state for processing falling items
   const processedItemsRef = useRef(new Set());
 
+  // Add new states for fullscreen and exit confirmation
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
+  const [nextLocation, setNextLocation] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isRestoringGame, setIsRestoringGame] = useState(false);
+  const [showRestartConfirmModal, setShowRestartConfirmModal] = useState(false);
+
+  // Add state for unlocked levels
+  const [unlockedLevels, setUnlockedLevels] = useState(1);
+  const [loadingUnlockedLevels, setLoadingUnlockedLevels] = useState(false);
+
+  // localStorage key for game state
+  const lsKey = `fallingGame-${game?.id || 'default'}`;
+
+  // Track previous game state to prevent unnecessary parent notifications
+  const previousGameStateRef = useRef({ gameStarted: false, gameOver: false });
+
+  // Notify parent when game state changes
+  useEffect(() => {
+    const currentState = { gameStarted, gameOver };
+    const previousState = previousGameStateRef.current;
+    
+    // Only notify parent if state actually changed
+    if (currentState.gameStarted !== previousState.gameStarted || 
+        currentState.gameOver !== previousState.gameOver) {
+      
+      if (onGameComplete && typeof onGameComplete === 'function') {
+        // Pass game state to parent
+        onGameComplete(null, currentState);
+      }
+      
+      // Update the ref with current state
+      previousGameStateRef.current = currentState;
+    }
+  }, [gameStarted, gameOver, onGameComplete]);
+
   // Cache validation function
   const isCacheValid = useCallback((topic, level) => {
     const cacheKey = `${topic}-${level}`;
@@ -156,9 +197,13 @@ const FallingGame = ({ game, onGameComplete }) => {
 
     // Don't submit zero scores
     if (score <= 0) {
-      console.log("Not submitting zero score");
       return;
     }
+
+    // Mark that game is over and clear saved state
+    hasLeftGameRef.current = true;
+    localStorage.removeItem(lsKey);
+    console.log('[FallingGame] Game over - clearing saved state');
 
     try {
       const currentDate = new Date().toISOString();
@@ -166,7 +211,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         gameId: game.id,
         score: score,
         level: currentLevel,
-        timeTaken: Math.floor(gameTime), // Changed from timeSpent to timeTaken to match API
+        timeSpent: Math.floor(gameTime), // Changed from timeTaken to timeSpent to match gameService
         levelAchieved: currentLevel,
         playedAt: currentDate,
         studentId: currentUser.id,
@@ -179,9 +224,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       
       // First try the API submission
       try {
-        console.log("Submitting score data:", gameScoreData);
         const result = await gameService.submitGameScore(gameScoreData);
-        console.log("Score submission result:", result);
         
         // Save score data and show modal with properly formatted data
         setLastScoreData({
@@ -237,7 +280,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       console.error("Failed to save score:", error);
       toast.error("Failed to save your score. Please try again.");
     }
-  }, [currentUser, game, score, currentLevel, gameTime, onGameComplete]);
+  }, [currentUser, game, score, currentLevel, gameTime, onGameComplete, lsKey]);
 
   const parseGroqApiContent = (content) => {
     // Remove markdown code block if present
@@ -282,7 +325,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       else if (topicLower.includes('subtract')) operationKeyword = 'subtract';
       else if (topicLower.includes('fraction')) operationKeyword = 'fraction';
       else if (topicLower.includes('algebra')) operationKeyword = 'algebra';
-      // Log the request payload for debugging
+      
       const requestPayload = {
         model: GROQ_MODEL,
         messages: [
@@ -299,8 +342,6 @@ const FallingGame = ({ game, onGameComplete }) => {
         max_tokens: 2048,
         stream: false
       };
-
-      console.log('Groq API Request Payload:', requestPayload);
 
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -326,7 +367,6 @@ const FallingGame = ({ game, onGameComplete }) => {
       apiState.lastCallTime = now;
 
       const data = await response.json();
-      console.log('Groq API Response:', data);
       
       if (!data || !data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
         console.error('Invalid API Response Structure:', data);
@@ -335,9 +375,8 @@ const FallingGame = ({ game, onGameComplete }) => {
 
       try {
         const content = data.choices[0].message.content;
-        console.log('Raw API Content:', content);
         const parsedContent = parseGroqApiContent(content);
-        console.log('Parsed Content:', parsedContent);
+        
         // Filter problems to only include those matching the topic/operation
         let filteredProblems = parsedContent;
         if (Array.isArray(parsedContent)) {
@@ -389,6 +428,8 @@ const FallingGame = ({ game, onGameComplete }) => {
     }
     try {
       setIsLoadingProblems(true);
+      // Clear active problems during loading to prevent them from falling
+      setActiveProblems([]);
       apiState.isGenerating = true;
       const topicLower = game.topic.toLowerCase();
       const problemCount = TOTAL_PROBLEMS;
@@ -572,14 +613,6 @@ const FallingGame = ({ game, onGameComplete }) => {
       BASE_ACTIVE_PROBLEMS + Math.floor((level - 1) / 2)
     );
     const speed = 100 / (fallTime / 16.67); // Convert fall time to speed
-    console.log('[FallingGame] Level Timing Details:', {
-      level,
-      fallTime: `${fallTime/1000}s`,
-      activeProblems,
-      speed: `${speed.toFixed(2)} units/frame`,
-      baseFallTime: `${BASE_FALL_TIME/1000}s`,
-      minFallTime: `${minFallTime/1000}s`
-    });
     return { fallTime, activeProblems, speed };
   }, []);
 
@@ -593,7 +626,7 @@ const FallingGame = ({ game, onGameComplete }) => {
     
     // Animation loop
     const gameLoop = (timestamp) => {
-      if (isPaused || gameOver || !gameStarted) return;
+      if (isPaused || gameOver || !gameStarted || isLoadingProblems) return;
       
       setActiveProblems(prevActive => {
         const updated = prevActive.map(p => {
@@ -655,19 +688,6 @@ const FallingGame = ({ game, onGameComplete }) => {
                 speed: speed
               };
             });
-            console.log('[FallingGame] Spawning New Items:', {
-              level: currentLevel,
-              currentActiveCount: activeProblems.length,
-              maxActiveCount: maxActiveProblems,
-              spawningCount: toAdd.length,
-              items: toAdd.map(item => ({
-                id: item.id,
-                question: item.question,
-                startY: item.y,
-                x: item.x,
-                speed: item.speed
-              }))
-            });
             setActiveProblems(prev => [...prev, ...toAdd]);
             usedProblemsRef.current.push(...toAdd.map(p => p.id));
             lastSpawnTimeRef.current = currentTime;
@@ -682,7 +702,7 @@ const FallingGame = ({ game, onGameComplete }) => {
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [gameStarted, gameOver, problems, currentLevel, activeProblems.length, isPaused, submitScore, calculateLevelTiming]);
+  }, [gameStarted, gameOver, problems, currentLevel, activeProblems.length, isPaused, submitScore, calculateLevelTiming, isLoadingProblems]);
 
   const levelUp = useCallback(() => {
     if (currentLevel >= MAX_LEVEL) {
@@ -696,7 +716,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       gameId: game.id,
       score: score,
       level: currentLevel,
-      timeTaken: Math.floor(gameTime),
+      timeSpent: Math.floor(gameTime),
       levelAchieved: currentLevel,
       playedAt: currentDate,
       studentId: currentUser?.id,
@@ -730,7 +750,18 @@ const FallingGame = ({ game, onGameComplete }) => {
       });
   }, [currentUser, game, currentLevel, score, gameTime, submitScore]);
 
-  const startGame = () => {
+  const handleStayOnPage = () => {
+    console.log('[FallingGame] User chose to stay on page');
+    setNextLocation(null);
+    setShowExitConfirmModal(false);
+  };
+
+  const handleRestartConfirm = () => {
+    console.log('[FallingGame] Restart confirmed - clearing game state');
+    setShowRestartConfirmModal(false);
+    // Clear saved state and restart fresh
+    hasLeftGameRef.current = true;
+    localStorage.removeItem(lsKey);
     setGameStarted(false);
     setActiveProblems([]);
     setProblems([]);
@@ -744,8 +775,8 @@ const FallingGame = ({ game, onGameComplete }) => {
     setIsPaused(false);
     setUserAnswer('');
     setGameTime(0);
-    processedItemsRef.current = new Set(); // Reset processed items ref
-    setDeductedProblems(new Set()); // Reset deducted problems
+    processedItemsRef.current = new Set();
+    setDeductedProblems(new Set());
     initialProblemGenerationDone.current = false;
     apiState.isGenerating = false;
     solvedProblemsRef.current = new Set();
@@ -768,6 +799,184 @@ const FallingGame = ({ game, onGameComplete }) => {
     });
   };
 
+  const handleExitGameConfirm = () => {
+    console.log('[FallingGame] Exit Game confirmed - starting exit process');
+    setShowExitConfirmModal(false);
+    setIsPaused(false); // Close the pause modal
+    console.log('[FallingGame] Pause modal closed, submitting score...');
+    submitScore();
+    setGameOver(true);
+    setGameStarted(false);
+    
+    // Mark that user has left the game and clear saved state
+    hasLeftGameRef.current = true;
+    localStorage.removeItem(lsKey);
+    console.log('[FallingGame] Game state reset, marked as left game, attempting navigation...');
+    
+    // Navigate back to the previous page or classroom
+    if (window.history.length > 1) {
+      console.log('[FallingGame] Using window.history.back() to navigate');
+      window.history.back();
+    } else {
+      console.log('[FallingGame] No history available, navigating to /student/classrooms');
+      // If no history, navigate to a default location
+      window.location.href = '/student/classrooms';
+    }
+  };
+
+  // Track if this is a page refresh vs returning from game over
+  const isPageRefreshRef = useRef(true);
+  const hasLeftGameRef = useRef(false);
+
+  // Check if this is a page refresh on component mount
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log('[FallingGame] beforeunload detected - marking as page refresh');
+      isPageRefreshRef.current = true;
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Check if we're returning from a completed game (not a refresh)
+    const savedState = localStorage.getItem(lsKey);
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        // If the saved state shows game over or we've left the game, this is not a refresh
+        if (parsed.gameOver || parsed.hasLeftGame) {
+          console.log('[FallingGame] Detected game over or left game state - not a refresh');
+          isPageRefreshRef.current = false;
+          hasLeftGameRef.current = true;
+        }
+      } catch (error) {
+        console.error('Error parsing saved state:', error);
+      }
+    }
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [lsKey]);
+
+  const startGame = () => {
+    // Only load saved state if this is a page refresh AND the previous game didn't end
+    const savedState = localStorage.getItem(lsKey);
+    let savedScore = 0;
+    let savedLevel = 1;
+    let savedLives = MAX_LIVES;
+    let savedProblemsSolved = 0;
+    let savedGameTime = 0;
+    let savedAnswers = '';
+    let hasPreviousProgress = false;
+    let shouldRestoreState = false;
+    
+    if (savedState && isPageRefreshRef.current && !hasLeftGameRef.current) {
+      try {
+        const parsed = JSON.parse(savedState);
+        console.log('[FallingGame] Checking saved state:', {
+          isPageRefresh: isPageRefreshRef.current,
+          hasLeftGame: hasLeftGameRef.current,
+          savedState: parsed
+        });
+        
+        // Don't restore if the previous game ended
+        if (parsed.gameOver) {
+          console.log('[FallingGame] Previous game ended, not restoring state');
+          shouldRestoreState = false;
+          // Clear the saved state since game is over
+          localStorage.removeItem(lsKey);
+        } else {
+          shouldRestoreState = true;
+          savedScore = parsed.savedScore || 0;
+          savedLevel = parsed.savedLevel || 1;
+          savedLives = parsed.savedLives || MAX_LIVES;
+          savedProblemsSolved = parsed.savedProblemsSolved || 0;
+          savedGameTime = parsed.savedGameTime || 0;
+          savedAnswers = parsed.savedAnswers || '';
+          
+          // Check if there was previous progress
+          hasPreviousProgress = savedScore > 0 || savedLevel > 1;
+          
+          // Show notification if we restored saved state
+          if (hasPreviousProgress) {
+            console.log('[FallingGame] Restoring previous progress from page refresh');
+            toast.success('Your previous progress has been restored!');
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing saved state:', error);
+        localStorage.removeItem(lsKey);
+        shouldRestoreState = false;
+      }
+    } else {
+      console.log('[FallingGame] Not restoring progress:', {
+        hasSavedState: !!savedState,
+        isPageRefresh: isPageRefreshRef.current,
+        hasLeftGame: hasLeftGameRef.current
+      });
+      shouldRestoreState = false;
+    }
+
+    // If we shouldn't restore state, use default values
+    if (!shouldRestoreState) {
+      savedScore = 0;
+      savedLevel = 1;
+      savedLives = MAX_LIVES;
+      savedProblemsSolved = 0;
+      savedGameTime = 0;
+      savedAnswers = '';
+      hasPreviousProgress = false;
+    }
+
+    setGameStarted(false);
+    setActiveProblems([]);
+    setProblems([]);
+    setScore(savedScore);
+    setLives(savedLives);
+    setCurrentLevel(savedLevel);
+    setSpeedMultiplier(1);
+    setProblemsSolvedThisLevel(savedProblemsSolved);
+    setTargetProblemsPerLevel(PROBLEMS_PER_LEVEL);
+    setGameOver(false);
+    setIsPaused(false);
+    setUserAnswer(savedAnswers);
+    setGameTime(savedGameTime);
+    processedItemsRef.current = new Set(); // Reset processed items ref
+    setDeductedProblems(new Set()); // Reset deducted problems
+    initialProblemGenerationDone.current = false;
+    apiState.isGenerating = false;
+    solvedProblemsRef.current = new Set();
+    usedProblemsRef.current = [];
+    apiState.lastCallTime = 0;
+    apiState.callCount = 0;
+    
+    // If there was previous progress, show loading and auto-start
+    if (hasPreviousProgress) {
+      setIsRestoringGame(true);
+      generateProblems().then(() => {
+        setIsRestoringGame(false);
+        setGameStarted(true);
+        lastSpawnTimeRef.current = performance.now();
+      });
+    } else {
+      // Normal countdown for new game
+      setCountdown(3);
+      generateProblems().then(() => {
+        let count = 3;
+        const countdownInterval = setInterval(() => {
+          count--;
+          setCountdown(count);
+          if (count <= 0) {
+            clearInterval(countdownInterval);
+            setCountdown(null);
+            setGameStarted(true);
+            lastSpawnTimeRef.current = performance.now();
+          }
+        }, 1000);
+      });
+    }
+  };
+
   let submitted = false;
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -778,18 +987,6 @@ const FallingGame = ({ game, onGameComplete }) => {
     
     const normalizedAnswer = userAnswer.trim().replace(/\s+/g, '');
     
-    // Add detailed logging for answer matching
-    console.log('[FallingGame] Answer submission details:', {
-      userAnswer: normalizedAnswer,
-      activeProblems: activeProblems.map(p => ({
-        id: p.id,
-        question: p.question,
-        answer: p.answer,
-        sequenceIndex: p.sequenceIndex,
-        currentSequenceIndex
-      }))
-    });
-
     const matchIndex = activeProblems.findIndex(problem => {
       const problemAnswer = problem.answer.replace(/\s+/g, '');
       const normalizeNumber = (str) => {
@@ -808,32 +1005,18 @@ const FallingGame = ({ game, onGameComplete }) => {
       const normalizedUserAnswer = normalizeNumber(normalizedAnswer);
       const normalizedProblemAnswer = normalizeNumber(problemAnswer);
       
-      // Add logging for answer normalization
-      console.log('[FallingGame] Answer normalization:', {
-        problemId: problem.id,
-        originalUserAnswer: normalizedAnswer,
-        normalizedUserAnswer,
-        originalProblemAnswer: problemAnswer,
-        normalizedProblemAnswer,
-        isMatch: normalizedUserAnswer === normalizedProblemAnswer
-      });
-
       return normalizedUserAnswer === normalizedProblemAnswer;
     });
 
     if (matchIndex !== -1) {
       const solvedProblem = activeProblems[matchIndex];
-      console.log('[FallingGame] Answer submitted:', {
-        problemId: solvedProblem.id,
-        problemSequenceIndex: solvedProblem.sequenceIndex,
-        currentSequenceIndex,
+      console.log('[FallingGame] Correct answer:', {
         question: solvedProblem.question,
         userAnswer: normalizedAnswer,
         correctAnswer: solvedProblem.answer
       });
 
       // Accept any correct answer
-      console.log('[FallingGame] Correct answer');
       solvedProblemsRef.current.add(solvedProblem.id);
       setScore(prev => prev + (10 * currentLevel));
       setActiveProblems(prev => prev.map((p, idx) => idx === matchIndex ? { ...p, status: 'correct' } : p));
@@ -852,18 +1035,9 @@ const FallingGame = ({ game, onGameComplete }) => {
     } else {
       // Wrong answer - deduct life only if not already deducted
       const wrongProblem = activeProblems.find(p => !deductedProblems.has(p.id));
-      console.log('[FallingGame] Wrong answer submitted:', {
-        wrongProblemId: wrongProblem?.id,
-        wrongProblemSequenceIndex: wrongProblem?.sequenceIndex,
-        currentSequenceIndex,
-        timeSinceLastDeduction: Date.now() - lastDeductionTime,
-        alreadyDeducted: wrongProblem ? deductedProblems.has(wrongProblem.id) : false,
-        userAnswer: normalizedAnswer,
-        availableAnswers: activeProblems.map(p => p.answer)
-      });
-
+      
       if (wrongProblem) {
-        console.log('[FallingGame] Deducting life for wrong answer');
+        console.log('[FallingGame] Wrong answer - deducting life');
         // Add to deducted problems immediately
         setDeductedProblems(prev => {
           const newSet = new Set(prev);
@@ -873,7 +1047,6 @@ const FallingGame = ({ game, onGameComplete }) => {
         
         setLives(l => {
           const newLives = l - 1;
-          console.log('[FallingGame] Life deducted from wrong answer. New lives:', newLives);
           if (newLives <= 0) {
             setGameOver(true);
             submitScore();
@@ -883,8 +1056,6 @@ const FallingGame = ({ game, onGameComplete }) => {
         });
         
         setLastDeductionTime(Date.now());
-      } else {
-        console.log('[FallingGame] Skipped life deduction for wrong answer: No undeducted problems available');
       }
       
       setActiveProblems(prev => prev.map(p => ({ ...p, status: 'incorrect' })));
@@ -967,9 +1138,11 @@ const FallingGame = ({ game, onGameComplete }) => {
   const handleLevelSelect = (selectedLevel) => {
     console.log('[FallingGame] Manual Level Change:', {
       fromLevel: currentLevel,
-      toLevel: selectedLevel,
-      timestamp: new Date().toISOString()
+      toLevel: selectedLevel
     });
+    
+    // Close the level selector modal
+    setShowLevelSelector(false);
     
     setCurrentLevel(selectedLevel);
     setProblemsSolvedThisLevel(0);
@@ -996,14 +1169,222 @@ const FallingGame = ({ game, onGameComplete }) => {
     setGameStarted(false);
   };
 
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (gameStarted && !showProgressModal) {
+      const stateToSave = {
+        savedScore: score,
+        savedLevel: currentLevel,
+        savedLives: lives,
+        savedProblemsSolved: problemsSolvedThisLevel,
+        savedGameTime: gameTime,
+        savedAnswers: userAnswer,
+        gameOver: gameOver, // Track if game is over
+        hasLeftGame: hasLeftGameRef.current, // Track if user has left the game
+        lastSaved: new Date().toISOString()
+      };
+      localStorage.setItem(lsKey, JSON.stringify(stateToSave));
+      setHasUnsavedChanges(false);
+    }
+  }, [score, currentLevel, lives, problemsSolvedThisLevel, gameTime, userAnswer, lsKey, gameStarted, showProgressModal, gameOver]);
+
+  // Track unsaved changes
+  useEffect(() => {
+    if (gameStarted && !gameOver) {
+      setHasUnsavedChanges(true);
+    }
+  }, [score, currentLevel, lives, problemsSolvedThisLevel, gameTime, userAnswer, gameStarted, gameOver]);
+
+  // Handle beforeunload event (page refresh/close)
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (gameStarted && !gameOver) {
+        console.log('[FallingGame] beforeunload event triggered - game is active, showing confirmation');
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+      console.log('[FallingGame] beforeunload event triggered - game not active, allowing navigation');
+    };
+
+    const handlePopState = (e) => {
+      if (gameStarted && !gameOver) {
+        console.log('[FallingGame] popstate event triggered - game is active, preventing navigation');
+        e.preventDefault();
+        setNextLocation(window.location.href);
+        setShowExitConfirmModal(true);
+        window.history.pushState(null, '', window.location.href);
+      } else {
+        console.log('[FallingGame] popstate event triggered - game not active, allowing navigation');
+      }
+    };
+
+    if (gameStarted && !gameOver) {
+      console.log('[FallingGame] Adding navigation protection - game is active');
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      window.addEventListener('popstate', handlePopState);
+      window.history.pushState(null, '', window.location.href);
+    } else {
+      console.log('[FallingGame] Removing navigation protection - game not active');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      console.log('[FallingGame] Cleanup: removing navigation event listeners');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [gameStarted, gameOver]);
+
+  // Handle navigation attempts (sidebar/navbar clicks)
+  useEffect(() => {
+    const handleNavigationAttempt = (e) => {
+      if (gameStarted && !gameOver) {
+        console.log('[FallingGame] Navigation attempt detected:', {
+          target: e.target,
+          href: e.target.href,
+          tagName: e.target.tagName,
+          className: e.target.className
+        });
+        e.preventDefault();
+        e.stopPropagation();
+        setNextLocation(e.target.href || e.target.getAttribute('href'));
+        setShowExitConfirmModal(true);
+      } else {
+        console.log('[FallingGame] Navigation attempt detected - game not active, allowing navigation');
+      }
+    };
+
+    if (gameStarted && !gameOver) {
+      console.log('[FallingGame] Adding navigation attempt listeners - game is active');
+      // Listen for clicks on navigation elements
+      const handleClick = (e) => {
+        // Check for various navigation elements
+        const target = e.target.closest('a, button[data-nav], [role="link"], .nav-link, .sidebar-link, [href]');
+        
+        if (target) {
+          const href = target.href || target.getAttribute('href');
+          const isExternalLink = href && !href.includes(window.location.origin + '/game/');
+          const isNavigationElement = target.tagName === 'A' || 
+                                     target.hasAttribute('data-nav') || 
+                                     target.getAttribute('role') === 'link' ||
+                                     target.className.includes('nav-link') ||
+                                     target.className.includes('sidebar-link');
+          
+          if (isNavigationElement && isExternalLink) {
+            console.log('[FallingGame] Navigation element clicked:', {
+              element: target,
+              href: href,
+              tagName: target.tagName,
+              className: target.className
+            });
+            handleNavigationAttempt(e);
+          }
+        }
+      };
+      
+      document.addEventListener('click', handleClick, true);
+      
+      return () => {
+        console.log('[FallingGame] Cleanup: removing navigation attempt listeners');
+        document.removeEventListener('click', handleClick, true);
+      };
+    }
+
+    return () => {
+      console.log('[FallingGame] Cleanup: removing navigation attempt listeners');
+    };
+  }, [gameStarted, gameOver]);
+
+  const handleLeavePage = () => {
+    console.log('[FallingGame] Leave Page confirmed - navigating to:', nextLocation);
+    if (nextLocation) {
+      window.location.href = nextLocation;
+    }
+    setShowExitConfirmModal(false);
+    setNextLocation(null);
+  };
+
+  // Fullscreen functionality
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+        // Hide navbar and sidebar in fullscreen
+        document.body.classList.add('fullscreen-mode');
+      }).catch(err => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+        // Show navbar and sidebar when exiting fullscreen
+        document.body.classList.remove('fullscreen-mode');
+      }).catch(err => {
+        console.error('Error attempting to exit fullscreen:', err);
+      });
+    }
+  };
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isInFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(isInFullscreen);
+      if (isInFullscreen) {
+        document.body.classList.add('fullscreen-mode');
+      } else {
+        document.body.classList.remove('fullscreen-mode');
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      // Clean up on unmount
+      document.body.classList.remove('fullscreen-mode');
+    };
+  }, []);
+
+  // Add function to fetch unlocked levels
+  const fetchUnlockedLevels = useCallback(async () => {
+    if (!currentUser || !game?.id) return;
+    
+    setLoadingUnlockedLevels(true);
+    try {
+      const levelData = await gameService.getStudentGameLevel(game.id, currentUser.id);
+      let unlockedLevel = 1;
+      
+      if (typeof levelData === 'object' && levelData !== null) {
+        unlockedLevel = levelData.level_achieved || levelData.level || 1;
+      } else if (typeof levelData === 'number') {
+        unlockedLevel = levelData;
+      }
+      
+      setUnlockedLevels(Math.min(unlockedLevel, MAX_LEVEL));
+    } catch (error) {
+      console.error('Error fetching unlocked levels:', error);
+      setUnlockedLevels(1);
+    } finally {
+      setLoadingUnlockedLevels(false);
+    }
+  }, [currentUser, game]);
+
+  // Update the level selector modal to fetch unlocked levels when opened
+  const handleShowLevelSelector = () => {
+    setShowLevelSelector(true);
+    fetchUnlockedLevels();
+  };
+
   // Main UI
   if (!game) {
     return <div className="text-center p-8 text-xl">Loading game data...</div>;
   }
 
   return (
-    // <div className="w-full min-h-screen bg-gray-800 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
-    <div className="w-full h-screen bg-gray-800 text-white flex flex-col items-center justify-between p-4 relative overflow-hidden">
+    <div className="px-4 sm:px-6  game-container">
+      <div className="mx-auto">
       <audio ref={audioRef} src="/game-bg-music.mp3" loop autoPlay style={{ display: 'none' }} />
       
       {/* Progress Modal - render at top level */}
@@ -1018,67 +1399,59 @@ const FallingGame = ({ game, onGameComplete }) => {
         />
       )}
       
-      {gameStarted && !gameOver && (
-          <div className="w-full  p-4 bg-gray-900 shadow-lg flex justify-between items-center mb-6 rounded-lg">
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="text-xs sm:text-sm md:text-base">LEVEL: <span className="font-bold text-yellow-400">{currentLevel}</span></div>
-            <button
-              onClick={() => setShowLevelSelector(true)}
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-            >
-              Change Level
-            </button>
-            {/* <div className="text-xs sm:text-sm md:text-base">Topic: <span className="font-bold text-yellow-400">
-              {isMultiplicationOrDivision ? (selectedTableForProblems === 'random' ? `Random ${game.topic.includes('multiply') ? '×' : '÷'}` : `${selectedTableForProblems}${game.topic.includes('multiply') ? '×' : '÷'}`) : game.topic.split(' ')[0]}
-            </span></div> */}
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="text-xs sm:text-sm text-gray-400">PROGRESS</div>
-            <div className="w-24 sm:w-32 h-4 bg-gray-700 rounded-full overflow-hidden border border-gray-600">
-              <div 
-                className="h-full bg-green-500 transition-all duration-300 ease-in-out"
-                style={{ width: `${Math.min(100, (problemsSolvedThisLevel / targetProblemsPerLevel) * 100)}%` }}
-              ></div>
-            </div>
-            <div className="text-xs sm:text-sm font-bold">{problemsSolvedThisLevel}/{targetProblemsPerLevel}</div>
-          </div>
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <button 
-              onClick={toggleSettingsModal} 
-              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-700 rounded-md hover:bg-gray-600 text-xs sm:text-sm text-white flex items-center"
-            >
-              <FaCog className="mr-1 sm:mr-2" size={12} sm={14} /> Settings
-            </button>
-            <button 
-              onClick={togglePause} 
-              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 rounded-md hover:bg-blue-500 text-xs sm:text-sm text-white flex items-center"
-            >
-              {isPaused ? <><FaPlay className="mr-1 sm:mr-2" size={12} sm={14}/> Resume</> : <><FaPause className="mr-1 sm:mr-2" size={12} sm={14}/> Pause</>}
-            </button>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-sm sm:text-base flex items-center">SCORE: <FaStar className="mx-1 text-yellow-400" /> <span className="font-bold text-yellow-400">{score}</span></div>
-            <div className="text-sm sm:text-base">LIVES: <span className="text-red-500">{'❤️'.repeat(lives) || '💔'}</span></div>
-          </div>
-        </div>
-      )}
-
-      <div className={`w-full max-w-3xl mx-auto flex flex-col items-center justify-center flex-grow`}>
+      <div className={`w-full mx-auto flex flex-col items-center justify-center md:flex-grow`}>
         {!gameStarted && !gameOver && countdown === null && (
-          <div className="text-center my-8 p-8 bg-gray-700 rounded-lg shadow-xl">
-            <h2 className="text-3xl font-bold mb-3 text-yellow-400">{game?.name || 'Falling Math Game'}</h2>
-            <p className="text-gray-300 mb-6">{game?.instructions || 'Solve the math problems before they fall off the screen!'}</p>
-            <button
-              onClick={startGame}
-              className="px-8 py-4 bg-green-500 text-white rounded-lg text-xl font-bold hover:bg-green-600 transition-colors"
-            >
-              Start Game
-            </button>
+          <div className="text-center my-8 p-8  md:mt-36 rounded-2xl shadow-xl dark:bg-transparent sm:p-6 lg:p-8 flex flex-col min-h-[200px] sm:min-h-[260px] relative border border-white/10 ">
+            <Header type="h1" fontSize="5xl"  weight="semibold" className="text-yellow-500 py-3 ">
+              {game?.name || 'Falling Math Game'}
+            </Header>
+            <p className="dark:text-gray-300 text-gray-900 mb-3">{game?.instructions || 'Solve the math problems before they fall off the screen!'}</p>
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex justify-center gap-2">
+                <Button
+                  onClick={toggleFullscreen}
+                  variant="link"
+                  size="sm"
+                >
+                  {/* <BsFullscreen className="mr-2" /> */}
+                  {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (onGameComplete) {
+                      onGameComplete(null, { showLeaderboard: true });
+                    }
+                  }}
+                  variant="link"
+                  size="sm"
+                >
+                  View Leaderboard
+                </Button>
+                <Button
+                  onClick={handleShowLevelSelector}
+                  variant="link"
+                  size="sm"
+                >
+                  View Level
+                </Button>
+              </div>
+              <div className="">
+                <Button
+                  onClick={startGame}
+                  variant="default"
+                  size="sm"
+                  rounded="full"
+                  className="w-full"
+                >
+                  Start Game
+                </Button>
+              </div>
+            </div>
           </div>
         )}
         
         {countdown !== null && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
             <div className="text-center">
               <h2 className="text-6xl font-bold text-white mb-4">Starting in</h2>
               <div className="text-8xl font-bold text-yellow-400 animate-pulse">
@@ -1088,125 +1461,203 @@ const FallingGame = ({ game, onGameComplete }) => {
           </div>
         )}
         
-        {gameStarted && !gameOver && !isPaused && (
-          <>
-            <div
-              ref={gameAreaRef}
-              className="relative w-full h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)] bg-gray-800 rounded-lg mb-4 overflow-hidden"
-            >
-              {activeProblems.map(problem => {
-                let bgColor = "from-pink-500 to-purple-600";
-                let borderColor = "border-pink-300";
-                
-                // Visual feedback based on status and sequence
-                if (problem.status === 'correct') {
-                  bgColor = "from-green-500 to-green-600";
-                  borderColor = "border-green-300";
-                } else if (problem.status === 'incorrect') {
-                  bgColor = "from-red-500 to-red-600";
-                  borderColor = "border-red-300";
-                } else if (problem.status === 'warning') {
-                  bgColor = "from-orange-500 to-orange-600";
-                  borderColor = "border-orange-300";
-                } else if (problem.sequenceIndex === currentSequenceIndex) {
-                  // Highlight current sequence problem
-                  bgColor = "from-blue-500 to-blue-600";
-                  borderColor = "border-blue-300";
-                }
-                
-                return (
-                  <div
-                    key={problem.id}
-                    className={`absolute px-3 py-2 sm:px-4 sm:py-3 bg-gradient-to-br ${bgColor} text-white rounded-lg shadow-lg border-2 ${borderColor} transform transition-transform duration-100 hover:scale-110`}
-                    style={{
-                      left: `${problem.x}%`,
-                      top: `${problem.y}%`,
-                      transform: 'translate(-50%, -50%)',
-                      fontSize: problem.question.length > 10 ? '1rem' : '1.25rem',
-                      fontWeight: 'bold',
-                      minWidth: '80px',
-                      textAlign: 'center',
-                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
-                    }}
-                  >
-                    <span className="font-bold">{problem.question}</span>
-                  </div>
-                );
-              })}
+        {isRestoringGame && (
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
+              <h2 className="text-2xl font-bold text-white mb-2">Loading...</h2>
+              <p className="text-lg text-gray-300">Getting back from the previous game</p>
             </div>
-            
-            <form onSubmit={handleSubmit} className="flex items-center w-full max-w-md mt-auto mb-4">
-              <input
-                type="text"
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                className="flex-1 px-4 py-3 bg-white text-gray-900 border-2 border-blue-400 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-500 text-lg"
-                placeholder={getPlaceholderText()}
-                autoFocus
-                disabled={isPaused || gameOver}
-              />
-              <button
-                type="submit"
-                className="px-6 py-3 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 transition-colors border-2 border-blue-600 border-l-0 text-lg font-semibold"
-                disabled={isPaused || gameOver || !userAnswer.trim()}
+          </div>
+        )}
+        
+        {gameStarted && !gameOver && !isPaused && (
+          <div className="flex flex-col lg:flex-row w-full gap-6">
+            {/* Game Area - Full width on small screens, 3/4 on large screens */}
+            <div className="w-full lg:w-3/4">
+              <div
+                ref={gameAreaRef}
+                className="relative w-full h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)] bg-gray-50 shadow-lg rounded-lg mb-4 overflow-hidden"
               >
-                Submit
-              </button>
-            </form>
-            <div className="w-full max-w-3xl mx-auto mt-8">
-              <h4 className="text-white text-sm mb-2">[DEV] All Problems (for debugging):</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-200 bg-gray-900 p-2 rounded max-h-40 overflow-y-auto">
-                {problems.map((p, i) => (
-                  <div key={p.id} className="truncate">
-                    {i + 1}. {p.question} = <span className="text-green-300">{p.answer}</span>
+                {activeProblems.map(problem => {
+                  let bgColor = "from-pink-500 to-purple-600";
+                  let borderColor = "border-pink-300";
+                  
+                  // Visual feedback based on status and sequence
+                  if (problem.status === 'correct') {
+                    bgColor = "from-green-500 to-green-600";
+                    borderColor = "border-green-300";
+                  } else if (problem.status === 'incorrect') {
+                    bgColor = "from-red-500 to-red-600";
+                    borderColor = "border-red-300";
+                  } else if (problem.status === 'warning') {
+                    bgColor = "from-orange-500 to-orange-600";
+                    borderColor = "border-orange-300";
+                  } else if (problem.sequenceIndex === currentSequenceIndex) {
+                    // Highlight current sequence problem
+                    bgColor = "from-blue-500 to-blue-600";
+                    borderColor = "border-blue-300";
+                  }
+                  
+                  return (
+                    <div
+                      key={problem.id}
+                      className={`absolute px-3 py-2 sm:px-4 sm:py-3 bg-gradient-to-br ${bgColor} text-white rounded-lg shadow-lg border-2 ${borderColor} transform transition-transform duration-100 hover:scale-110`}
+                      style={{
+                        left: `${problem.x}%`,
+                        top: `${problem.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        fontSize: problem.question.length > 10 ? '1rem' : '1.25rem',
+                        fontWeight: 'bold',
+                        minWidth: '80px',
+                        textAlign: 'center',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+                      }}
+                    >
+                      <span className="font-bold">{problem.question}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <form onSubmit={handleSubmit} className="flex items-center w-full  mt-auto mb-4">
+                <input
+                  type="text"
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  className="flex-1 px-4 py-3 bg-white text-gray-900 border-2 border-blue-400 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-500 text-lg"
+                  placeholder={getPlaceholderText()}
+                  autoFocus
+                  disabled={isPaused || gameOver}
+                />
+                <button
+                  type="submit"
+                  className="px-6 py-3 h-14 text-white bg-gradient-to-b from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] hover:opacity-70 dark:text-white dark:bg-gradient-to-b dark:from-[#18C8FF] dark:via-[#4B8CFF] dark:to-[#6D6DFF] dark:hover:opacity-70 rounded-r-md"
+                  disabled={isPaused || gameOver || !userAnswer.trim()}
+                >
+                  Submit
+                </button>
+              </form>
+            </div>
+
+            {/* Game Controls - Full width on small screens, 1/4 on large screens */}
+            <div className="w-full lg:w-1/4">
+              <div className="bg-gray-50 rounded-lg p-4 shadow-lg h-fit">
+                <Header type="h3" variant="default" fontSize="2xl" className="mb-6 text-primary text-center">Game Controls</Header>
+                
+                {/* Level Info */}
+                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-800">Current Level</div>
+                    <div className="text-2xl font-bold text-yellow-500">{currentLevel}</div>
                   </div>
-                ))}
+                </div>
+
+                {/* Score */}
+                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-800 flex items-center justify-center">
+                      <FaStar className="mr-1 text-yellow-500" /> Score
+                    </div>
+                    <div className="text-2xl font-bold text-yellow-500">{score}</div>
+                  </div>
+                </div>
+
+                {/* Lives */}
+                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-800">Lives</div>
+                    <div className="text-2xl text-red-500">{'❤️'.repeat(lives) || '💔'}</div>
+                  </div>
+                </div>
+
+                {/* Progress */}
+                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-800 mb-2">Progress</div>
+                    <div className="w-full h-3 bg-gray-600 rounded-full overflow-hidden border border-gray-500">
+                      <div 
+                        className="h-full bg-green-500 transition-all duration-300 ease-in-out"
+                        style={{ width: `${Math.min(100, (problemsSolvedThisLevel / targetProblemsPerLevel) * 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-sm font-bold mt-1">{problemsSolvedThisLevel}/{targetProblemsPerLevel}</div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  <button
+                    onClick={handleShowLevelSelector}
+                    className="w-full px-3 py-2 bg-blue-400 text-white rounded hover:bg-blue-600 text-sm font-medium"
+                  >
+                    Change Level
+                  </button>
+                  <button 
+                    onClick={toggleSettingsModal} 
+                    className="w-full px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium flex items-center justify-center"
+                  >
+                    <FaCog className="mr-2" size={14} /> Settings
+                  </button>
+                  <button 
+                    onClick={togglePause} 
+                    className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium flex items-center justify-center"
+                  >
+                    {isPaused ? <><FaPlay className="mr-2" size={14}/> Resume</> : <><FaPause className="mr-2" size={14}/> Pause</>}
+                  </button>
+                  <button
+                    onClick={toggleFullscreen}
+                    className="w-full px-3 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 text-sm font-medium flex items-center justify-center"
+                  >
+                    <BsFullscreen className="mr-2" size={14} />
+                    {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                  </button>
+                </div>
               </div>
             </div>
-            {/* <div className="flex justify-end mb-2">
-              <button
-                onClick={handleExitGame}
-                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                data-testid="exit-button"
-              >
-                Exit
-              </button>
-            </div> */}
-          </>
+          </div>
         )}
         
         {gameOver && (
-          <div className="text-center my-8 p-8 bg-gray-700 rounded-lg shadow-xl">
-            <h3 className="text-3xl font-bold mb-3 text-red-500">Game Over!</h3>
-            <p className="text-xl mb-6">Your final score: <span className="font-bold text-yellow-400">{score}</span></p>
-            <button
-              onClick={startGame}
-              className="px-8 py-4 bg-green-500 text-white rounded-lg text-xl font-bold hover:bg-green-600 transition-colors"
-            >
-              Play Again
-            </button>
-             <button
+          <div className="text-center md:mt-36 my-8 p-8 w-full max-w-md mx-auto rounded-2xl shadow-xl dark:bg-transparent sm:p-6 lg:p-8 flex flex-col relative border border-white/10 ">
+            <Header type="h1" fontSize="5xl"  weight="semibold" className="text-red-600 py-3 ">
+              Game Over!
+            </Header>
+            <p className="dark:text-gray-300 text-gray-900 mb-3">Your final score: <span className="font-bold text-yellow-500">{score}</span></p>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                onClick={startGame}
+                variant="default"
+                size="sm"
+                rounded="full"
+              >
+                Play Again
+              </Button>
+              <Button
                 onClick={() => { 
                   if (onGameComplete) {
                     // For the "Back to Games" button, just pass the score number
                     onGameComplete(score);
                   }
                 }}
-                className="ml-4 px-6 py-3 bg-gray-500 text-white rounded-lg text-lg hover:bg-gray-600 transition-colors"
-            >
+                variant="cancel"
+                size="sm"
+                rounded="full"
+              >
                 Back to Games
-            </button>
+              </Button>
+            </div>
           </div>
         )}
 
         {isPaused && gameStarted && !gameOver && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-30">
-            <div className="bg-gray-700 p-8 rounded-lg shadow-xl text-center">
-              <h2 className="text-4xl font-bold mb-8 text-yellow-400">Game Paused</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-30">
+            <div className="bg-gray-50 p-8 w-64 md:w-80 rounded-lg shadow-xl text-center">
+              <Header type="h2" variant="default" fontSize="2xl" className="mb-8  text-primary text-center">Game Paused</Header>
               <div className="space-y-4">
                  <button
                   onClick={togglePause}
-                  className="w-full px-6 py-3 bg-green-500 text-white rounded-lg text-lg font-bold hover:bg-green-600 transition-colors flex items-center justify-center"
+                  className="w-full px-6 py-3 bg-blue-400 text-white rounded-lg text-lg font-bold hover:bg-blue-500 transition-colors flex items-center justify-center"
                 >
                   <FaPlay className="mr-2"/> Resume
                 </button>
@@ -1217,18 +1668,21 @@ const FallingGame = ({ game, onGameComplete }) => {
                   <FaCog className="mr-2"/> Settings
                 </button>
                 <button
-                  onClick={startGame}
-                  className="w-full px-6 py-3 bg-orange-300 text-white rounded-lg text-lg font-bold hover:bg-red-400 transition-colors flex items-center justify-center"
+                  onClick={() => setShowRestartConfirmModal(true)}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg text-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center"
                 >
                   <FaRedo className="mr-2"/> Restart
                 </button>
                 <button
-                onClick={handleExitGame}
-                className="w-full px-6 py-3 bg-red-500 text-white rounded-lg text-lg font-bold hover:bg-red-600 transition-colors flex items-center justify-center"
-                data-testid="exit-button"
-              >
-                Exit Game
-              </button>
+                  onClick={() => {
+                    console.log('[FallingGame] Exit Game button clicked - showing confirmation modal');
+                    setShowExitConfirmModal(true);
+                  }}
+                  className="w-full px-6 py-3 bg-red-500 text-white rounded-lg text-lg font-bold hover:bg-red-600 transition-colors flex items-center justify-center"
+                  data-testid="exit-button"
+                >
+                  Exit Game
+                </button>
                
               </div>
             </div>
@@ -1236,101 +1690,148 @@ const FallingGame = ({ game, onGameComplete }) => {
         )}
 
         {showSettingsModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40 p-4">
-            <div className="bg-gray-700 p-6 rounded-lg shadow-xl w-full max-w-md">
-              <h3 className="text-2xl font-bold mb-6 text-yellow-400 text-center">Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gray-600 rounded-md">
-                  <span className="text-lg">Background Music</span>
-                  <button onClick={toggleMusic} className="p-2 rounded-full hover:bg-gray-500 transition-colors">
-                    {musicEnabled ? <FaVolumeUp size={24} className="text-green-400"/> : <FaVolumeMute size={24} className="text-red-400"/>}
-                  </button>
-                </div>
-                <div className="flex items-center p-3 bg-gray-600 rounded-md">
-                  <span className="text-lg mr-4">Volume</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={musicVolume}
-                    onChange={e => setMusicVolume(Number(e.target.value))}
-                    className="w-full"
-                    disabled={!musicEnabled}
-                    data-testid="music-volume-slider"
-                  />
-                </div>
-
-                {isMultiplicationOrDivision && (
-                  <div className="p-3 bg-gray-600 rounded-md">
-                    <label htmlFor="tableSelect" className="block text-lg mb-2">Problem Table Focus:</label>
-                    <select 
-                      id="tableSelect"
-                      value={selectedTableForProblems}
-                      onChange={(e) => {
-                        setSelectedTableForProblems(e.target.value);
-                        if (gameStarted && !isPaused && !gameOver) {
-                            generateProblems();
-                        }
-                      }}
-                      className="w-full p-2 bg-gray-500 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="random">Random</option>
-                      {Array.from({ length: 11 }, (_, i) => i + 2).map(num => (
-                        <option key={num} value={num}>{`${num}${game.topic.includes('multiply') ? '×' : '÷'}`}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {isMultiplicationOrDivision && (
-                    <button
-                        onClick={() => { toggleTableModal(); setShowSettingsModal(false);}}
-                        className="w-full px-4 py-2 bg-purple-500 text-white rounded-md text-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
-                    >
-                        <FaTable className="mr-2"/> Show Multiplication Reference
-                    </button>
-                )}
-              </div>
-              <div className="mt-8 text-center">
-                <button
-                  onClick={() => {
-                     toggleSettingsModal();
-                     if (gameStarted && !isPaused && !gameOver && selectedTableForProblems !== 'random') {
-                        generateProblems();
-                     }
-                  }}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md text-lg hover:bg-blue-700 transition-colors"
-                >
-                  Close
+          <Modal
+            isOpen={showSettingsModal}
+            onClose={toggleSettingsModal}
+            title="Settings"
+            maxWidth="max-w-md"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-md">
+                <span className="text-lg dark:text-gray-50 text-gray-900">Background Music</span>
+                <button onClick={toggleMusic} className="p-2 rounded-full hover:bg-gray-500 transition-colors">
+                  {musicEnabled ? <FaVolumeUp size={24} className="text-green-400"/> : <FaVolumeMute size={24} className="text-red-400"/>}
                 </button>
               </div>
+              <div className="flex items-center p-3  rounded-md">
+                <span className="text-lg mr-4 dark:text-gray-50 text-gray-900">Volume</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={musicVolume}
+                  onChange={e => setMusicVolume(Number(e.target.value))}
+                  className="w-full"
+                  disabled={!musicEnabled}
+                  data-testid="music-volume-slider"
+                />
+              </div>
+
+              {isMultiplicationOrDivision && (
+                <div className="p-3 bg-gray-600 rounded-md">
+                  <label htmlFor="tableSelect" className="block text-lg mb-2">Problem Table Focus:</label>
+                  <select 
+                    id="tableSelect"
+                    value={selectedTableForProblems}
+                    onChange={(e) => {
+                      setSelectedTableForProblems(e.target.value);
+                      if (gameStarted && !isPaused && !gameOver) {
+                          generateProblems();
+                      }
+                    }}
+                    className="w-full p-2 bg-gray-500 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="random">Random</option>
+                    {Array.from({ length: 11 }, (_, i) => i + 2).map(num => (
+                      <option key={num} value={num}>{`${num}${game.topic.includes('multiply') ? '×' : '÷'}`}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {isMultiplicationOrDivision && (
+                  <button
+                      onClick={() => { toggleTableModal(); setShowSettingsModal(false);}}
+                      className="w-full px-4 py-2 bg-purple-500 text-white rounded-md text-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
+                  >
+                      <FaTable className="mr-2"/> Show Multiplication Reference
+                  </button>
+              )}
             </div>
-          </div>
+          </Modal>
         )}
 
 
         {isLoadingProblems && countdown === null && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-4 rounded-lg">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <p className="text-black mt-2">Generating problems...</p>
-            </div>
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+         
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              
+           
           </div>
         )}
 
         {showLevelSelector && (
-          <LevelProgressionModal
-          isOpen={true}
-          onClose={() => setShowLevelSelector(false)}
-          scoreData={null}
-          gameName={game?.name || 'Game'}
-          gameId={game.id}
-          maxGameLevel={10}
-          onLevelSelect={handleLevelSelect}
-          showLevelSelection={true}
-        />
+          <Modal
+            isOpen={showLevelSelector}
+            onClose={() => setShowLevelSelector(false)}
+            title="Select Level"
+            maxWidth="max-w-lg"
+          >
+            {loadingUnlockedLevels ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => handleLevelSelect(level)}
+                    disabled={level > unlockedLevels}
+                    className={`p-4 rounded-lg text-center transition-colors ${
+                      level <= unlockedLevels
+                        ? 'bg-blue-500 text-white hover:bg-blue-600'
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Level {level}
+                    {level <= unlockedLevels && <span className="block text-xs mt-1">Unlocked</span>}
+                    {level > unlockedLevels && <span className="block text-xs mt-1">Locked</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </Modal>
         )}
+
+        <Modal
+          isOpen={showExitConfirmModal}
+          onClose={handleStayOnPage}
+          title="Leave Game?"
+        >
+          <p className="dark:text-gray-50 text-gray-700 mb-4">
+            Your game progress is automatically saved, so you can continue later. Are you sure you want to leave the game now?
+          </p>
+          <div className="mt-6 flex justify-end gap-4">
+            <Button variant="cancel" rounded="full" onClick={handleExitGameConfirm}>
+              Leave Game
+            </Button>
+            <Button variant="default" rounded="full" onClick={handleStayOnPage}>
+              Stay on Game
+            </Button>
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={showRestartConfirmModal}
+          onClose={() => setShowRestartConfirmModal(false)}
+          title="Restart Game?"
+        >
+          <p className="dark:text-gray-50 text-gray-700 mb-4">
+            Restarting the game will clear your progress. Are you sure you want to restart?
+          </p>
+          <div className="mt-6 flex justify-end gap-4">
+            <Button variant="cancel" rounded="full" onClick={() => setShowRestartConfirmModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="default" rounded="full" onClick={handleRestartConfirm}>
+              Restart
+            </Button>
+          </div>
+        </Modal>
+      </div>
       </div>
     </div>
   );

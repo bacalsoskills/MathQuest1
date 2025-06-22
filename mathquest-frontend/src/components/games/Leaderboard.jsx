@@ -13,9 +13,19 @@ const Leaderboard = ({ gameId, finalScore }) => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const response = await api.get(`/games/${gameId}/leaderboard`);
+        console.log('[Leaderboard] Fetching leaderboard data:', { gameId, finalScore });
+        
+        // If finalScore changed, show loading state
+        if (finalScore !== null) {
+          setLoading(true);
+        }
+        
+        // Add timestamp to prevent caching
+        const timestamp = Date.now();
+        const response = await api.get(`/games/${gameId}/leaderboard?t=${timestamp}`);
         
         let leaderboardData = response.data;
+        console.log('[Leaderboard] Raw leaderboard data:', leaderboardData);
         
         // Filter data based on user role
         if (!isTeacher()) {
@@ -25,6 +35,7 @@ const Leaderboard = ({ gameId, finalScore }) => {
           );
         }
         
+        console.log('[Leaderboard] Filtered leaderboard data:', leaderboardData);
         setLeaderboard(leaderboardData);
         
         // Find current user's position in the leaderboard (only for students)
@@ -35,6 +46,7 @@ const Leaderboard = ({ gameId, finalScore }) => {
           
           if (userIndex !== -1) {
             setCurrentUserRank(userIndex + 1);
+            console.log('[Leaderboard] Current user rank:', userIndex + 1);
           }
         }
       } catch (error) {

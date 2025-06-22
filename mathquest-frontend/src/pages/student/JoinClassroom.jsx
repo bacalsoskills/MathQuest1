@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ClassroomService from '../../services/classroomService';
 import { Button } from '../../ui/button';
+import { Header } from '../../ui/heading';
+import { Input } from '../../ui/input';
 
 const JoinClassroom = () => {
   const navigate = useNavigate();
@@ -38,13 +40,11 @@ const JoinClassroom = () => {
   };
 
   return (
-    // <div className="fixed inset-0 bg-purple-700 bg-opacity-70 flex items-center justify-center z-50 p-4">
-    //   <div className="w-full max-w-sm">
-    <div className="bg-purple-700 bg-opacity-70 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-      <div className="max-w-5xl mx-auto">
+    <div className="md:min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 mt-20 md:-mt-32">
+      <div className="w-full max-w-md mx-auto">
         {joinedClassroom ? (
           <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl text-dark text-center">
-            <h2 className="text-2xl sm:text-3xl font-semibold mb-3 sm:mb-4">Successfully Joined!</h2>
+            <Header type="h2" fontSize="3xl" weight="semibold" className="mb-3 sm:mb-4">Successfully Joined!</Header>
             <div className="mb-4 sm:mb-6">
               <p className="text-base sm:text-lg">
                 You've joined: <span className="font-bold">{joinedClassroom.name}</span>
@@ -66,17 +66,19 @@ const JoinClassroom = () => {
             </Button>
           </div>
         ) : (
-          <>
-            <h1 className="text-4xl sm:text-5xl font-bold text-white text-center mb-8 sm:mb-10">Join Classroom</h1>
+          <div className="text-center">
+           <Header type="h1" fontSize="5xl" weight="bold" className="mb-4 text-primary dark:text-white">Join Classroom</Header>
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-              <div>
-                <input
+              <div> 
+                <Input
                   id="classCode"
                   name="classCode"
                   type="text"
                   required
                   placeholder="Enter class code"
-                  className="bg-white bg-opacity-20 border-2 border-white rounded-md p-3 sm:p-4 text-white placeholder-gray-300 w-full text-base sm:text-lg focus:ring-white focus:border-white focus:bg-opacity-30 transition-all disabled:opacity-70"
+                 variant="form"
+
+                 className="!bg-gray-300"
                   value={classCode}
                   onChange={(e) => setClassCode(e.target.value)}
                   disabled={loading}
@@ -84,7 +86,7 @@ const JoinClassroom = () => {
               </div>
               
               {error && !loading && (
-                <p className="text-gray-200 text-sm text-center -mt-2 mb-2">{error}</p>
+                <p className="dark:text-gray-200 text-gray-700 text-sm text-center -mt-2 mb-2">{error}</p>
               )}
 
               <div>
@@ -93,13 +95,13 @@ const JoinClassroom = () => {
                   disabled={loading}
                   variant="default"
                   size="lg"
-                  className="w-full "
+                  className="w-full"
                 >
                   {loading ? 'Joining...' : 'Join'}
                 </Button>
               </div>
             </form>
-          </>
+          </div>
         )}
       </div>
     </div>

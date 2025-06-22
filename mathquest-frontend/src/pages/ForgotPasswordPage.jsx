@@ -4,6 +4,7 @@ import AuthService from '../services/authService';
 import { Button } from "../ui/button";
 import { Header } from "../ui/heading";
 import { MdKeyboardBackspace } from "react-icons/md";
+import { Input } from "../ui/input";
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -41,74 +42,73 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-8">
-        <div className="text-center">
-          <Header type="h1" fontSize="3xl" weight="bold" className="mb-6">
-            Forgot Password
-          </Header>
-          <p className="text-gray-600 mb-8">
-            Enter your email address and we'll send you instructions to reset your password.
-          </p>
-        </div>
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
-          
-          {success && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-              <span className="block sm:inline">{success}</span>
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="email" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <Button
-              type="submit"
-              disabled={loading}
-              variant="default"
-              size="sm"
-              className="w-full"
-            >
-              {loading ? 'Sending...' : 'Send Reset Instructions'}
-            </Button>
-          </div>
-
+    <div className="md:py-28 flex items-center justify-center">
+      <div className="w-full max-w-xl mx-4 flex flex-col items-center justify-center rounded-2xl shadow-xl py-12 px-8 border border-white/10 dark:border-gray-700 backdrop-blur-md bg-gray-100 dark:bg-transparent">
+        <div className="w-full max-w-md mx-auto">
           <div className="text-center">
-          <Button
-            variant="link"
-            size="sm"
-            onClick={() => navigate('/login')}
-            className="text-primary flex items-center justify-center group"
-          >
-            <span className="flex items-center gap-1 group-hover:underline">
-              <MdKeyboardBackspace />
-              Back to Login
-            </span>
-          </Button>
+            <Header type="h1" fontSize="3xl" weight="bold" className="mb-6 text-gray-900 dark:text-white">
+              Forgot Password
+            </Header>
+            <p className="text-gray-600 dark:text-gray-300 mb-8">
+              Enter your email address and we'll send you instructions to reset your password.
+            </p>
+          </div>
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                <span className="block sm:inline">{success}</span>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                variant="form"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                disabled={loading}
+                variant="default"
+                size="sm"
+                className="w-full"
+                rounded="full"
+              >
+                {loading ? 'Sending...' : 'Send Reset Instructions'}
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => navigate('/login')}
+                className="text-primary flex items-center justify-center group"
+              >
+                <span className="flex items-center gap-1 group-hover:underline">
+                  <MdKeyboardBackspace />
+                  Back to Login
+                </span>
+              </Button>
+            </div>
+          </form>
         </div>
-
-
-        </form>
       </div>
     </div>
   );

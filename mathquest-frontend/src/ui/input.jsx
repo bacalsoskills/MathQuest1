@@ -10,7 +10,8 @@ const inputVariants = {
     "flex h-10 w-full rounded-none bg-transparent border-green-500 border px-3 py-2 text-sm focus:outline-none focus:border-green-500",
   disabled:
     "flex h-10 w-full rounded-none bg-gray-100 text-gray-400 border border-gray-300 px-3 py-2 text-sm cursor-not-allowed",
-  gray: "px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+  gray: "px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm",
+  form: "rounded-md w-full bg-gray-200 dark:bg-white py-4 px-4"
 };
 
 const Input = React.forwardRef(({ className, type, variant = "default", ...props }, ref) => {

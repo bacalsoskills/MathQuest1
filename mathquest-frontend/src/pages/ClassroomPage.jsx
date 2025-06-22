@@ -14,6 +14,7 @@ const ClassroomPage = () => {
   const [selectedLesson, setSelectedLesson] = useState(null); 
   const [currentLessonId, setCurrentLessonId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lessonLoading, setLessonLoading] = useState(false); // Separate loading state for lesson changes
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("lessons"); 
 
@@ -29,7 +30,7 @@ const ClassroomPage = () => {
         // Determine initial lesson to load
         let lessonToLoadId = initialLessonId;
         if (!lessonToLoadId && details.lessons && details.lessons.length > 0) {
-          lessonToLoadId = details.lessons[0].id; 
+          lessonToLoadId = details.lessons[details.lessons.length - 1].id; 
         }
         setCurrentLessonId(lessonToLoadId);
       } catch (err) {
@@ -48,14 +49,12 @@ const ClassroomPage = () => {
       if (!currentLessonId) {
         setSelectedLesson(null); 
         if (lessons.length === 0 && classroomDetails) {
-          
           setLoading(false);
         }
         return;
       }
       try {
-        
-        if (!loading) setLoading(true);
+        setLessonLoading(true);
         const lessonData = await lessonService.getLessonById(currentLessonId);
         setSelectedLesson(lessonData);
       } catch (err) {
@@ -63,7 +62,7 @@ const ClassroomPage = () => {
         setError(`Failed to load lesson: ${err.message}`);
         setSelectedLesson(null);
       } finally {
-        
+        setLessonLoading(false);
         if (currentLessonId || (lessons.length === 0 && classroomDetails)) {
           setLoading(false);
         }
@@ -71,11 +70,10 @@ const ClassroomPage = () => {
     };
 
     if (classroomDetails) {
-  
       fetchLessonDetails();
     }
 
-  }, [currentLessonId, classroomDetails]); 
+  }, [currentLessonId, classroomDetails]);
 
   const handleSelectLesson = (lessonId) => {
     setCurrentLessonId(lessonId);
@@ -133,12 +131,25 @@ const ClassroomPage = () => {
           
               />
             </div>
-            <div className="w-full md:w-2/3 lg:w-3/4"> {/* Main content width, responsive */}
+            <div className="w-full md:w-2/3 lg:w-3/4 relative"> {/* Main content width, responsive */}
+              {/* Lesson Loading Overlay */}
+              {lessonLoading && (
+                <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                    <p className="text-gray-600 text-sm">Loading lesson...</p>
+                  </div>
+                </div>
+              )}
+              
               {loading && currentLessonId && !selectedLesson ? (
                 <main
                   className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow" 
                 >
-                  <p className="text-gray-500 text-lg">Loading lesson details...</p>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                    <p className="text-gray-500 text-lg">Loading lesson details...</p>
+                  </div>
                 </main>
               ) : selectedLesson ? (
                 <LessonDetailView lesson={selectedLesson} />

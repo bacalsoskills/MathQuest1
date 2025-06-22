@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
@@ -43,17 +43,25 @@ import ReportsPage from './pages/ReportsPage';
 import QuizAttemptPage from './pages/student/QuizAttemptPage';
 import SystemSettings from './pages/admin/SystemSettings';
 import UserManagement from './pages/admin/UserManagement';
-import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/admin/AdminFeedbackPage';
 import FeedbackTicketPage from './pages/admin/FeedbackTicketPage';
+import Dashboard from './pages/Dashboard';
+import ThemeToggleButton from './components/ThemeToggleButton';
+import HelpPage from './pages/HelpPage';
 
 // Root redirect component to handle role-based redirection
 const RootRedirect = () => {
-  const { isAdmin, isTeacher, isStudent } = useAuth();
+  const { currentUser, isAdmin, isTeacher, isStudent } = useAuth();
   
+  // If not logged in, show the homepage
+  if (!currentUser) return <HomePage />;
+  
+  // If logged in, redirect based on role
   if (isAdmin()) return <Navigate to="/admin/users" />;
   if (isTeacher()) return <Navigate to="/teacher/classrooms" />;
   if (isStudent()) return <Navigate to="/student/classrooms" />;
+  
+  // Fallback to homepage if role is undefined
   return <HomePage />;
 };
 
@@ -108,13 +116,30 @@ const NavbarLayout = () => (
 );
 
 function App() {
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
+
   return (
     <AuthProvider>
       <ContentProvider>
         <UserProgressProvider>
           <ClassroomProvider>
             <Router>
-              <div className="flex flex-col min-h-screen bg-gray-50">
+              <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+                {/* Theme Toggle Button */}
+                <ThemeToggleButton darkMode={darkMode} setDarkMode={setDarkMode} />
                 {/* Toast notifications */}
                 <Toaster
                   position="top-right"
@@ -142,21 +167,39 @@ function App() {
                 <Routes>
                   {/* Special routes without Navbar */}
                   <Route path="/auth/verify" element={<VerificationPage />} />
-                  
+
                   {/* Routes with Navbar */}
                   <Route element={<NavbarLayout />}>
                     {/* Public Routes */}
-                    <Route path="/" element={
-                      <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
-                        <RootRedirect />
-                      </ProtectedRoute>
-                    } />
+                    <Route path="/" element={<RootRedirect />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/users/verify-email" element={<EmailUpdateVerification />} />
+                    {/* Shared Dashboard Route */}
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute allowedRoles={['admin','teacher','student']}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    {/* Role-specific Dashboard Routes */}
+                    <Route path="/student/dashboard" element={
+                      <ProtectedRoute allowedRoles={['student']}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/teacher/dashboard" element={
+                      <ProtectedRoute allowedRoles={['teacher']}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/dashboard" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
                     
                     {/* Student Routes */}
                     <Route path="/student" element={<Navigate to="/student/classrooms" />} />
@@ -248,9 +291,9 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
-                    <Route path="/student/feedback" element={
-                      <ProtectedRoute allowedRoles={['STUDENT']}>
-                        <FeedbackPage />
+                    <Route path="/student/help" element={
+                      <ProtectedRoute allowedRoles={['student']}>
+                        <HelpPage />
                       </ProtectedRoute>
                     } />
                     
@@ -320,10 +363,9 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
-
-                  <Route path="/teacher/feedback" element={
-                      <ProtectedRoute allowedRoles={['TEACHER']}>
-                        <FeedbackPage />
+                    <Route path="/teacher/help" element={
+                      <ProtectedRoute allowedRoles={['teacher']}>
+                        <HelpPage />
                       </ProtectedRoute>
                     } />
                     
@@ -448,6 +490,11 @@ function App() {
                        <Route path="/admin/feedback/:ticketNumber" element={
                       <ProtectedRoute allowedRoles={['admin']}>
                         <FeedbackTicketPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/help" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <HelpPage />
                       </ProtectedRoute>
                     } />
                   </Route>

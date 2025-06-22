@@ -160,6 +160,15 @@ const gameService = {
         score: scoreData.score,
         level: scoreData.level || 1, // Ensure level is always sent, default to 1
         timeSpent: scoreData.timeSpent,
+        levelAchieved: scoreData.levelAchieved,
+        playedAt: scoreData.playedAt,
+        studentId: scoreData.studentId,
+        studentName: scoreData.studentName,
+        studentUsername: scoreData.studentUsername,
+        gameType: scoreData.gameType,
+        gameName: scoreData.gameName,
+        isHighScore: scoreData.isHighScore,
+        isLevelUp: scoreData.isLevelUp,
       });
       console.log("Game score submitted, server response:", response.data);
       return response.data;

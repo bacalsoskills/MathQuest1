@@ -4,9 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from "../ui/button"
 import { CgProfile } from "react-icons/cg";
 import { BiGroup } from "react-icons/bi";
-import { MdOutlineGames } from "react-icons/md";
-import { PiRanking } from "react-icons/pi";
-import { GiProgression } from "react-icons/gi";
 import { RiLogoutCircleRLine } from "react-icons/ri";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { AiOutlinePlusCircle } from "react-icons/ai";
@@ -18,6 +15,10 @@ import { LuNotebookPen } from "react-icons/lu";
 import SystemSettingsService from '../services/systemSettingsService';
 import { BsPersonFillCheck } from "react-icons/bs";
 import { MdOutlineFeedback } from "react-icons/md";
+import { FaMoon, FaSun, FaBars, FaQuestionCircle } from "react-icons/fa";
+import { HiMenuAlt1 } from "react-icons/hi";
+import { MdOutlineDashboard } from "react-icons/md";
+import { useSidebar } from '../context/SidebarContext';
 
 // Helper function to get initials
 const getInitials = (firstName, lastName) => {
@@ -27,7 +28,6 @@ const getInitials = (firstName, lastName) => {
 // Helper function to create image source from base64 data
 const createImageSource = (base64Data, imageName) => {
   if (!base64Data) return '';
-  
   // Determine mime type based on filename or default to jpeg
   let mimeType = 'image/jpeg';
   if (imageName) {
@@ -35,10 +35,12 @@ const createImageSource = (base64Data, imageName) => {
     else if (imageName.endsWith('.gif')) mimeType = 'image/gif';
     else if (imageName.endsWith('.webp')) mimeType = 'image/webp';
   }
-  
   // Create data URL
   return `data:${mimeType};base64,${base64Data}`;
 };
+
+// Define a single icon size for all sidebar icons
+const ICON_SIZE = "text-3xl";
 
 const Navbar = () => {
   const location = useLocation();
@@ -47,8 +49,35 @@ const Navbar = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [classrooms, setClassrooms] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  
+  const [isMobile, setIsMobile] = useState(false);
+
   const { currentUser, logout, isAdmin, isTeacher, isStudent } = useAuth();
+  const { sidebarOpen, setSidebarOpen } = useSidebar();
+
+  // Dark mode state
+  const [darkMode, setDarkMode] = useState(true);
+  
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      console.log('Mobile detection:', mobile, 'Window width:', window.innerWidth);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   // Function to fetch the profile image directly
   const fetchProfileImage = async () => {
@@ -60,7 +89,7 @@ const Navbar = () => {
       }
       return false;
     } catch (err) {
-      console.error("Error fetching profile image directly:", err);
+     
       return false;
     }
   };
@@ -76,7 +105,7 @@ const Navbar = () => {
       }
       setClassrooms(classroomData || []);
     } catch (err) {
-      console.error("Error fetching classrooms:", err);
+
       setClassrooms([]);
     }
   };
@@ -110,7 +139,6 @@ const Navbar = () => {
     if (location.pathname === path || location.pathname.startsWith(`${path}/`)) {
       return true;
     }
-
     // Check for active subLinks
     const link = linksToShow.find(link => link.path === path);
     if (link && link.subLinks) {
@@ -125,85 +153,93 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const handleSidebarToggle = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleMobileLinkClick = () => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
   const loadAnnouncements = async () => {
-    try {
-      console.log("\n=== Navbar Announcement Loading ===");
-      console.log("1. User Details:");
-      console.log("- Is Admin:", isAdmin());
-      console.log("- Is Teacher:", isTeacher());
-      console.log("- Is Student:", isStudent());
-      
+    try {  
       const userRole = isAdmin() ? 'ADMIN' : isTeacher() ? 'TEACHERS' : 'STUDENTS';
-      console.log("- Selected User Role:", userRole);
-      
-      console.log("\n2. Current Time Details:");
       const now = new Date();
-      console.log("- Local Time:", now.toLocaleString());
-      console.log("- UTC Time:", now.toISOString());
-      console.log("- Timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
-      
-      console.log("\n3. Fetching Announcements...");
       const announcements = await SystemSettingsService.getActiveAnnouncements(userRole);
-      
-      console.log("\n4. Received Announcements:");
-      console.log("- Count:", announcements?.length || 0);
+
       if (announcements && announcements.length > 0) {
         announcements.forEach((announcement, index) => {
-          console.log(`\nAnnouncement ${index + 1}:`);
-          console.log("- ID:", announcement.id);
-          console.log("- Message:", announcement.message);
-          console.log("- Start Date (UTC):", announcement.startDate);
-          console.log("- Start Date (Local):", new Date(announcement.startDate).toLocaleString());
-          console.log("- End Date (UTC):", announcement.endDate);
-          console.log("- End Date (Local):", new Date(announcement.endDate).toLocaleString());
-          console.log("- Visibility:", announcement.visibility);
-          console.log("- Is Active:", announcement.isActive);
         });
       } else {
         console.log("- No announcements received");
       }
-
       if (announcements) {
         setAnnouncements(announcements);
       }
     } catch (error) {
       console.error('Failed to load announcements:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack
-      });
     }
   };
 
-  // If user is not logged in, show basic navbar
   if (!currentUser) {
     return (
-      <nav className="bg-white shadow-lg">
-        <div className="max-w-[1280px] container mx-auto px-4">
-          <div className="flex justify-between items-center h-28 ">
-            <div className="flex space-x-4">
-              <Link
-                to="/"
-                className="flex items-center px-3 py-2 rounded-md transition-colors"
-              >
+      <>
+        {/* Mobile Sticky Navbar for non-authenticated users */}
+        {isMobile && (
+          <nav className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-primary/80 border-b border-gray-200 dark:border-gray-700 md:hidden shadow-lg">
+            <div className="flex items-center justify-between px-4 py-3">
+              {/* Logo on the left */}
+              <Link to="/" className="flex items-center">
                 <img
-                  src="images/mathquest-logo.png"
+                  src="/images/new-logo.png"
                   alt="MathQuest Logo"
-                  className="h-[180px] w-[180px] py-2"
+                  className="h-10 w-10 object-contain"
                 />
               </Link>
+              
+              {/* Login and Sign Up buttons on the right */}
+              <div className="flex items-center space-x-2">
+                <Button asChild variant="outlineWhite" size="sm" className="!rounded-md text-xs px-3 py-1">
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button asChild variant="default" size="sm" className="!rounded-md text-xs px-3 py-1">
+                  <Link to="/register">Sign Up</Link>
+                </Button>
+              </div>
             </div>
-            <div className="flex space-x-4">
-              <Button asChild variant="default" size="sm">
-                <Link to="/login">Login</Link>
-              </Button>
-              <Button asChild variant="secondary" size="sm">
-                <Link to="/register">Sign Up</Link>
-              </Button>
+          </nav>
+        )}
+
+        {/* Desktop navbar for non-authenticated users */}
+        <nav className="bg-transparent py-5 absolute w-full z-10 md:block hidden">
+          <div className="max-w-[1280px] container mx-auto px-4">
+            <div className="flex justify-between items-center h-28 ">
+              <div className="flex space-x-4">
+                <Link
+                  to="/"
+                  className="flex items-center px-3 py-2 rounded-md transition-colors"
+                >
+                  <img
+                    src="images/new-logo.png"
+                    alt="MathQuest Logo"
+                    className="h-[70px] w-[70px] md:h-[135px] md:w-[135px] py-2"
+                  />
+                </Link>
+              </div>
+              <div className="flex space-x-4">
+                <Button asChild variant="outlineWhite" className=" !rounded-md " size="sm">
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button asChild variant="default" size="sm">
+                  <Link to="/register">Sign Up</Link>
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </>
     );
   }
 
@@ -219,7 +255,6 @@ const Navbar = () => {
         name: classroom.name
       }))
     },
-    { path: '/student/feedback', icon: <MdOutlineFeedback className="mr-3 text-xl" />, name: 'Send Feedback' },
   ];
 
   const teacherLinks = [
@@ -234,7 +269,6 @@ const Navbar = () => {
         name: classroom.name
       }))
     },
-    { path: '/teacher/feedback', icon: <MdOutlineFeedback className="mr-3 text-xl" />, name: 'Send Feedback' },
   ];
 
   const adminLinks = [
@@ -250,68 +284,115 @@ const Navbar = () => {
     { path: '/admin/settings', icon: <MdOutlineAdminPanelSettings className="mr-3 text-xl" />, name: 'System Settings' },
   ];
 
+  // Use role-specific dashboard for all roles
+  const dashboardLink = { 
+    path: isAdmin() ? '/admin/dashboard' : isTeacher() ? '/teacher/dashboard' : '/student/dashboard', 
+    icon: <MdOutlineDashboard className="mr-3 text-xl" />, 
+    name: 'Dashboard' 
+  };
+
+  const addDashboard = (links) => {
+    const profileIdx = links.findIndex(l => l.name === 'Profile');
+    if (profileIdx !== -1) {
+      return [
+        ...links.slice(0, profileIdx),
+        dashboardLink,
+        ...links.slice(profileIdx)
+      ];
+    }
+    return [dashboardLink, ...links];
+  };
+
   let linksToShow = [];
   if (isAdmin()) {
-    linksToShow = adminLinks;
+    linksToShow = addDashboard(adminLinks);
   } else if (isTeacher()) {
-    linksToShow = teacherLinks;
+    linksToShow = addDashboard(teacherLinks);
   } else if (isStudent()) {
-    linksToShow = studentLinks;
+    linksToShow = addDashboard(studentLinks);
   }
 
-  return (
-    <nav>
-      <div className="bg-white text-black w-64 fixed h-full z-30 shadow-lg flex flex-col justify-between">
+  // Mobile sidebar overlay
+  const MobileOverlay = () => (
+    <>
+      {/* Mobile overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Mobile sidebar */}
+      <aside className={`fixed top-0 left-0 h-full z-50 transition-transform duration-300 ease-in-out ${
+        isMobile 
+          ? `w-80 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+          : `${sidebarOpen ? 'w-80' : 'w-28 px-2'}`
+      } bg-[#070926] dark:bg-[#070926] text-white flex flex-col justify-between shadow-lg`}>
+        {/* Top: Logo and App Name + Toggle */}
         <div>
-          <div className="p-4 flex flex-col items-center border-b border-gray-200 mb-4">
-            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-semibold mb-2 overflow-hidden">
-              {profileImageSrc ? (
-                <img 
-                  src={profileImageSrc} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover" 
-                  onLoad={handleImageLoad}
-                  onError={handleImageError}
-                />
-              ) : (
-                <span>{getInitials(currentUser.firstName, currentUser.lastName)}</span>
-              )}
-            </div>
-            <h2 className="text-md font-semibold text-center">{`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.username}</h2>
-            <p className="text-sm text-gray-500 text-center">{currentUser.email}</p>
+          <div className={`flex items-center gap-3 mb-5 ${sidebarOpen ? 'px-6' : 'px-0'} pt-6 pb-2 ${sidebarOpen ? '' : 'justify-center'}`}>
+            {sidebarOpen && (
+              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+                <img src="/images/new-logo.png" alt="MathQuest Logo" className="w-16 h-16 object-contain" />
+              </div>
+            )}
+            {sidebarOpen && <span className="font-semibold text-lg tracking-wide">MathQuest</span>}
+            <button
+              className={`flex items-center justify-center ${sidebarOpen ? 'ml-auto' : ''} text-white focus:outline-none h-12 w-12 rounded-lg transition-colors duration-150 ${!sidebarOpen ? 'mx-auto' : ''}`}
+              style={{ minWidth: '48px', minHeight: '48px' }}
+              onClick={handleSidebarToggle}
+              aria-label="Toggle Sidebar"
+            >
+              <HiMenuAlt1 className={ICON_SIZE} />
+            </button>
           </div>
-
-          <nav className="mt-4 flex-grow">
+          {/* Search Bar */}
+          {sidebarOpen && (
+            <div className="px-6 pt-2 pb-4">
+              <div className="flex items-center bg-[#101233] dark:bg-[#101233] rounded-lg px-3 py-2">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"/></svg>
+                <input type="text" placeholder="Search" className="bg-transparent outline-none ml-2 text-sm w-full text-white placeholder-gray-400" />
+              </div>
+            </div>
+          )}
+          {/* Navigation Links */}
+          <nav className="flex flex-col gap-1 px-2">
             {linksToShow.map((link) => (
               <div key={link.path + link.name}>
                 <Link
                   to={link.path}
-                  className={`flex items-center px-6 py-3 text-sm font-medium transition-colors duration-150 group ${
+                  onClick={handleMobileLinkClick}
+                  className={`flex items-center ${sidebarOpen ? 'px-6 py-3' : 'justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
                     isActive(link.path)
-                      ? 'bg-primary hover:text-white text-white' 
-                      : 'text-black hover:bg-primary hover:text-white' 
+                      ? 'bg-white text-[#070926]' 
+                      : 'text-white hover:bg-[#101233]'
                   }`}
+                  style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
                 >
-                  <span className={`inline-block ${isActive(link.path) ? 'text-white' : 'text-primary'} group-hover:text-white`}> 
-                    {link.icon}
-                  </span>
-                  <span>{link.name}</span>
+                  <span className={`inline-block ${ICON_SIZE} ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>{link.icon}</span>
+                  {sidebarOpen && <span>{link.name}</span>}
+                  {/* Notification dot for Home, Dashboard, Leaderboard, Activity (example) */}
+                  {(link.name === 'Home' || link.name === 'Dashboard' || link.name === 'LeaderBoard' || link.name === 'Activity') && (
+                    <span className={`absolute right-4 w-2 h-2 bg-red-500 rounded-full ${isActive(link.path) ? 'top-1/2 -translate-y-1/2' : ''}`}></span>
+                  )}
                 </Link>
-                {link.subLinks && (
-                  <div className="ml-6">
+                {/* Sublinks: active = text-white, no bg; hover = bg-white/50 */}
+                {link.subLinks && sidebarOpen && (
+                  <div className="ml-8 mt-1">
                     {link.subLinks.map((subLink) => (
                       <Link
                         key={subLink.path + subLink.name}
                         to={subLink.path}
-                        className={`block px-6 py-2 text-sm font-medium transition-colors duration-150 ${
+                        onClick={handleMobileLinkClick}
+                        className={`block px-6 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
                           location.pathname === subLink.path || location.pathname.startsWith(subLink.path + '/')
-                            ? 'text-primary font-semibold' 
-                            : 'text-gray-700 hover:bg-gray-100 hover:text-black' 
+                            ? 'text-white' 
+                            : 'text-gray-300 hover:bg-[#101233]'
                         }`}
+                        style={{ minHeight: '40px' }}
                       >
-                         <span className={`inline-block ${isActive(subLink.path) ? 'text-primary font-semibold' : 'text-gray-700 hover:bg-gray-100 hover:text-black'} group-hover:text-white `}> 
-                        {subLink.icon}
-                      </span>
+                        <span className={`inline-block ${ICON_SIZE} mr-3 align-middle`}>{subLink.icon}</span>
                         {subLink.name}
                       </Link>
                     ))}
@@ -319,101 +400,127 @@ const Navbar = () => {
                 )}
               </div>
             ))}
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-6 py-3 text-sm font-medium w-full text-left text-black hover:bg-primary hover:text-white group transition-colors duration-150"
+            {/* Join/Create Classroom as a nav link */}
+            {(isStudent() || isTeacher()) && (
+              <Link
+                to={isStudent() ? '/student/join-classroom' : '/teacher/add-classroom'}
+                onClick={handleMobileLinkClick}
+                className={`flex items-center ${sidebarOpen ? 'px-6 py-3' : 'justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
+                  (isStudent() && isActive('/student/join-classroom')) || (isTeacher() && isActive('/teacher/add-classroom'))
+                    ? 'bg-white text-[#070926]'
+                    : 'text-white hover:bg-[#101233]'
+                }`}
+                style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
+              >
+                <span className={`inline-block text-2xl ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>
+                  <AiOutlinePlusCircle />
+                </span>
+                {sidebarOpen && (isStudent() ? 'Join Classroom' : 'Create Classroom')}
+              </Link>
+            )}
+            {/* Help link at the end */}
+            <Link
+              to={isAdmin() ? '/admin/help' : isTeacher() ? '/teacher/help' : '/student/help'}
+              onClick={handleMobileLinkClick}
+              className={`flex items-center ${sidebarOpen ? 'px-6 py-3' : 'justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
+                isActive(isAdmin() ? '/admin/help' : isTeacher() ? '/teacher/help' : '/student/help')
+                  ? 'bg-white text-[#070926]' 
+                  : 'text-white hover:bg-[#101233]'
+              }`}
+              style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
             >
-              <span className="text-primary group-hover:text-white">
-                <RiLogoutCircleRLine className="mr-3 text-xl" />
+              <span className={`inline-block text-xl ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>
+                <FaQuestionCircle />
               </span>
-              <span>Logout</span>
-            </button>
+              {sidebarOpen && <span>Help</span>}
+            </Link>
           </nav>
         </div>
-
-        <div className="p-4 border-t border-gray-200 text-center text-xs text-gray-500">
-          © 2025 MathQuest
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col ml-64">
-      {announcements.length > 0 && !isAdmin() && (
-          <div className="space-y-2 p-4">
-            {announcements.map((announcement) => (
-              <div key={announcement.id} className="bg-blue-100 border-l-4 border-blue-500 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <IoMdNotificationsOutline className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <div className="ml-3">
-                    <div 
-                      className="text-sm text-blue-700"
-                      dangerouslySetInnerHTML={{ __html: announcement.message }}
-                    />
-                    <p className="text-xs text-blue-600 mt-1">
-                      {announcement.startDate && `From: ${new Date(announcement.startDate).toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true,
-                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                      })}`}
-                      {announcement.endDate && ` To: ${new Date(announcement.endDate).toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true,
-                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                      })}`}
-                    </p>
-                  </div>
-                </div>
+        {/* Bottom: Dark/Light Toggle & User Profile & Logout */}
+        <div className={`px-3 pb-6 pt-2 ${sidebarOpen ? '' : 'px-0'}`}>
+          {/* Dark/Light Mode Toggle */}
+          <div className={`flex items-center justify-center mb-4 bg-[#101233] rounded-lg p-1 ${sidebarOpen ? '' : 'justify-center'}`}>
+            <button
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${darkMode ? 'bg-blue-800 text-white' : 'text-gray-400'}`}
+              onClick={() => setDarkMode(true)}
+            >
+              <FaMoon className="mr-2" />
+              {sidebarOpen && 'Dark'}
+            </button>
+            <button
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${!darkMode ? 'bg-blue-800 text-white' : 'text-gray-400'}`}
+              onClick={() => setDarkMode(false)}
+            >
+              <FaSun className="mr-2" />
+              {sidebarOpen && 'Light'}
+            </button>
+          </div>
+          {/* User Profile & Logout */}
+          <div className={`flex items-center ${sidebarOpen ? 'gap-3 bg-[#101233] rounded-xl p-3' : 'justify-center'} relative`}>
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#070926] text-lg font-semibold overflow-hidden">
+              {profileImageSrc ? (
+                <img
+                  src={profileImageSrc}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                />
+              ) : (
+                <span>{getInitials(currentUser.firstName, currentUser.lastName)}</span>
+              )}
+            </div>
+            {sidebarOpen && (
+              <div className="flex flex-col flex-1">
+                <span className="font-semibold text-white text-sm">{`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.username}</span>
+                <span className="text-xs text-gray-400">{isAdmin() ? 'Admin' : isTeacher() ? 'Teacher' : 'Student'}</span>
               </div>
-            ))}
-          </div>
-        )}
-        <div className="bg-white shadow-md p-4 flex justify-between items-center w-full z-20">
-          <div className="text-gray-600"> 
-            Welcome {currentUser?.firstName || currentUser?.username || currentUser?.email}!
-          </div>
-
-          <div className="flex items-center space-x-4">
-            {isStudent() && (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex items-center gap-2 h-10"
-                onClick={() => navigate('/student/join-classroom')}
-              >
-                <AiOutlinePlusCircle className="w-5 h-5" />
-                Join Classroom
-              </Button>
             )}
-
-            {isTeacher() && (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex items-center gap-2 h-10"
-                onClick={() => navigate('/teacher/add-classroom')}
-              >
-                <AiOutlinePlusCircle className="w-5 h-5" />
-                Create Classroom
-              </Button>
-            )}
-
-            {/* <div className="h-10 w-10 flex items-center justify-center ">
-              <IoMdNotificationsOutline className="h-5 w-5 text-black" />
-            </div> */}
+            <button
+              className={`ml-2 text-white hover:text-red-500 transition-colors duration-150 ${sidebarOpen ? '' : ''}`}
+              onClick={handleLogout}
+              title="Logout"
+            >
+              <RiLogoutCircleRLine className="text-2xl" />
+            </button>
           </div>
         </div>
-      </div>
-    </nav>
+      </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile Sticky Navbar */}
+      {isMobile && (
+        <nav className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-primary/80 border-b border-gray-200 dark:border-gray-700 md:hidden shadow-lg">
+          <div className="flex items-center justify-between px-4 py-3">
+            {/* Logo on the left */}
+            <Link to="/" className="flex items-center">
+              <img
+                src="/images/new-logo.png"
+                alt="MathQuest Logo"
+                className="h-10 w-10 object-contain"
+              />
+            </Link>
+            
+            {/* Menu button on the right */}
+            <button
+              className="p-3 rounded-lg  text-primary dark:text-white  hover:text-primary/70 dark:hover:text-white/70 transition-colors shadow-md"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open Menu"
+            >
+              <HiMenuAlt1 className="text-xl" />
+            </button>
+          </div>
+        </nav>
+      )}
+      
+      
+      
+      {/* Render sidebar with overlay */}
+      <MobileOverlay />
+    </>
   );
 };
 

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import AddQuizModal from './AddQuizModal';
 import QuizPreviewModal from './QuizPreviewModal';
 import { FaCheck, FaStar } from 'react-icons/fa';
+import { Button } from '../../ui/button';
 
 const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => {
   const { token, currentUser } = useAuth();
@@ -203,6 +204,29 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
     }
   };
 
+  const formatQuizType = (quizType) => {
+    if (!quizType) return 'Unknown';
+    
+    switch (quizType) {
+      case 'MAJOR_EXAMS':
+        return 'Major Exams';
+      case 'DIAGNOSTIC_QUIZ':
+        return 'Diagnostic Quiz';
+      case 'PRACTICE_QUIZ':
+        return 'Practice Quiz';
+      case 'POP_QUIZ':
+        return 'Pop Quiz';
+      case 'ACTIVITY':
+        return 'Activity';
+      default:
+        // Fallback: convert to sentence case and replace underscores
+        return quizType
+          .toLowerCase()
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
   const getQuizStatus = (quiz) => {
     if (!isStudent || !currentUser?.id) return null;
     
@@ -261,8 +285,8 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
           const status = getQuizStatus(quiz);
           return (
             <div key={quiz.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-              <div className="bg-blue-600 text-white px-4 py-3 flex justify-between items-center">
-                <h4 className="font-semibold truncate">{quiz.quizName}</h4>
+              <div className="bg-blue-900 text-white px-4 py-3 flex justify-between items-center">
+                <h4 className="font-semibold break-words max-w-sm">{quiz.quizName}</h4>
                 {isStudent && status && (
                   <div className="flex items-center gap-2">
                     {status.hasPassed ? (
@@ -271,7 +295,7 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
                         <span className="text-sm">Passed!</span>
                       </div>
                     ) : status.attemptCount > 0 ? (
-                      <div className="flex items-center gap-1 bg-blue-500 px-2 py-1 rounded-full">
+                      <div className="flex items-center gap-1 bg-blue-600 px-2 py-1  rounded-full">
                         <FaStar className="text-yellow-300" />
                         <span className="text-sm">Best: {status.bestScore}%</span>
                       </div>
@@ -284,23 +308,15 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
                 <p className="text-base text-gray-700 mb-2 line-clamp-2">{quiz.description || 'No description provided'}</p>
                 
                 <div className="mt-3 space-y-1 text-base text-gray-600">
+                <p><span className="font-bold">Quiz Type:</span> {formatQuizType(quiz.quizType)}</p>
                   <p><span className="font-bold">Total Questions:</span> {quiz.totalItems}</p>
                   <p><span className="font-bold">Time Limit:</span> {quiz.timeLimitMinutes} minutes</p>
                   <p><span className="font-bold">Passing Score:</span> {quiz.passingScore}/{quiz.overallScore}</p>
                   <p><span className="font-bold">Available From:</span> {formatDate(quiz.availableFrom)}</p>
                   <p><span className="font-bold">Available To:</span> {formatDate(quiz.availableTo)}</p>
-                  <p><span className="font-bold">{quiz.repeatable ? (`Multiple attempts allowed${quiz.maxAttempts ? ` : ${quiz.maxAttempts} attempts only` : ''}`) : 'Single attempt only'}</span></p>
+                  <p><span className="font-bold">{quiz.repeatable ? (`Multiple attempts allowed${quiz.maxAttempts ? ` : ${quiz.maxAttempts} attempts` : ''}`) : 'Single attempt'}</span></p>
                   {isStudent && status && (
                     <div className="mt-2 p-2 bg-gray-50 rounded">
-                      {status.hasPassed ? (
-                        <p className="text-green-600 font-medium">Great job! You've passed this quiz!</p>
-                      ) : status.attemptCount > 0 ? (
-                        <p className="text-blue-600 font-medium">
-                          Keep trying! Your best score is {status.bestScore}%. {status.canAttempt ? 'You can try again!' : ''}
-                        </p>
-                      ) : (
-                        <p className="text-blue-600 font-medium">Ready to test your knowledge? Give it a try!</p>
-                      )}
                       <p className="text-sm text-gray-500 mt-1">
                         Attempts: {status.attemptCount}{quiz.maxAttempts ? `/${quiz.maxAttempts}` : ''}
                       </p>
@@ -310,19 +326,19 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
                 
                 <div className="flex justify-between mt-4 items-center">
                   {isStudent ? (
-                    <button
-                      onClick={() => handleStartQuiz(quiz.id)}
-                      disabled={!status?.canAttempt}
-                      className={`w-full px-3 py-2 rounded transition-colors text-base ${
-                        status?.canAttempt 
-                          ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {status?.attemptCount > 0 
-                        ? (status.hasPassed ? 'Try Again' : 'Try Again') 
-                        : 'Start Quiz'}
-                    </button>
+                     <button
+                     onClick={() => handleStartQuiz(quiz.id)}
+                     disabled={!status?.canAttempt}
+                     className={`w-full px-3 py-2  transition-colors text-base rounded-full ${
+                       status?.canAttempt 
+                         ? 'bg-blue-400 text-white hover:bg-blue-700' 
+                         : 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                     }`}
+                   >
+                     {status?.attemptCount > 0 
+                       ? (status.hasPassed ? 'Try Again' : 'Try Again') 
+                       : 'Start Quiz'}
+                   </button>
                   ) : (
                     <div className="flex items-center space-x-2">
                       <button

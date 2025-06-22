@@ -105,7 +105,7 @@ const ClassroomGamesTab = ({ classroomId: propClassroomId }) => {
 
   if (!effectiveClassroomId) {
     return (
-      <div className="mt-4 bg-white rounded-lg shadow-md p-6 text-center">
+      <div className="mt-4  p-6 text-center">
         <p className="text-gray-600">No classroom selected. Please select a classroom to view games.</p>
       </div>
     );
@@ -121,7 +121,7 @@ const ClassroomGamesTab = ({ classroomId: propClassroomId }) => {
 
   if (games.length === 0) {
     return (
-      <div className="mt-4 bg-white rounded-lg shadow-md p-6 text-center">
+      <div className="mt-4  p-6 text-center">
         <p className="text-gray-600">No games available for this classroom yet.</p>
       </div>
     );
@@ -138,7 +138,7 @@ const ClassroomGamesTab = ({ classroomId: propClassroomId }) => {
             className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transform transition hover:scale-105"
             onClick={() => navigate(`/student/games/${game.id}`)}
           >
-            <div className="bg-blue-500 text-white px-4 py-3 flex justify-between items-center">
+            <div className="bg-blue-900 text-white px-4 py-3 flex justify-between items-center">
               <span className="text-2xl">{getGameTypeIcon(game.type)}</span>
               {getGameLevelBadge(game.level)}
             </div>
@@ -172,7 +172,7 @@ const ClassroomGamesTab = ({ classroomId: propClassroomId }) => {
                 </div>
                 
                 <button
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-5 py-1 bg-blue-400  hover:bg-blue-700 text-white rounded-full"
                 >
                   Play
                 </button>

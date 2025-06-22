@@ -1,64 +1,3 @@
-// import React from "react";
-// import { Header } from "../../ui/heading";
-// import { IoBookSharp } from "react-icons/io5";
-
-// const LessonSidebar = ({ lessons, currentLessonId, onSelectLesson }) => {
-//   if (!lessons?.length) {
-//     return (
-//       <aside className="lesson-sidebar">
-//         <Header
-//           type="h2"
-//           weight="bold"
-//           size="2xl"
-//           className="!text-2xl text-white mb-5"
-//         >
-//           Contents
-//         </Header>
-//         <p className="text-gray-800">
-//           No lessons available for this classroom.
-//         </p>
-//       </aside>
-//     );
-//   }
-
-//   return (
-//     <aside className="lesson-sidebar">
-//       <Header
-//         type="h2"
-//         weight="bold"
-//         size="2xl"
-//         className="!text-2xl text-white mb-5"
-//       >
-//         Contents
-//       </Header>
-
-//       <ul>
-//         {lessons.map((lesson) => {
-//           const isActive = lesson.id === currentLessonId;
-
-//           return (
-//             <li
-//               key={lesson.id}
-//               onClick={() => onSelectLesson(lesson.id)}
-//               className={`
-//                 lesson-item flex items-center gap-2 cursor-pointer rounded-md
-//                 px-3 py-2 transition-colors font-semibold font-xl hover:text-gray-100
-//                 ${isActive ? " text-white" : "text-black "}
-//               `}
-//             >
-//               <IoBookSharp className="h-4 w-4 shrink-0" />
-
-//               <span className="flex-1 truncate">Lesson: {lesson.title}</span>
-//             </li>
-//           );
-//         })}
-//       </ul>
-//     </aside>
-//   );
-// };
-
-// export default LessonSidebar;
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import lessonService from "../../services/lessonService";
@@ -112,7 +51,7 @@ const LessonSidebar = ({
       if (status.quizCompleted) {
         return (
           <div
-            className="flex items-center gap-1 text-green-600"
+            className="flex items-center gap-1 text-green-600 flex-shrink-0"
             title="Lesson completed"
           >
             <BookOpen className="w-4 h-4" />
@@ -122,7 +61,7 @@ const LessonSidebar = ({
       } else if (status.contentRead) {
         return (
           <div
-            className="flex items-center gap-1 text-blue-600"
+            className="flex items-center gap-1 text-blue-600 flex-shrink-0"
             title="Content read, quiz pending"
           >
             <BookOpen className="w-4 h-4" />
@@ -134,7 +73,7 @@ const LessonSidebar = ({
       if (!lessonStats) return null;
 
       return (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-gray-600 flex-shrink-0">
           <div
             className="flex items-center gap-1"
             title={`${Math.round(
@@ -243,9 +182,11 @@ const LessonSidebar = ({
                 {!isUnlocked && <Lock className="w-4 h-4 flex-shrink-0" />}
                 {isUnlocked && <BookOpen className="w-4 h-4 flex-shrink-0" />}
                 {isCompleted && (
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                 )}
-                <span className="truncate">{lesson.title}</span>
+                <span className="break-words text-sm leading-tight">
+                  {lesson.title}
+                </span>
               </div>
               {getLessonStatus(lesson.id)}
             </button>

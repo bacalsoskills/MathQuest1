@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaGoogle, FaFacebookF, FaRegEyeSlash, FaRegEye } from 'react-icons/fa';
 import { Button } from "../ui/button"
 import { Header } from "../ui/heading"
+import { Input } from "../ui/input"
 
 
 const RegisterPage = () => {
@@ -24,6 +25,15 @@ const RegisterPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -113,22 +123,17 @@ const RegisterPage = () => {
         role: formData.role // This will be formatted to array in authService.js
       };
       
-      console.log("Sending registration data:", registrationData);
-      
       // Call the register function from AuthContext
       const result = await register(registrationData); 
       
-      console.log("Registration result:", result);
-      
-      // Backend returns { message: "..." } on success
       if (result && result.message) {
-        // Check if the message is an error message (sometimes backend returns errors with status 200)
+        
         if (result.message.startsWith("Error:")) {
           setGeneralError(result.message);
         } else {
-          // This is a true success message (email verification instructions)
+        
           setSuccessMessage(result.message);
-          // Clear form on successful registration
+         
           setFormData({
             username: '', email: '', password: '', confirmPassword: '',
             firstName: '', lastName: '', role: 'STUDENT'
@@ -140,7 +145,7 @@ const RegisterPage = () => {
       }
     } catch (err) {
       console.error("Registration error:", err);
-      // Display the specific error message from the backend
+      
       setGeneralError(err.message || 'An error occurred during registration');
     } finally {
       setLoading(false);
@@ -148,70 +153,53 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="flex w-full max-w-3xl bg-white rounded-xl shadow-2xl overflow-hidden">
-        <div className="w-1/3 bg-primary flex flex-col items-center justify-center p-8 text-white">
-          <Header   type="h2" fontSize="2xl" weight="bold" className=" mb-4 text-center text-white">Already have an account?</Header>
-        
-          <Button
-                to="/login"
-                variant="outline"
-                size="sm"
-              >
-            Sign In
-          </Button>
+    <div className="md:py-28 flex items-center justify-center">
+      <div className="w-full max-w-5xl mx-4 2xl:mx-auto flex flex-col md:flex-row items-center justify-center rounded-2xl shadow-xl py-12 2xl:py-28 px-8 border border-white/10 dark:border-gray-700 backdrop-blur-md bg-gray-100 dark:bg-transparent">
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center">
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Success!</strong>
+              <span className="block sm:inline"> {successMessage}</span>
+            </div>
+          )}
+          <Link to="/">
+            <img
+              src="/images/new-logo.png"
+              alt="MathQuest Logo"
+              className="w-40 h-40 md:w-72 md:h-72 object-contain mb-2 drop-shadow-xl"
+              draggable="false"
+            />
+          </Link>
+          <Header type="h1" fontSize="5xl" weight="thin" className=" text-primary/80 dark:text-white/80 mb-2 text-center drop-shadow-lg">
+            Create Account
+          </Header>
         </div>
-
-        <div className="w-2/3 p-8">
-          <div className="max-w-md mx-auto">
-          <Header type="h1" fontSize="3xl" weight="bold"  className="text-dark text-center mb-6">
-           Create Account
-        </Header>
- 
-            <div className="flex justify-center space-x-4 mb-6">
-              <button className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors">
-                <FaGoogle className="!text-primary text-base" />
-              </button>
-              <button className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors">
-                <FaFacebookF className="text-primary text-base" />
-              </button>
-            </div>
-
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or fill up the details below</span>
-              </div>
-            </div>
-
+        <div className="w-full lg:w-1/2 flex flex-col justify-center mt-5 lg:mt-0">
+          {/* Registration Form */}
+          <div className="w-full md:max-w-xs mx-auto">
+          
+          
+        
+            {/* Form */}
             <form className="space-y-6" onSubmit={handleSubmit}>
               {generalError && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                   <span className="block sm:inline">{generalError}</span>
                 </div>
               )}
-              {successMessage && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                  <strong className="font-bold">Success!</strong>
-                  <span className="block sm:inline"> {successMessage}</span>
-                </div>
-              )}
+             
               <div className="">
                 <div className="grid grid-cols-1 gap-y-4 gap-x-3 sm:grid-cols-2 mb-3">
                   <div>
                     <label htmlFor="firstName" className="sr-only">
                       First Name
                     </label>
-                    <input
+                    <Input
                       id="firstName"
                       name="firstName"
                       type="text"
                       required
-                      className={`appearance-none rounded relative block w-full px-3 py-2 border ${
-                        errors.firstName ? 'border-red-300' : 'border-gray-300'
-                      } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                      variant="form"
                       placeholder="First Name"
                       value={formData.firstName}
                       onChange={handleChange}
@@ -224,14 +212,12 @@ const RegisterPage = () => {
                     <label htmlFor="lastName" className="sr-only">
                       Last Name
                     </label>
-                    <input
+                    <Input
                       id="lastName"
                       name="lastName"
                       type="text"
-                      required
-                      className={`appearance-none rounded relative block w-full px-3 py-2 border ${
-                        errors.lastName ? 'border-red-300' : 'border-gray-300'
-                      } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                      required      
+                      variant="form"
                       placeholder="Last Name"
                       value={formData.lastName}
                       onChange={handleChange}
@@ -246,14 +232,13 @@ const RegisterPage = () => {
                   <label htmlFor="username" className="sr-only">
                     Username
                   </label>
-                  <input
+                  <Input
                     id="username"
                     name="username"
                     type="text"
                     required
-                    className={`appearance-none rounded relative block w-full px-3 py-2 border ${
-                      errors.username ? 'border-red-300' : 'border-gray-300'
-                    } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                    variant="form"
+                          
                     placeholder="Username"
                     value={formData.username}
                     onChange={handleChange}
@@ -267,14 +252,13 @@ const RegisterPage = () => {
                   <label htmlFor="email" className="sr-only">
                     Email address
                   </label>
-                  <input
+                  <Input
                     id="email"
                     name="email"
                     type="email"
                     required
-                    className={`appearance-none rounded relative block w-full px-3 py-2 border ${
-                      errors.email ? 'border-red-300' : 'border-gray-300'
-                    } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                    variant="form"
+                          
                     placeholder="Email address"
                     value={formData.email}
                     onChange={handleChange}
@@ -289,12 +273,12 @@ const RegisterPage = () => {
                     Password
                   </label>
                   <div className="relative">
-                    <input
+                    <Input
                       id="password"
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       required
-                      className={`appearance-none rounded relative block w-full px-3 py-2 pr-12 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                      variant="form"
                       placeholder="Password"
                       value={formData.password}
                       onChange={handleChange}
@@ -302,7 +286,7 @@ const RegisterPage = () => {
                     <button
                       type="button"
                       onClick={togglePasswordVisibility}
-                      className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                      className="absolute inset-y-0 right-8 flex items-center text-gray-500 z-10 bg-transparent"
                       aria-label="Toggle password visibility"
                       style={{ background: 'none', border: 'none', padding: 0 }}
                     >
@@ -319,12 +303,12 @@ const RegisterPage = () => {
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <input
+                    <Input
                       id="confirmPassword"
                       name="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       required
-                      className={`appearance-none rounded relative block w-full px-3 py-2 pr-12 border ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                      variant="form"
                       placeholder="Confirm Password"
                       value={formData.confirmPassword}
                       onChange={handleChange}
@@ -332,7 +316,7 @@ const RegisterPage = () => {
                     <button
                       type="button"
                       onClick={toggleConfirmPasswordVisibility}
-                      className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                      className="absolute inset-y-0 right-8 flex items-center text-gray-500 z-10 bg-transparent"
                       aria-label="Toggle confirm password visibility"
                       style={{ background: 'none', border: 'none', padding: 0 }}
                     >
@@ -352,9 +336,18 @@ const RegisterPage = () => {
                     id="role"
                     name="role"
                     required
-                    className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-md relative block w-full py-4 px-4 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-gray-200 dark:bg-white/80"
+
                     value={formData.role}
                     onChange={handleChange}
+                    style={
+                      isDark
+                        ? {
+                            backgroundColor: "white",
+                          }
+                        : {}
+                    }
+
                   >
                     <option value="STUDENT">Student</option>
                     <option value="TEACHER">Teacher</option>
@@ -363,16 +356,21 @@ const RegisterPage = () => {
               </div>
 
               <div>
-              <Button
-               type="submit"
-                variant="default"
-                size="sm"
-                className="w-full"
-              >
+                <Button
+                  type="submit"
+                  variant="default"
+                  size="sm"
+                  rounded="full"
+                  className="w-full"
+                >
                   {loading ? 'Creating account...' : 'Create account'}
                 </Button>
               </div>
             </form>
+            <div className="flex justify-center mt-6">
+              <span className="text-sm text-gray-600 dark:text-gray-300">Already have an account?</span>
+              <Link to="/login" className="ml-2 -mt-[0.5px] text-blue-600 dark:text-blue-400 hover:underline">Sign In</Link>
+            </div>
           </div>
         </div>
       </div>

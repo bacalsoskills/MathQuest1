@@ -16,7 +16,7 @@ const StudentClassrooms = () => {
 
   // Function to get a random pastel color
   const getRandomColor = (code) => {
-    const defaultCode = 'DEFAULT_CODE'; // A default string if code is null/undefined/empty
+    const defaultCode = 'DEFAULT_CODE'; 
     const effectiveCode = code && code.length > 0 ? code : defaultCode;
 
     const colors = [
@@ -24,7 +24,7 @@ const StudentClassrooms = () => {
       'bg-red-500', 'bg-yellow-500', 'bg-indigo-600', 'bg-pink-600',
       'bg-teal-500', 'bg-cyan-500'
     ];
-    // Simple hashing to pick a color based on the first character of the code
+
     const index = effectiveCode.charCodeAt(0) % colors.length;
     return colors[index];
   };
@@ -32,13 +32,9 @@ const StudentClassrooms = () => {
   useEffect(() => {
     const fetchClassrooms = async () => {
       try {
-        console.log("Fetching classrooms as student");
         const classroomData = await ClassroomService.getStudentClassrooms();
-        
-        console.log("Retrieved classrooms:", classroomData);
         setClassrooms(classroomData);
       } catch (err) {
-        console.error('Fetch classrooms error:', err);
         setError(err.message || 'Failed to load classrooms');
       } finally {
         setLoading(false);
@@ -48,19 +44,20 @@ const StudentClassrooms = () => {
     fetchClassrooms();
   }, []);
 
-  const handleLeaveClassroom = async (classroomId) => {
-    if (!window.confirm('Are you sure you want to leave this classroom?')) {
-      return;
-    }
+  //remove this students can't leave a classroom
+  // const handleLeaveClassroom = async (classroomId) => {
+  //   if (!window.confirm('Are you sure you want to leave this classroom?')) {
+  //     return;
+  //   }
     
-    try {
-      await ClassroomService.leaveClassroom(classroomId);
-      setClassrooms(classrooms.filter(c => c.id !== classroomId));
-    } catch (err) {
-      console.error('Leave classroom error:', err);
-      setError(err.message || 'Failed to leave classroom');
-    }
-  };
+  //   try {
+  //     await ClassroomService.leaveClassroom(classroomId);
+  //     setClassrooms(classrooms.filter(c => c.id !== classroomId));
+  //   } catch (err) {
+  //     console.error('Leave classroom error:', err);
+  //     setError(err.message || 'Failed to leave classroom');
+  //   }
+  // };
 
   // Filter classrooms based on search term
   const filteredClassrooms = classrooms.filter(classroom => 
@@ -77,34 +74,33 @@ const StudentClassrooms = () => {
   }
 
   return (
-    <div className="bg-[#E7EFFC] min-h-screen px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-      <div className="max-w-5xl mx-auto">
-      <Header type="h1" fontSize="3xl" weight="bold" className="mb-6">My Classrooms</Header>
-        
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-300">
-        <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none  !text-gray-800">
-                <CiSearch />
+    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="max-w-6xl mx-auto">
+      <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white">My Classrooms</Header>
+      <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] mb-5 md:mb-8"></div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 gap-4">
+          <div className="relative w-full sm:w-auto order-2 sm:order-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none dark:!text-gray-300 !text-gray-700">
+                <CiSearch className="dark:!text-gray-300 !text-gray-700" />
               </div>
               <Input
                 type="search"
                 name="search"
                 id="search"
-                className=" block w-full sm:w-64 pl-10 pr-3 py-2 sm:text-sm  !text-gray-800"
+                className="block w-full sm:w-64 pl-10 pr-3 py-2 sm:text-sm border-gray-700 dark:border-gray-300 text-gray-500 dark:text-gray-300"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
+          </div>
         
           <Link
-              to="/student/join-classroom"
-             className="text-secondary font-semibold flex items-center gap-2 h-10"
-           >
-             <AiOutlinePlusCircle className="w-5 h-5" />
-                  Join Classroom
-             
-              </Link>
+            to="/student/join-classroom"
+            className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+          >
+            <AiOutlinePlusCircle className="w-5 h-5" />
+            Join Classroom
+          </Link>
         </div>
 
         {error && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -7,18 +7,17 @@ import { useAuth } from '../../context/AuthContext';
 import FallingGame from './FallingGame';
 import MultipleChoiceGame from './MultipleChoiceGame';
 import Leaderboard from './Leaderboard';
-import LevelProgressionModal from './LevelProgressionModal';
 
 const GameContainer = () => {
   const { gameId } = useParams();
-  const { token } = useAuth();
+  const { token, currentUser } = useAuth();
   const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [finalScore, setFinalScore] = useState(null);
-  const [showLevelSelector, setShowLevelSelector] = useState(false);
+  const [gameState, setGameState] = useState({ gameStarted: false, gameOver: false });
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -39,10 +38,26 @@ const GameContainer = () => {
     }
   }, [gameId, token]);
 
-  const handleGameComplete = (score) => {
-    setFinalScore(score);
-    setShowLeaderboard(true);
-  };
+  const handleGameComplete = useCallback((score, gameStateUpdate) => {
+    if (score !== null) {
+      // Handle score submission
+      setFinalScore(score);
+      // Add a small delay to ensure score submission is processed
+      setTimeout(() => {
+        setShowLeaderboard(true);
+      }, 1000);
+    }
+    
+    if (gameStateUpdate) {
+      // Handle game state update
+      if (gameStateUpdate.showLeaderboard) {
+        // Handle View Leaderboard button click
+        setShowLeaderboard(true);
+      } else {
+        setGameState(gameStateUpdate);
+      }
+    }
+  }, []);
 
   const handleBackToGame = () => {
     setShowLeaderboard(false);
@@ -55,10 +70,6 @@ const GameContainer = () => {
     } else {
       navigate(-1);
     }
-  };
-
-  const handleLevelSelect = (selectedLevel) => {
-    setShowLevelSelector(false);
   };
 
   if (loading) {
@@ -89,14 +100,28 @@ const GameContainer = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {!showLeaderboard ? (
-        <div className="mb-4 flex justify-between items-center">
-          <button
-            onClick={handleBackToClassroom}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-          >
-            Back to Classroom
-          </button>
+      {showLeaderboard && (
+        <div className="mb-4">
+          <nav className="flex items-center space-x-2 text-sm text-gray-600">
+            <button
+              onClick={handleBackToClassroom}
+              className="hover:text-blue-600 transition-colors"
+            >
+              Back to Classroom
+            </button>
+            <span className="text-gray-400">/</span>
+            <button
+              onClick={handleBackToGame}
+              className="hover:text-blue-600 transition-colors"
+            >
+              Back to Game
+            </button>
+          </nav>
+        </div>
+      )}
+
+      {/* {!showLeaderboard && !gameState.gameStarted && (
+        <div className="mb-4 flex justify-start items-center">
           <div className="flex space-x-2">
             <button
               onClick={() => setShowLeaderboard(true)}
@@ -104,52 +129,20 @@ const GameContainer = () => {
             >
               View Leaderboard
             </button>
-            <button
-              onClick={() => setShowLevelSelector(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              View Level
-            </button>
           </div>
         </div>
-      ) : (
-        <div className="mb-4 flex justify-between items-center">
-          <button
-            onClick={handleBackToGame}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-          >
-            Back to Game
-          </button>
-          <button
-            onClick={handleBackToClassroom}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Back to Classroom
-          </button>
-        </div>
-      )}
+      )} */}
 
       {showLeaderboard ? (
-        <Leaderboard gameId={gameId} finalScore={finalScore} />
+        <Leaderboard key={`${gameId}-${finalScore}`} gameId={gameId} finalScore={finalScore} />
       ) : (
-        game.type === 'FALLING_GAME' ? (
-          <FallingGame game={game} onGameComplete={handleGameComplete} />
-        ) : (
-          <MultipleChoiceGame game={game} onGameComplete={handleGameComplete} />
-        )
-      )}
-
-      {showLevelSelector && (
-        <LevelProgressionModal
-          isOpen={true}
-          onClose={() => setShowLevelSelector(false)}
-          scoreData={finalScore ? { score: finalScore } : null}
-          gameName={game?.name || 'Game'}
-          gameId={gameId}
-          maxGameLevel={10}
-          onLevelSelect={handleLevelSelect}
-          showLevelSelection={true}
-        />
+        <div className="">
+          {game.type === 'FALLING_GAME' ? (
+            <FallingGame game={game} onGameComplete={handleGameComplete} />
+          ) : (
+            <MultipleChoiceGame game={game} onGameComplete={handleGameComplete} />
+          )}
+        </div>
       )}
     </div>
   );
