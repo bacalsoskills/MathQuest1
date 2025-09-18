@@ -23,6 +23,10 @@ import { Button } from "../../ui/button";
 import { BookOpen, CheckCircle } from "lucide-react";
 import QuizDisplay from "../../components/quiz/QuizDisplay";
 import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
+import { CiSearch } from "react-icons/ci";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
+import Modal from "../../ui/modal";
 
 const TeacherClassroomPage = () => {
   const { classroomId, lessonId: initialLessonId } = useParams();
@@ -53,6 +57,15 @@ const TeacherClassroomPage = () => {
   const [lastFetchedLessonId, setLastFetchedLessonId] = useState(null);
   const [quizDataMap, setQuizDataMap] = useState({});
 
+  // Students tab state
+  const [classroomStudents, setClassroomStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [studentSearchResults, setStudentSearchResults] = useState([]);
+  const [searchingStudents, setSearchingStudents] = useState(false);
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [enrolledStudentsSearchTerm, setEnrolledStudentsSearchTerm] = useState('');
+
   // Handle URL hash changes to automatically switch tabs
   useEffect(() => {
     const handleHashChange = () => {
@@ -63,7 +76,8 @@ const TeacherClassroomPage = () => {
         const tabMapping = {
           'class-record-tab': 'class-record',
           'lessons-tab': 'lessons',
-          'activities-tab': 'activities'
+          'activities-tab': 'activities',
+          'students-tab': 'students'
         };
         
         if (tabMapping[tabName]) {
@@ -123,7 +137,215 @@ const TeacherClassroomPage = () => {
 
     fetchData();
   }, [classroomId, initialLessonId]);
-  
+
+  // Fetch students when students tab is active
+  useEffect(() => {
+    if (activeTab === "students" && classroomId) {
+      fetchClassroomStudents();
+    }
+  }, [activeTab, classroomId]);
+
+  const fetchClassroomStudents = async () => {
+    try {
+      setLoadingStudents(true);
+      const students = await classroomService.getStudentsInClassroom(classroomId);
+      setClassroomStudents(students);
+    } catch (err) {
+      console.error('Fetch students error:', err);
+      setError(`Failed to load students for ${classroomDetails?.name || 'classroom'}`);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const handleSearchStudents = async (searchTerm) => {
+    if (!classroomId || !searchTerm.trim()) {
+      setStudentSearchResults([]);
+      return;
+    }
+    
+    setSearchingStudents(true);
+    try {
+      // Search for students using the backend API
+      const results = await classroomService.searchStudents(searchTerm, classroomId);
+      
+      // Additional client-side filtering for better search results
+      const filteredResults = results.filter(student => {
+        const searchLower = searchTerm.toLowerCase();
+        const firstName = (student.firstName || '').toLowerCase();
+        const lastName = (student.lastName || '').toLowerCase();
+        const username = (student.username || '').toLowerCase();
+        const fullName = `${firstName} ${lastName}`.toLowerCase();
+        
+        return (
+          firstName.includes(searchLower) ||
+          lastName.includes(searchLower) ||
+          username.includes(searchLower) ||
+          fullName.includes(searchLower)
+        );
+      });
+      
+      setStudentSearchResults(filteredResults);
+      setError('');
+    } catch (err) {
+      console.error('Search students error:', err);
+      setError(err.message || 'Failed to search for students');
+      setStudentSearchResults([]);
+    } finally {
+      setSearchingStudents(false);
+    }
+  };
+
+  // Helper function to safely render avatar
+  const renderStudentAvatar = (student) => {
+    if (student.profileImage) {
+      // Check if the profile image is already a complete URL
+      if (student.profileImage.startsWith('http')) {
+        return (
+          <AvatarImage
+            src={student.profileImage}
+            alt={`${student.firstName} ${student.lastName}`}
+          />
+        );
+      }
+      // Check if it's a base64 string
+      if (student.profileImage.startsWith('data:')) {
+        return (
+          <AvatarImage
+            src={student.profileImage}
+            alt={`${student.firstName} ${student.lastName}`}
+          />
+        );
+      }
+      // Assume it's a base64 string without the data URL prefix
+      return (
+        <AvatarImage
+          src={`data:image/jpeg;base64,${student.profileImage}`}
+          alt={`${student.firstName} ${student.lastName}`}
+        />
+      );
+    }
+    
+    // Fallback to initials
+    const initials = `${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase();
+    return (
+      <AvatarFallback className="bg-blue-500 text-white">
+        {initials || '?'}
+      </AvatarFallback>
+    );
+  };
+
+  // Helper function to filter enrolled students
+  const getFilteredEnrolledStudents = () => {
+    if (!enrolledStudentsSearchTerm.trim()) {
+      return classroomStudents;
+    }
+    
+    const searchLower = enrolledStudentsSearchTerm.toLowerCase();
+    return classroomStudents.filter(student => {
+      const firstName = (student.firstName || '').toLowerCase();
+      const lastName = (student.lastName || '').toLowerCase();
+      const username = (student.username || '').toLowerCase();
+      const fullName = `${firstName} ${lastName}`.toLowerCase();
+      
+      return (
+        firstName.includes(searchLower) ||
+        lastName.includes(searchLower) ||
+        username.includes(searchLower) ||
+        fullName.includes(searchLower)
+      );
+    });
+  };
+
+  const handleAddStudent = async (studentId) => {
+    if (!studentId || !classroomId) return;
+    
+    // Find the student in the search results
+    const studentToAdd = studentSearchResults.find(s => s.id === studentId);
+    if (!studentToAdd || studentToAdd.inClassroom) return;
+    
+    // Optimistically update UI
+    setStudentSearchResults(prevResults => 
+      prevResults.map(student => 
+        student.id === studentId 
+          ? { ...student, inClassroom: true, isAdding: true } 
+          : student
+      )
+    );
+    
+    try {
+      await classroomService.addStudentToClassroom(classroomId, studentId);
+      
+      // Update the student search results to mark this student as in the classroom
+      setStudentSearchResults(prevResults => 
+        prevResults.map(student => 
+          student.id === studentId 
+            ? { ...student, inClassroom: true, isAdding: false } 
+            : student
+        )
+      );
+      
+      // Refresh the classroom students list
+      await fetchClassroomStudents();
+      
+      // Update total student count
+      const newCount = await classroomService.getStudentCountInClassroom(classroomId);
+      setTotalStudents(newCount);
+      
+      setError('');
+      toast.success('Student added successfully');
+    } catch (err) {
+      console.error('Add student error:', err);
+      setError(err.message || 'Failed to add student to classroom');
+      toast.error(err.message || 'Failed to add student to classroom');
+      
+      // Revert the optimistic update
+      setStudentSearchResults(prevResults => 
+        prevResults.map(student => 
+          student.id === studentId 
+            ? { ...student, inClassroom: false, isAdding: false } 
+            : student
+        )
+      );
+    }
+  };
+
+  const handleRemoveStudent = async (studentId) => {
+    if (!classroomId) return;
+ 
+    if (!window.confirm('Are you sure you want to remove this student from the classroom?')) {
+      return;
+    }
+    
+    try {
+      await classroomService.removeStudentFromClassroom(classroomId, studentId);
+      setClassroomStudents(prevStudents => prevStudents.filter(s => s.id !== studentId));
+      
+      // Update total student count
+      const newCount = await classroomService.getStudentCountInClassroom(classroomId);
+      setTotalStudents(newCount);
+      
+      toast.success('Student removed successfully');
+    } catch (err) {
+      console.error('Remove student error:', err);
+      setError(err.message || 'Failed to remove student from classroom');
+      toast.error(err.message || 'Failed to remove student from classroom');
+    }
+  };
+
+  // Debounce student search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (studentSearchTerm) {
+        handleSearchStudents(studentSearchTerm);
+      } else {
+        setStudentSearchResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [studentSearchTerm, classroomId]);
+
   useEffect(() => {
     const fetchActivities = async () => {
       const activitiesList = await activityService.getActivitiesByClassroom(classroomId);
@@ -197,23 +419,19 @@ const TeacherClassroomPage = () => {
         setStatsError(null);
         
         // Fetch completion stats for teachers
-        console.log(`[TeacherClassroomPage] Fetching completion stats for lesson ${selectedLesson.id}`);
         const statsData = await lessonService.getLessonCompletionStats(selectedLesson.id);
-        console.log(`[TeacherClassroomPage] Received completion stats:`, statsData);
         setStats(statsData);
         setLastFetchedLessonId(selectedLesson.id);
 
         // Fetch students who read the lesson
         if (statsData.studentsRead > 0) {
-          console.log(`[TeacherClassroomPage] Fetching students who read lesson ${selectedLesson.id}`);
           const students = await lessonService.getStudentsWhoReadLesson(selectedLesson.id);
-          console.log(`[TeacherClassroomPage] Received students who read:`, students);
           setStudentsWhoRead(students);
         } else {
           setStudentsWhoRead([]);
         }
       } catch (err) {
-        console.error(`[TeacherClassroomPage] Error fetching stats:`, err);
+      
         setStatsError(err.message || 'Failed to fetch lesson statistics');
         setStats(null);
         setStudentsWhoRead([]);
@@ -232,8 +450,6 @@ const TeacherClassroomPage = () => {
     const quizActivities = selectedLesson.activities.filter(activity => activity?.type === 'QUIZ' && activity?.id);
     
     if (quizActivities.length > 0) {
-      console.log(`[TeacherClassroomPage] Fetching quiz data for ${quizActivities.length} quizzes`);
-      
       // For each quiz activity, fetch the quiz details
       quizActivities.forEach(activity => {
         // Skip if we already have the quiz data
@@ -241,7 +457,6 @@ const TeacherClassroomPage = () => {
 
         quizService.getQuizByActivityId(activity.id)
           .then(quizData => {
-            console.log(`[TeacherClassroomPage] Received quiz data for activity ${activity.id}:`, quizData);
             setQuizDataMap(prev => ({
               ...prev,
               [activity.id]: quizData
@@ -258,7 +473,7 @@ const TeacherClassroomPage = () => {
     if (studentsWhoRead.length > 0) {
       studentsWhoRead.slice(-4).forEach(student => {
         const imgHash = student.profileImage ? student.profileImage.substring(0, 16) : 'NO_IMAGE';
-        console.log(`[TeacherClassroomPage] Avatar: id=${student.id}, name=${student.firstName} ${student.lastName}, imgHash=${imgHash}`);
+      
       });
     }
   }, [studentsWhoRead]);
@@ -372,8 +587,6 @@ const TeacherClassroomPage = () => {
 
   const handleQuizCreated = async (quizPayload) => {
     try {
-      console.log('Quiz created successfully:', quizPayload);
-
       // Close the modal
       setIsAddQuizModalOpen(false);
 
@@ -382,12 +595,6 @@ const TeacherClassroomPage = () => {
 
       // Trigger a refresh by incrementing the refreshTrigger
       setActivityRefreshTrigger(prev => prev + 1);
-
-      // Refresh the lesson data to show updated activities
-      // if (currentLessonId) {
-      //   const updatedLesson = await lessonService.getLessonById(currentLessonId);
-      //   setSelectedLesson(updatedLesson);
-      // }
       
       // Refresh quizzes
       const quizData = await quizService.getQuizzesByClassroom(classroomId);
@@ -415,446 +622,570 @@ const TeacherClassroomPage = () => {
   }
 
   return (
-     <div className="bg-[#E7EFFC] min-h-screen px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-      <div className="max-w-5xl mx-auto">
-
-      <div className="classroom-header flex flex-col md:flex-row md:space-x-8 h-full md:h-auto">
-        {/* Left - Image */}
-        <div className="w-full md:w-1/3 h-full">
-          <div className="h-full bg-gray-200 rounded-tl-3xl rounded-bl-3xl overflow-hidden">
-            {classroomDetails.image ? (
-              <img
-                src={`data:image/jpeg;base64,${classroomDetails.image}`}
-                alt={classroomDetails.name}
-                className="w-full h-[280px] object-cover"
-              />
-            ) : (
-              <div className="w-full h-[280px] flex items-center justify-center bg-gradient-to-r from-blue-100 to-blue-200">
-                <span className="text-lg text-blue-500 font-medium">
-                  {selectedLesson?.title || classroomDetails.name}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right - Details */}
-        <div className="w-full md:w-2/3 flex flex-col md:pl-4 md:pr-6 py-5 h-full">
-          {/* Course code and title */}
-          <div className="flex flex-col md:flex-row justify-between">
-            <div>
-              <div className="text-sm font-bold text-blue-600 mb-1">
-                {classroomDetails.shortCode}
-              </div>
-              <div className="flex items-center gap-2">
-                <Header type="h1" fontSize="3xl" weight="bold" className="text-gray-800">
-                  {classroomDetails.name}
-                </Header>
-                <button 
-                  onClick={handleOpenEditClassroomModal}
-                  className="text-blue-600 hover:text-blue-800 transition-colors"
-                  title="Edit classroom details"
-                >
-                  <MdEdit className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Teacher */}
-            <div className="mt-2 md:mt-0">
-              <div className="text-sm font-semibold text-gray-800">
-                Teacher:{' '}
-                {classroomDetails.teacher?.firstName && classroomDetails.teacher?.lastName
-                  ? `${classroomDetails.teacher.firstName} ${classroomDetails.teacher.lastName}`
-                  : classroomDetails.teacher?.name || 'N/A'}
-              </div>
-              <div className="font-medium">{classroomDetails.teacherName}</div>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="mt-3">
-            <p className="text-gray-700">{classroomDetails.description}</p>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-10 grid grid-cols-4 divide-x divide-gray-300 text-center">
-            <div className="stat-counter px-4">
-              <div className="text-2xl font-bold">{lessons.length}</div>
-              <div className="text-sm text-gray-500">Lessons</div>
-            </div>
-            <div className="stat-counter px-4">
-              <div className="text-2xl font-bold">{activities.length}</div>
-              <div className="text-sm text-gray-500">Activities</div>
-            </div>
-            <div className="stat-counter px-4">
-            <div className="text-2xl font-bold ">
-              {totalStudents}
-            </div>
-            <div className="text-sm text-gray-500">Students</div>
-            </div>
-          
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs Navigation */}
-      <div className="my-10">
-        <hr className="border-gray-300" />
-        
-        <div className="flex flex-col items-center justify-center py-4">
-          <div className="tabs-nav flex items-center">
-            <button
-            onClick={() => handleTabChange("lessons")}
-            className="px-4 py-2 mr-2 text-gray-500 hover:text-gray-800"
-          >
-            <span
-              className={`${
-                activeTab === "lessons"
-                  ? "font-semibold border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              Lessons
-            </span>
-          </button>
-
-            <div className="border-l border-gray-300 h-6 mx-2" />
-           
-
-            <button
-             onClick={() => handleTabChange("activities")}
-            className="px-4 py-2 text-gray-500 hover:text-gray-800"
-          >
-            <span
-              className={`${
-                activeTab === "activities"
-                  ? "font-semibold border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              Activities
-            </span>
-          </button>
-
-          <div className="border-l border-gray-300 h-6 mx-2" />
-           
-
-           <button
-            onClick={() => handleTabChange("class-record")}
-           className="px-4 py-2 text-gray-500 hover:text-gray-800"
-         >
-           <span
-             className={`${
-               activeTab === "class-record"
-                 ? "font-semibold border-b-2 border-blue-600 text-blue-600"
-                 : "text-gray-500 hover:text-gray-800"
-             }`}
-             id="class-record-tab"
-           >
-             Class Record
-           </span>
-         </button>
-          </div>
-        </div>
-
-        <hr className="border-gray-300" />
-    </div>
-
-
-    {/* Tab Contents */}
-    <div className="mt-6 ">
-       <div className="flex justify-end my-5 gap-2">
-        {activeTab === "activities" && (
-          <>
-            <button
-              onClick={handleOpenAddQuizModal}
-              className="px-4 py-2 font-bold text-secondary flex items-center gap-2 h-10"
-            >
-              <AiOutlinePlusCircle className="w-5 h-5" />
-              Add Quiz
-            </button>
-            <button
-              onClick={handleOpenAddActivityModal}
-              className="px-4 py-2 font-bold text-secondary flex items-center gap-2 h-10"
-            >
-              <AiOutlinePlusCircle className="w-5 h-5" />
-              Add Game
-            </button>
-          </>
-        )}
-        {activeTab === "lessons" && (
-          <button
-            onClick={handleOpenAddModal}
-            className="px-4 py-2 font-bold text-secondary flex items-center gap-2 h-10"
-          >
-            <AiOutlinePlusCircle className="w-5 h-5" />
-            Add Lesson
-          </button>
-        )}
-      </div>
-      {activeTab === "lessons" && (
-        
-        <div className="flex flex-col md:flex-row gap-6">
-
-
-          {/* Left Side - Sidebar */}
-          <div className="w-full md:w-1/3 bg-[#60B5FF] rounded-tl-3xl rounded-bl-3xl overflow-hidden p-5">
-            <LessonSidebar
-              lessons={lessons}
-              currentLessonId={currentLessonId}
-              onSelectLesson={handleSelectLesson}
-            />
-          </div>
-
-
-
-          {/* Right Side - Lesson Content */}
-          <div className="w-full md:w-2/3 bg-[#60B5FF]/20 rounded-lg shadow h-[calc(85vh)] flex flex-col relative">
-            {/* Lesson Loading Overlay */}
-            {lessonLoading && (
-              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-                  <p className="text-gray-600 text-sm">Loading lesson...</p>
+    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="classroom-header flex flex-col md:flex-row md:space-x-8 h-full md:h-auto">
+          {/* Left - Image */}
+          <div className="w-full md:w-1/3 h-full">
+            <div className="h-full bg-gray-200 rounded-tl-3xl rounded-bl-3xl overflow-hidden mb-5 md:mb-0">
+              {classroomDetails.image ? (
+                <img
+                  src={`data:image/jpeg;base64,${classroomDetails.image}`}
+                  alt={classroomDetails.name}
+                  className="w-full h-[280px] object-cover"
+                />
+              ) : (
+                <div className="w-full h-[280px] flex items-center justify-center bg-gradient-to-r from-blue-100 to-blue-200">
+                  <span className="text-2xl text-blue-500 font-medium">
+                    {classroomDetails.shortCode}
+                  </span>
                 </div>
-              </div>
-            )}
-            
-            {!lessons || lessons.length === 0 ? (
-              <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
-                <div className="text-center">
-                  <Header
-                    type="h1"
-                    weight="bold"
-                    size="3xl"
-                    className="!text-4xl text-gray-800 mb-4"
-                  >
-                    Add New Lesson
+              )}
+            </div>
+          </div>
+
+          {/* Right - Details */}
+          <div className="w-full md:w-2/3 flex flex-col md:pl-4 md:pr-6 py-5 h-full">
+            <div className="flex flex-col md:flex-row justify-between">
+              <div>
+                <div className="text-sm font-bold text-blue-600 mb-1">
+                  {classroomDetails.shortCode}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Header type="h1" fontSize="3xl" weight="bold" className="dark:text-gray-50 text-gray-800">
+                    {classroomDetails.name}
                   </Header>
-                  <p className="text-gray-500 text-lg mb-4">This classroom currently has no lessons.</p>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="flex items-center gap-2 h-10"
-                    onClick={handleOpenAddModal}
+                  <button 
+                    onClick={handleOpenEditClassroomModal}
+                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                    title="Edit classroom details"
                   >
-                    Add Your First Lesson
-                  </Button>
+                    <MdEdit className="w-5 h-5" />
+                  </button>
                 </div>
-              </main>
-            ) : loading && currentLessonId && !selectedLesson ? (
-              <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-                  <p className="text-gray-500 text-lg">Loading lesson details...</p>
-                </div>
-              </main>
-            ) : selectedLesson ? (
-              <div className="flex flex-col h-full">
-                {/* Fixed Title Section */}
-                <div className="p-5 border-b border-gray-100">
-                  <div className="flex justify-between items-center">
-                    <Header
-                      type="h2"
-                      weight="bold"
-                      size="3xl"
-                      className="!text-4xl text-black"
-                    >{selectedLesson.title}</Header>
-                    <button 
-                      onClick={handleOpenEditLessonModal}
-                      className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                      title="Edit lesson details"
-                    >
-                      <MdEdit className="w-6 h-6" />
-                    </button>
-                  </div>
-                </div>
+              </div>
 
-                {/* Scrollable Content Section */}
-                <div className="flex-1 overflow-y-auto p-5">
-                  {stats && (
-                    <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-1" title={`Students who read the content`}>
-                            <BookOpen className="w-4 h-4" />
-                            <span>{stats.studentsRead} / {stats.totalStudents} Read</span>
+              {/* Teacher */}
+              <div className="mt-2 md:mt-0">
+                <div className="text-sm font-medium dark:text-gray-50 text-gray-800">
+                  Teacher:{' '}
+                  {classroomDetails.teacher?.firstName && classroomDetails.teacher?.lastName
+                    ? `${classroomDetails.teacher.firstName} ${classroomDetails.teacher.lastName}`
+                    : classroomDetails.teacher?.name || 'N/A'}
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="mt-3">
+              <p className="text-gray-700 dark:text-gray-100">{classroomDetails.description}</p>
+            </div>
+
+            {/* Stats */}
+            <div className="mt-10 grid grid-cols-4 divide-x divide-gray-300 text-center">
+              <div className="stat-counter px-4">
+                <div className="text-2xl font-bold dark:text-gray-100">{lessons.length}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-100">Lessons</div>
+              </div>
+              <div className="stat-counter px-4">
+                <div className="text-2xl font-bold dark:text-gray-100">{activities.length}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-100">Activities</div>
+              </div>
+              <div className="stat-counter px-4">
+                <div className="text-2xl font-bold dark:text-gray-100">
+                  {totalStudents}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-100">Students</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs Navigation */}
+        <div className="my-10">
+          <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] "></div>
+          
+          <div className="flex flex-col items-center justify-center py-4">
+            <div className="tabs-nav flex items-center">
+              <button
+                onClick={() => handleTabChange("lessons")}
+                className="md:px-4 py-2 mr-1 md:mr-2 text-gray-500 hover:text-gray-800 "
+                id="lessons-tab"
+              >
+                <span
+                  className={`${
+                    activeTab === "lessons"
+                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
+                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
+                  }`}
+                >
+                  Lessons
+                </span>
+              </button>
+
+              <div className="border-l border-gray-300 h-6 mx-2" />
+            
+              <button
+                onClick={() => handleTabChange("activities")}
+                className="md:px-4 py-2 mr-1 md:mr-2 text-gray-500 hover:text-gray-800 "
+                id="activities-tab"
+              >
+                <span
+                  className={`${
+                    activeTab === "activities"
+                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
+                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
+                  }`}
+                >
+                  Activities
+                </span>
+              </button>
+
+              <div className="border-l border-gray-300 h-6 mx-2" />
+              <button
+                onClick={() => handleTabChange("class-record")}
+                className="md:px-4 py-2 mr-1 md:mr-2 text-gray-500 hover:text-gray-800 "
+                id="class-record-tab"
+              >
+                <span
+                  className={`${
+                    activeTab === "class-record"
+                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
+                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
+                  }`}
+                >
+                  Class Record
+                </span>
+              </button>
+
+              <div className="border-l border-gray-300 h-6 mx-2" />
+              <button
+                onClick={() => handleTabChange("students")}
+                className="md:px-4 py-2 mr-1 md:mr-2 text-gray-500 hover:text-gray-800 "
+                id="students-tab"
+              >
+                <span
+                  className={`${
+                    activeTab === "students"
+                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
+                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
+                  }`}
+                >
+                  Students
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] "></div>
+        </div>
+
+        {/* Tab Contents */}
+        <div className="mt-6 tab-content-section">
+          <div className="flex justify-end my-5 gap-2">
+            {activeTab === "activities" && (
+              <>
+                <button
+                  onClick={handleOpenAddQuizModal}
+                   className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+                >
+                  <AiOutlinePlusCircle className="w-5 h-5" />
+                  Add Quiz
+                </button>
+                <button
+                  onClick={handleOpenAddActivityModal}
+                 className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+                >
+                  <AiOutlinePlusCircle className="w-5 h-5" />
+                  Add Game
+                </button>
+              </>
+            )}
+            {activeTab === "lessons" && (
+              <button
+                onClick={handleOpenAddModal}
+                className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+              >
+                <AiOutlinePlusCircle className="w-5 h-5" />
+                Add Lesson
+              </button>
+            )}
+            {activeTab === "students" && (
+              <button
+                onClick={() => setIsAddStudentModalOpen(true)}
+                className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+              >
+                <AiOutlinePlusCircle className="w-5 h-5" />
+                Add Student
+              </button>
+            )}
+          </div>
+
+          {activeTab === "lessons" && (
+            <div className="flex flex-col md:flex-row gap-6">
+              
+              <div className="w-full md:w-1/3 bg-[#60B5FF] rounded-tl-3xl rounded-bl-3xl overflow-hidden p-5">
+                <LessonSidebar
+                  lessons={lessons}
+                  currentLessonId={currentLessonId}
+                  onSelectLesson={handleSelectLesson}
+                />
+              </div>
+
+     
+              <div className="w-full md:w-2/3 bg-[#60B5FF]/20 dark:bg-gray-50 rounded-lg shadow h-[calc(85vh)] flex flex-col relative">
+                
+                {lessonLoading && (
+                  <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                      <p className="text-gray-600 text-sm">Loading lesson...</p>
+                    </div>
+                  </div>
+                )}
+                
+                {!lessons || lessons.length === 0 ? (
+                  <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                    <div className="text-center">
+                      <Header
+                        type="h1"
+                        weight="bold"
+                        size="3xl"
+                        className="!text-4xl text-gray-800 mb-4"
+                      >
+                        Add New Lesson
+                      </Header>
+                      <p className="text-gray-500 text-lg mb-4">This classroom currently has no lessons.</p>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        rounded="full"
+                        className="flex items-center gap-2 h-10"
+                        onClick={handleOpenAddModal}
+                      >
+                        Add Your First Lesson
+                      </Button>
+                    </div>
+                  </main>
+                ) : loading && currentLessonId && !selectedLesson ? (
+                  <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                      <p className="text-gray-500 text-lg">Loading lesson details...</p>
+                    </div>
+                  </main>
+                ) : selectedLesson ? (
+                  <div className="flex flex-col h-full">
+                    {/* Fixed Title Section */}
+                    <div className="p-5 border-b dark:border-blue-400 border-gray-100">
+                      <div className="flex justify-between items-center">
+                        <Header
+                          type="h2"
+                          weight="bold"
+                          className="!text-4xl text-primary "
+                        >{selectedLesson.title}</Header>
+                        <button 
+                          onClick={handleOpenEditLessonModal}
+                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                          title="Edit lesson details"
+                        >
+                          <MdEdit className="w-6 h-6" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Scrollable Content Section */}
+                    <div className="flex-1 overflow-y-auto p-5">
+                      {stats && (
+                        <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-1" title={`Students who read the content`}>
+                                <BookOpen className="w-4 h-4" />
+                                <span>{stats.studentsRead} / {stats.totalStudents} Read</span>
+                              </div>
+                              {/* Only show quiz completion if there's a quiz in the lesson */}
+                              {selectedLesson.activities?.some(activity => activity?.type === 'QUIZ') && (
+                                <div className="flex items-center gap-1" title={`Students who completed the quiz`}>
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>{stats.studentsCompletedQuiz} / {stats.totalStudents} Completed Quiz</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          {/* Only show quiz completion if there's a quiz in the lesson */}
-                          {selectedLesson.activities?.some(activity => activity?.type === 'QUIZ') && (
-                            <div className="flex items-center gap-1" title={`Students who completed the quiz`}>
-                              <CheckCircle className="w-4 h-4" />
-                              <span>{stats.studentsCompletedQuiz} / {stats.totalStudents} Completed Quiz</span>
+                        </div>
+                      )}
+
+                      {/* Content Blocks */}
+                      {selectedLesson.contentBlocks?.length > 0 ? (
+                        <div className="content-blocks space-y-8">
+                          {selectedLesson.contentBlocks.map((block) => (
+                            <div key={block.id} className="content-block">
+                              <ContentBlockDisplay block={block} />
+                            </div>
+                          ))}
+
+                          {/* Quiz Section */}
+                          {selectedLesson.activities?.filter(activity => activity?.type === 'QUIZ' && activity?.id)?.length > 0 && (
+                            <div className="mt-8">
+                              <div className="quiz-section">
+                                <Header type="h3" weight="semibold" className="mb-4">
+                                  Lesson Quiz
+                                </Header>
+                                {selectedLesson.activities
+                                  .filter(activity => activity?.type === 'QUIZ' && activity?.id)
+                                  .map(activity => {
+                                    const quizData = quizDataMap[activity.id];
+                                    return (
+                                      <div key={activity.id} className="mb-6 p-4 bg-white rounded-lg shadow">
+                                        <h4 className="text-lg font-semibold mb-2">{activity.title || quizData?.quizName || 'Quiz'}</h4>
+                                        <p className="text-gray-600 mb-4">{activity.description || quizData?.description}</p>
+                                        
+                                        {/* Quiz Details */}
+                                        <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                                          <div>
+                                            <span className="font-medium">Time Limit:</span> {quizData?.timeLimitMinutes || 0} minutes
+                                          </div>
+                                          <div>
+                                            <span className="font-medium">Quiz Type:</span> {quizData?.quizType || 'Standard'}
+                                          </div>
+                                          <div>
+                                            <span className="font-medium">Passing Score:</span> {quizData?.passingScore || 0}/{quizData?.overallScore || 0}
+                                          </div>
+                                          <div>
+                                            <span className="font-medium">Max Attempts:</span> {quizData?.maxAttempts || '1'}
+                                          </div>
+                                          <div>
+                                            <span className="font-medium">Available From:</span> {quizData?.availableFrom ? new Date(quizData.availableFrom).toLocaleString() : 'Not set'}
+                                          </div>
+                                          <div>
+                                            <span className="font-medium">Available To:</span> {quizData?.availableTo ? new Date(quizData.availableTo).toLocaleString() : 'Not set'}
+                                          </div>
+                                          {quizData?.attempts && (
+                                            <div>
+                                              <span className="font-medium">Total Attempts:</span> {quizData.attempts.length || 0}
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Quiz Status */}
+                                        <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-100">
+                                          <p className="font-medium text-blue-700">Quiz Status:</p>
+                                          <p className="text-blue-600">
+                                            {stats?.studentsCompletedQuiz || 0} out of {stats?.totalStudents || 0} students have completed this quiz.
+                                          </p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
                             </div>
                           )}
                         </div>
-                      </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">No content has been added to this lesson yet.</p>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {/* Content Blocks */}
-                  {selectedLesson.contentBlocks.map((block) => (
-                    <div key={block.id} className="content-block">
-                      <ContentBlockDisplay block={block} />
-                    </div>
-                  ))}
-
-                  {/* Quiz Section */}
-                  {selectedLesson.activities?.filter(activity => activity?.type === 'QUIZ' && activity?.id)?.length > 0 && (
-                    <div className="mt-8">
-                      <div className="quiz-section">
-                        <Header type="h3" weight="semibold" className="mb-4">
-                          Lesson Quiz
-                        </Header>
-                        {selectedLesson.activities
-                          .filter(activity => activity?.type === 'QUIZ' && activity?.id)
-                          .map(activity => {
-                            const quizData = quizDataMap[activity.id];
-                            return (
-                              <div key={activity.id} className="mb-6 p-4 bg-white rounded-lg shadow">
-                                <h4 className="text-lg font-semibold mb-2">{activity.title || quizData?.quizName || 'Quiz'}</h4>
-                                <p className="text-gray-600 mb-4">{activity.description || quizData?.description}</p>
-                                
-                                {/* Quiz Details */}
-                                <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                                  <div>
-                                    <span className="font-medium">Time Limit:</span> {quizData?.timeLimitMinutes || 0} minutes
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Quiz Type:</span> {quizData?.quizType || 'Standard'}
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Passing Score:</span> {quizData?.passingScore || 0}/{quizData?.overallScore || 0}
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Max Attempts:</span> {quizData?.maxAttempts || '1'}
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Available From:</span> {quizData?.availableFrom ? new Date(quizData.availableFrom).toLocaleString() : 'Not set'}
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Available To:</span> {quizData?.availableTo ? new Date(quizData.availableTo).toLocaleString() : 'Not set'}
-                                  </div>
-                                  {quizData?.attempts && (
-                                    <div>
-                                      <span className="font-medium">Total Attempts:</span> {quizData.attempts.length || 0}
-                                    </div>
-                                  )}
-                                </div>
-                                
-                                {/* Quiz Status */}
-                                <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-100">
-                                  <p className="font-medium text-blue-700">Quiz Status:</p>
-                                  <p className="text-blue-600">
-                                    {stats?.studentsCompletedQuiz || 0} out of {stats?.totalStudents || 0} students have completed this quiz.
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Student Avatars Overlay */}
-                {studentsWhoRead.length > 0 && (
-                  (() => {
-                    // Log student avatar info for debugging
-                    studentsWhoRead.slice(-4).forEach(student => {
-                      const imgHash = student.profileImage ? student.profileImage.substring(0, 16) : 'NO_IMAGE';
-                      console.log(`[TeacherClassroomPage] Avatar: id=${student.id}, name=${student.firstName} ${student.lastName}, imgHash=${imgHash}`);
-                    });
-                    return (
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: 24,
-                          right: 24,
-                          display: "flex",
-                          alignItems: "center",
-                          zIndex: 10,
-                          background: "#23272f",
-                          borderRadius: "9999px",
-                          padding: "4px 8px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-                        }}
-                      >
-                        {studentsWhoRead.length > 4 && (
+                    {/* Student Avatars Overlay */}
+                    {studentsWhoRead.length > 0 && (
+                      (() => {
+                        return (
                           <div
                             style={{
-                              background: "#444950",
-                              color: "#fff",
+                              position: "absolute",
+                              bottom: 24,
+                              right: 24,
+                              display: "flex",
+                              alignItems: "center",
+                              zIndex: 10,
+                              background: "white",
                               borderRadius: "9999px",
-                              padding: "2px 8px",
-                              fontSize: "14px",
-                              fontWeight: 500,
-                              marginRight: "4px"
+                              padding: "4px 8px",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
                             }}
                           >
-                            +{studentsWhoRead.length - 4}
-                          </div>
-                        )}
-                        {studentsWhoRead.slice(-4).map((student) => (
-                          <Avatar key={student.id} className="h-8 w-8 border-2 border-[#23272f] -ml-2 first:ml-0">
-                            {student.profileImage ? (
-                              <AvatarImage
-                                src={`data:image/jpeg;base64,${student.profileImage}`}
-                                alt={`${student.firstName} ${student.lastName}`}
-                              />
-                            ) : (
-                              <AvatarFallback className="bg-blue-500 text-white text-xs">
-                                {`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`}
-                              </AvatarFallback>
+                            {studentsWhoRead.length > 4 && (
+                              <div
+                                style={{
+                                  background: "#444950",
+                                  color: "#fff",
+                                  borderRadius: "9999px",
+                                  padding: "2px 8px",
+                                  fontSize: "14px",
+                                  fontWeight: 500,
+                                  marginRight: "4px"
+                                }}
+                              >
+                                +{studentsWhoRead.length - 4}
+                              </div>
                             )}
-                          </Avatar>
-                        ))}
-                      </div>
-                    );
-                  })()
+                            {studentsWhoRead.slice(-4).map((student) => (
+                              <Avatar key={student.id} className="h-8 w-8 border-2 border-[#23272f] -ml-2 first:ml-0">
+                                {renderStudentAvatar(student)}
+                              </Avatar>
+                            ))}
+                          </div>
+                        );
+                      })()
+                    )}
+                  </div>
+                ) : lessons.length > 0 && !currentLessonId ? (
+                  <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                    <p className="text-gray-500 text-lg">Please select a lesson to view its details.</p>
+                  </main>
+                ) : (
+                  <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                    <div className="text-center">
+                      <p className="text-gray-500 text-lg mb-4">This classroom currently has no lessons.</p>
+                    </div>
+                  </main>
                 )}
               </div>
-            ) : (
-              <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
-                <p className="text-gray-500 text-lg">Please select a lesson to view its details.</p>
-              </main>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === "activities" && (
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              {/* <h2 className="text-2xl font-semibold text-gray-700">Quizzes</h2> */}
-              {/* <button
-                onClick={handleOpenAddQuizModal}
-                className="px-4 py-2 font-bold text-secondary flex items-center gap-2 h-10"
-              >
-                <AiOutlinePlusCircle className="w-5 h-5" />
-                Add Quiz
-              </button> */}
             </div>
-            <QuizManager classroomId={classroomId} refreshTrigger={activityRefreshTrigger} />
-          </div>
+          )}
 
-          {/* <h2 className="text-2xl font-semibold mb-4 text-gray-700">Game Activities</h2> */}
-          <ActivityManager 
-            classroomId={classroomId} 
-            refreshTrigger={activityRefreshTrigger}
-          />
+          {activeTab === "activities" && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="mb-8">
+                <QuizManager classroomId={classroomId} refreshTrigger={activityRefreshTrigger} />
+              </div>
+              <ActivityManager 
+                classroomId={classroomId} 
+                refreshTrigger={activityRefreshTrigger}
+              />
+            </div>
+          )}
+
+          {activeTab === "class-record" && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <ClassRecordManager 
+                classroomId={classroomId}
+                teacherId={user?.id}
+              />
+            </div>
+          )}
+
+          {activeTab === "students" && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="mb-6">
+                <Header type="h2" fontSize="2xl" weight="bold" className="text-gray-800 mb-2">
+                  Enrolled Students ({classroomStudents.length})
+                </Header>
+                <p className="text-gray-600 mb-4">Manage students enrolled in this classroom</p>
+                
+                {/* Search box for enrolled students */}
+                <div className="relative max-w-md">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <CiSearch className="text-gray-400" />
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Search enrolled students..."
+                    className="pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value={enrolledStudentsSearchTerm}
+                    onChange={(e) => setEnrolledStudentsSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {loadingStudents ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                </div>
+              ) : classroomStudents.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">No students enrolled in this classroom yet.</p>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setIsAddStudentModalOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <AiOutlinePlusCircle className="w-4 h-4" />
+                    Add First Student
+                  </Button>
+                </div>
+              ) : getFilteredEnrolledStudents().length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">No students found matching '{enrolledStudentsSearchTerm}' <span className="underline text-blue-500" onClick={() => setEnrolledStudentsSearchTerm('')}>clear search</span></p>
+                  {/* <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => setEnrolledStudentsSearchTerm('')}
+                    className="flex items-center gap-2"
+                  >
+                    Clear Search
+                  </Button> */}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Student
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Username
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getFilteredEnrolledStudents().map(student => (
+                        <tr key={student.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {/* <Avatar className="h-10 w-10 mr-3">
+                                {renderStudentAvatar(student)}
+                              </Avatar> */}
+                               <Avatar key={student.id} className="h-10 w-10 mr-3">
+                                {renderStudentAvatar(student)}
+                              </Avatar>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {student.firstName} {student.lastName}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  ID: {student.id}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            @{student.username}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {student.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleRemoveStudent(student.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Remove
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
-       {activeTab === "class-record" && (
-        <ClassRecordManager 
-          classroomId={classroomId}
-          teacherId={user?.id}
-        />
-      )}
-    </div>
-
+      </div>
       
       {/* Add Lesson/Quiz Modal */}
       <AddLessonModal
@@ -890,14 +1221,103 @@ const TeacherClassroomPage = () => {
       />
 
       {/* Add the Quiz Modal */}
-       {/* Add the Quiz Modal */}
        <AddQuizModal
         isOpen={isAddQuizModalOpen}
         onClose={handleCloseAddQuizModal}
         classroomId={classroomId}
         onQuizCreated={handleQuizCreated}
       />
-      </div>
+
+      {/* Add Student Modal */}
+      <Modal 
+        isOpen={isAddStudentModalOpen} 
+        onClose={() => {
+          setIsAddStudentModalOpen(false);
+          setStudentSearchTerm('');
+          setStudentSearchResults([]);
+          setError('');
+        }}
+        title={`Add Student to ${classroomDetails?.name || 'Classroom'}`}
+        maxWidth="max-w-lg"
+      >
+        {error && isAddStudentModalOpen && (
+          <div className="text-red-500 mb-3">{error}</div>
+        )}
+        <div className="flex flex-col gap-4">
+          <div>
+            <Label htmlFor="studentSearch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Search Students
+            </Label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <CiSearch className="text-gray-400 dark:text-gray-300" />
+              </div>
+              <Input
+                type="text"
+                id="studentSearch"
+                placeholder="Search by first name, last name, or username"
+                className="w-full pl-10 pr-3 py-2 border dark:text-gray-300 border-gray-300 dark:border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={studentSearchTerm}
+                onChange={(e) => setStudentSearchTerm(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Search by first name, last name, or username. Results will show students not already in this classroom.
+            </p>
+          </div>
+          
+          {searchingStudents ? (
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">Searching...</div>
+          ) : studentSearchTerm && studentSearchResults.length === 0 ? (
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">No students found matching '{studentSearchTerm}'</div>
+          ) : !studentSearchTerm ? (
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">Type to search for students</div>
+          ) : (
+            <div className="mt-2 max-h-60 overflow-y-auto">
+              {studentSearchResults.map(student => (
+                <div 
+                  key={student.id} 
+                  className={`flex justify-between items-center p-3 border-b border-gray-100 ${
+                    !student.inClassroom 
+                      ? 'hover:bg-blue-50 cursor-pointer transition-colors duration-150' 
+                      : ''
+                  }`}
+                  onClick={() => !student.inClassroom && handleAddStudent(student.id)}
+                >
+                  <div className="flex items-center gap-3 flex-grow">
+                    <Avatar className="h-8 w-8">
+                      {renderStudentAvatar(student)}
+                    </Avatar>
+                    <div className="flex-grow">
+                      <p className="font-medium text-gray-800 dark:text-gray-300">{student.firstName} {student.lastName}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">@{student.username}</p>
+                    </div>
+                  </div>
+                  {student.inClassroom ? (
+                    <span className="text-sm text-green-600 font-medium">Already in classroom</span>
+                  ) : student.isAdding ? (
+                    <span className="text-sm text-blue-600 font-medium animate-pulse">Adding...</span>
+                  ) : (
+                    <div className="flex items-center">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation(); 
+                          handleAddStudent(student.id);
+                        }}
+                        variant="default"
+                        size="sm"
+                        className="text-sm"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

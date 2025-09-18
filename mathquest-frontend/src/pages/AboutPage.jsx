@@ -5,7 +5,7 @@ const AboutPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-purple-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-blue-800 mb-8 text-center">
-          About Math Properties Adventure 🎓
+          About MathQuest - Math Properties Adventure 🎓
         </h1>
         
         <div className="bg-white rounded-lg shadow-lg p-8 mb-8">

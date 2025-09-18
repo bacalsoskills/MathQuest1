@@ -41,9 +41,36 @@ const SystemSettingsService = {
     }
   },
 
+  getAllAnnouncements: async () => {
+    try {
+      const response = await api.get("/api/admin/settings/announcements");
+
+      // Convert UTC dates to local dates
+      const announcements = response.data.map((announcement) => {
+        const processedAnnouncement = { ...announcement };
+
+        if (announcement.startDate) {
+          const startDate = new Date(announcement.startDate);
+          processedAnnouncement.startDate = startDate.toISOString();
+        }
+
+        if (announcement.endDate) {
+          const endDate = new Date(announcement.endDate);
+          processedAnnouncement.endDate = endDate.toISOString();
+        }
+
+        return processedAnnouncement;
+      });
+
+      return announcements;
+    } catch (error) {
+      console.error("Failed to fetch all announcements:", error);
+      throw error;
+    }
+  },
+
   updateSettings: async (settings) => {
     try {
-      console.log("Updating settings with:", settings);
       const response = await api.put("/api/admin/settings", settings);
       return response.data;
     } catch (error) {
@@ -86,16 +113,17 @@ const SystemSettingsService = {
     try {
       // Ensure dates are in UTC before sending
       const announcementData = {
-        ...announcement,
+        message: announcement.message,
         startDate: announcement.startDate
           ? new Date(announcement.startDate).toISOString()
           : null,
         endDate: announcement.endDate
           ? new Date(announcement.endDate).toISOString()
           : null,
+        visibility: announcement.visibility,
+        isActive: announcement.isActive,
       };
 
-      console.log("Sending announcement data:", announcementData);
       const response = await api.post(
         "/api/admin/settings/announcements",
         announcementData
@@ -109,9 +137,22 @@ const SystemSettingsService = {
 
   updateAnnouncement: async (id, announcement) => {
     try {
+      // Ensure dates are in UTC before sending
+      const announcementData = {
+        message: announcement.message,
+        startDate: announcement.startDate
+          ? new Date(announcement.startDate).toISOString()
+          : null,
+        endDate: announcement.endDate
+          ? new Date(announcement.endDate).toISOString()
+          : null,
+        visibility: announcement.visibility,
+        isActive: announcement.isActive,
+      };
+
       const response = await api.put(
         `/api/admin/settings/announcements/${id}`,
-        announcement
+        announcementData
       );
       return response.data;
     } catch (error) {

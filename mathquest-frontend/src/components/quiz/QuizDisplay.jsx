@@ -269,7 +269,7 @@ const QuizDisplay = ({ activity, onComplete }) => {
     try {
       // Create a new quiz attempt
       const attempt = await quizService.createQuizAttempt(quiz.id, user.id);
-      console.log('Created quiz attempt:', attempt);
+  
       
       // Navigate to the quiz attempt page with the attempt ID
       navigate(`/quiz-attempt/${quiz.id}/attempt/${attempt.id}`, {

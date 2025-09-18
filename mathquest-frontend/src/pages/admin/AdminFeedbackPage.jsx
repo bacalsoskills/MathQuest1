@@ -29,11 +29,10 @@ const AdminFeedbackPage = () => {
       setFeedback(response.data);
       setLoading(false);
       // Log the feedback data for debugging
-      console.log('Fetched feedback:', response.data);
+  
       if (response.data && response.data.length > 0) {
         response.data.forEach(item => {
-          console.log('User object:', item.user);
-          console.log('User role:', item.user && item.user.role);
+          
         });
       }
     } catch (error) {
@@ -85,7 +84,7 @@ const AdminFeedbackPage = () => {
     {
       header: 'Status',
       render: (row) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+        <span className={`inline-block w-24 text-center px-3 py-1 rounded-full text-xs font-medium ${
           row.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
           row.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
           row.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
@@ -111,27 +110,34 @@ const AdminFeedbackPage = () => {
   });
 
   return (
-    <div className="bg-[#E7EFFC] min-h-screen px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-      <div className="max-w-7xl mx-auto">
-        <div className='mb-5'>
-          <Header type="h1" fontSize="3xl" weight="bold" className="mb-6">Feedbacks</Header>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none !text-gray-800">
-              <CiSearch />
+    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+    <div className="max-w-6xl mx-auto">
+    <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white"> Feedback Management</Header>
+    <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] mb-5 md:mb-8"></div>
+       
+
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 gap-4">
+          <div className="flex items-center gap-4 w-full sm:w-auto order-2 sm:order-1">
+            <div className="relative flex-1 sm:flex-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none dark:!text-gray-300 !text-gray-700">
+                <CiSearch className="dark:!text-gray-300 !text-gray-700" />
+              </div>
+              <Input
+                type="search"
+                name="search"
+                id="search"
+                className="block w-full sm:w-96 pl-10 pr-3 py-2 sm:text-sm border-gray-700 dark:border-gray-300 text-gray-500 dark:text-gray-300"
+                placeholder="Search Feedback..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <Input
-              type="search"
-              name="search"
-              id="search"
-              className="block w-full sm:w-64 pl-10 pr-3 py-2 sm:text-sm !text-gray-800"
-              placeholder="Search feedback..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
           </div>
         </div>
 
+      <div className="">
         <Table columns={columns} data={filteredFeedback} />
+      </div>
       </div>
     </div>
   );

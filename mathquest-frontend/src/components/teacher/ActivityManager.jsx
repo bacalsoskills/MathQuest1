@@ -5,6 +5,8 @@ import axios from 'axios';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Leaderboard from '../games/Leaderboard';
+import { TbDotsVertical } from 'react-icons/tb';
+import Modal from '../../ui/modal';
 
 const ActivityManager = ({ classroomId, refreshTrigger }) => {
   const { token } = useAuth();
@@ -15,6 +17,7 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
   const [error, setError] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState(null); // Track which dropdown is open
 
   useEffect(() => {
     if (!classroomId) return;
@@ -56,6 +59,20 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
 
     fetchActivities();
   }, [classroomId, token, refreshTrigger]);
+
+  // Handle clicking outside dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdownId && !event.target.closest('.dropdown-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdownId]);
 
   const handleDeleteGame = async (gameId) => {
     if (!window.confirm('Are you sure you want to delete this game activity? All student scores will be lost.')) {
@@ -179,7 +196,44 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
                 <span className="text-2xl mr-2">{getGameTypeIcon(game.type)}</span>
                 <span className="font-semibold">{game.name}</span>
               </div>
-              {getGameLevelBadge(game.level)}
+              <div className="flex items-center gap-2">
+                {/* {getGameLevelBadge(game.level)} */}
+                
+                {/* Dropdown Menu */}
+                <div className="relative dropdown-container">
+                  <button
+                    onClick={() => setOpenDropdownId(openDropdownId === game.id ? null : game.id)}
+                    className="p-2 text-gray-300 hover:text-white rounded-full hover:bg-blue-600 transition-colors"
+                  >
+                    <TbDotsVertical className="w-5 h-5" />
+                  </button>
+                  
+                  {openDropdownId === game.id && (
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            handlePreviewGame(game);
+                            setOpenDropdownId(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Preview
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDeleteGame(game.id);
+                            setOpenDropdownId(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             <div className="p-4">
@@ -190,24 +244,6 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
                   <p className="text-gray-600 mb-4 line-clamp-2">{game.instructions}</p>
                 )} 
               </div>
-              
-              <div className="flex items-center space-x-2 mt-4">
-                <button
-                  onClick={() => handlePreviewGame(game)}
-                  className="text-gray-600 hover:text-gray-900 text-base focus:outline-none"
-                  style={{ background: 'none', border: 'none', padding: 0 }}
-                >
-                  Preview
-                </button>
-                <span className="mx-1 text-gray-400">|</span>
-                <button
-                  onClick={() => handleDeleteGame(game.id)}
-                  className="text-red-600 hover:text-red-900 text-base focus:outline-none"
-                  style={{ background: 'none', border: 'none', padding: 0 }}
-                >
-                  Delete
-                </button>
-              </div>
             </div>
           </div>
         ))}
@@ -215,30 +251,14 @@ const ActivityManager = ({ classroomId, refreshTrigger }) => {
 
       {/* Preview Modal */}
       {showPreviewModal && selectedGame && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={(e) => {
-            // Only close if clicking the backdrop (outer div)
-            if (e.target === e.currentTarget) {
-              closePreviewModal();
-            }
-          }}
+        <Modal
+          isOpen={showPreviewModal}
+          onClose={closePreviewModal}
+          title={`Preview Leaderboard - ${selectedGame.name}`}
+          maxWidth="max-w-4xl"
         >
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="text-xl font-bold">Preview Leaderboard - {selectedGame.name}</h3>
-              <button
-                onClick={closePreviewModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4">
-              <Leaderboard gameId={selectedGame.id} />
-            </div>
-          </div>
-        </div>
+          <Leaderboard gameId={selectedGame.id} />
+        </Modal>
       )}
     </div>
   );

@@ -262,7 +262,6 @@ const StudentClassroomPage = () => {
         const status = await lessonService.getLessonCompletionStatus(selectedLesson.id, user.id);
         
         if (status.quizCompleted && !completionStatus?.quizCompleted) {
-          console.log(`Quiz completed, unlocking next lesson`);
           setCompletionStatus(status);
           unlockNextLesson();
         }
@@ -271,8 +270,8 @@ const StudentClassroomPage = () => {
       }
     };
 
-    // Check every 2 seconds
-    const intervalId = setInterval(checkQuizCompletion, 2000);
+    // Check every 10 seconds instead of 2 seconds to reduce API calls
+    const intervalId = setInterval(checkQuizCompletion, 10000);
 
     return () => clearInterval(intervalId);
   }, [selectedLesson?.id, user?.id, completionStatus?.quizCompleted]);

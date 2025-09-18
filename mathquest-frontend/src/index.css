@@ -3,4 +3,13 @@
 @tailwind utilities;
 
 /* Import custom styles */
-@import './styles/custom.css'; 
+@import './styles/custom.css';
+
+/* Prevent theme flashing */
+body {
+  visibility: hidden;
+}
+
+body.theme-ready {
+  visibility: visible;
+} 

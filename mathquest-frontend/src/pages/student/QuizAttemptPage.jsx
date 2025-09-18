@@ -484,7 +484,7 @@ const QuizAttemptPage = () => {
             savedAnswers = parsed.savedAnswers || {};
             savedIndex = parsed.savedIndex || 0;
             savedTimeLeft = parsed.savedTimeLeft;
-            console.log('Loaded saved state:', { savedAnswers, savedIndex, savedTimeLeft });
+
             
             // Show notification if we restored saved state
             if (Object.keys(savedAnswers).length > 0) {
@@ -500,7 +500,7 @@ const QuizAttemptPage = () => {
         const serverAnswers = attemptData.answers ? JSON.parse(attemptData.answers) : {};
         const mergedAnswers = { ...serverAnswers, ...savedAnswers };
         
-        console.log('Merged answers:', { serverAnswers, savedAnswers, mergedAnswers });
+
         
         // Set the merged answers and saved index
         setAnswers(mergedAnswers);
@@ -512,7 +512,7 @@ const QuizAttemptPage = () => {
           
           if (savedTimeLeft && savedTimeLeft > 0) {
             // Use saved timer state
-            console.log('Using saved timer state:', savedTimeLeft);
+
             setTimeLeft(savedTimeLeft);
           } else {
             // Calculate new timer based on start time
@@ -521,7 +521,7 @@ const QuizAttemptPage = () => {
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             const remaining = Math.max(timeLimitSeconds - elapsedSeconds, 0);
             
-            console.log(`Time limit: ${timeLimitSeconds}s, Elapsed: ${elapsedSeconds}s, Remaining: ${remaining}s`);
+
             setTimeLeft(remaining);
           }
         }
@@ -553,7 +553,7 @@ const QuizAttemptPage = () => {
       setTimeLeft(prevTime => {
         const newTime = prevTime - 1;
         if (newTime <= 0) {
-          console.log('Timer reached zero, auto-submitting');
+
           clearInterval(id);
           return 0;
         }
@@ -571,7 +571,7 @@ const QuizAttemptPage = () => {
   // Handle auto-submission when timer reaches zero
   useEffect(() => {
     if (timeLeft === 0 && !showResultModal && !showConfirmationModal) {
-      console.log('Auto-submitting quiz due to time expiration');
+
       setShowConfirmationModal(true);
     }
   }, [timeLeft, showResultModal, showConfirmationModal]);
@@ -586,7 +586,7 @@ const QuizAttemptPage = () => {
   const handleAnswerSelect = useCallback((questionId, answer) => {
     const validQuestionId = questionId || `question_${currentQuestionIndex}`;
     
-    console.log(`Saving answer for question ID: ${validQuestionId}`, answer);
+
     
     setAnswers(prevAnswers => ({
       ...prevAnswers,

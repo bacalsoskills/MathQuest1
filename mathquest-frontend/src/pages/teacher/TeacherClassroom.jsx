@@ -6,25 +6,11 @@ import { Button } from "../../ui/button"
 import { Header } from "../../ui/heading"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
+import Modal from "../../ui/modal"
 import { AiOutlinePlusCircle } from "react-icons/ai";
+import { TbDotsVertical } from "react-icons/tb";
 
 
-// Basic Modal Component
-const Modal = ({ isOpen, onClose, title, children }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-};
 
 const TeacherClassrooms = () => {
   const [classrooms, setClassrooms] = useState([]);
@@ -42,6 +28,7 @@ const TeacherClassrooms = () => {
 
   const [isViewStudentsModalOpen, setIsViewStudentsModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   useEffect(() => {
     const fetchClassrooms = async () => {
@@ -62,6 +49,20 @@ const TeacherClassrooms = () => {
 
     fetchClassrooms();
   }, [sortOption]);
+
+  // Handle clicking outside dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdownId && !event.target.closest('.dropdown-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdownId]);
 
   const handleViewStudents = async (classroom) => {
     setSelectedClassroom(classroom);
@@ -234,43 +235,47 @@ const TeacherClassrooms = () => {
   }
 
   return (
-    <div className="bg-[#E7EFFC] min-h-screen px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-      <div className="max-w-5xl mx-auto">
-      <Header type="h1" fontSize="3xl" weight="bold" className="mb-6">Classrooms</Header>
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-300">
-          <div className="flex items-center space-x-4 w-full sm:w-auto">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none  !text-gray-800">
-                <CiSearch />
+    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="max-w-6xl mx-auto">
+      <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white"> Classrooms</Header>
+      <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] mb-5 md:mb-8"></div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 gap-4">
+          <div className="flex items-center gap-4 w-full sm:w-auto order-2 sm:order-1">
+            <div className="relative flex-1 sm:flex-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none dark:!text-gray-300 !text-gray-700">
+                <CiSearch className="dark:!text-gray-300 !text-gray-700" />
               </div>
               <Input
                 type="search"
                 name="search"
                 id="search"
-                className=" block w-full sm:w-64 pl-10 pr-3 py-2 sm:text-sm  !text-gray-800"
+                className="block w-full sm:w-64 pl-10 pr-3 py-2 sm:text-sm border-gray-700 dark:border-gray-300 text-gray-500 dark:text-gray-300"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="text-sm text-gray-600">
-              Sort by: 
-              <select className="ml-2 !bg-transparent focus:outline-none font-medium text-gray-800" onChange={(e) => setSortOption(e.target.value)}>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-300">Sort by:</span>
+              <select 
+                className="text-sm bg-transparent focus:outline-none font-medium text-gray-800 dark:text-gray-300"
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+              >
                 <option value="alphabetical">Alphabetical</option>
                 <option value="date">Most Recent</option>
               </select>
             </div>
           </div>
-          
-            <Link
-              to="/add-classroom"
-             className="text-secondary font-semibold flex items-center gap-2 h-10"
-           >
-             <AiOutlinePlusCircle className="w-5 h-5" />
-                  Create Classroom
-              </Link>
+        
+          <Link
+            to="/teacher/add-classroom"
+            className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+          >
+            <AiOutlinePlusCircle className="w-5 h-5" />
+            Create Classroom
+          </Link>
         </div>
-
         {error && !isViewStudentsModalOpen && !isAddStudentModalOpen && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <span className="block sm:inline">{error}</span>
@@ -301,76 +306,94 @@ const TeacherClassrooms = () => {
         ) : (
           <div className="space-y-6">
             {sortedClassrooms.map(classroom => (
-              <Link
+              <div
                 key={classroom.id}
-                to={`/teacher/classrooms/${classroom.id}`}
-                className="block"
+                className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col sm:flex-row hover:shadow-lg transition-shadow duration-200"
               >
-                <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col sm:flex-row hover:shadow-lg transition-shadow duration-200">
-                  {/* Classroom Image */}
-                  <div className="sm:w-1/3 md:w-1/3 flex-shrink-0">
-                    {classroom.image ? (
-                      <img 
-                        src={`data:image/jpeg;base64,${classroom.image}`} 
-                        alt={classroom.name} 
-                        className="w-full h-[200px] object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-[200px] bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
-                        <span className="text-white font-medium text-lg lg:text-3xl">{classroom.shortCode || 'N/A'}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Classroom Details */}
-                  <div className="p-5 flex-grow sm:w-2/3 md:w-2/3">
-                    <p className="text-xs font-semibold text-secondary uppercase tracking-wide">{classroom.shortCode || 'N/A'}</p>
-                    <Header type="h2" fontSize="2xl" weight="bold" className="text-gray-800 mt-1 mb-1">
-                      {classroom.name}
-                    </Header>
-                    <p className="text-sm text-gray-500 italic mb-2">Join Code: {classroom.classCode || 'N/A'}</p>
+                {/* Classroom Image - Clickable */}
+                <Link
+                  to={`/teacher/classrooms/${classroom.id}`}
+                  className="sm:w-1/3 md:w-1/3 flex-shrink-0 cursor-pointer"
+                >
+                  {classroom.image ? (
+                    <img 
+                      src={`data:image/jpeg;base64,${classroom.image}`} 
+                      alt={classroom.name} 
+                      className="w-full h-[200px] object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-[200px] bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                      <span className="text-white font-medium text-lg lg:text-3xl">{classroom.shortCode || 'N/A'}</span>
+                    </div>
+                  )}
+                </Link>
+                
+                {/* Classroom Details */}
+                <div className="p-5 flex-grow sm:w-2/3 md:w-2/3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-grow">
+                      <Link
+                        to={`/teacher/classrooms/${classroom.id}`}
+                        className="block cursor-pointer"
+                      >
+                        <p className="text-xs font-semibold text-secondary uppercase tracking-wide">{classroom.shortCode || 'N/A'}</p>
+                        <Header type="h2" fontSize="2xl" weight="bold" className="text-gray-800 mt-1 mb-1 hover:text-blue-600 transition-colors">
+                          {classroom.name}
+                        </Header>
+                      </Link>
+                      <p className="text-sm text-gray-500 italic mb-2">Join Code: {classroom.classCode || 'N/A'}</p>
+                      
+                      {classroom.description && (
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-3 sm:line-clamp-2 whitespace-normal">{classroom.description}</p>
+                      )}
+                    </div>
                     
-                    {classroom.description && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-3 sm:line-clamp-2 whitespace-normal">{classroom.description}</p>
-                    )}
-                    
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" onClick={(e) => e.stopPropagation()}>
+                    {/* Dropdown Menu */}
+                    <div className="relative ml-4 dropdown-container">
                       <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleViewStudents(classroom);
-                        }}
-                        className="font-medium text-gray-600 hover:text-gray-900"
+                        onClick={() => setOpenDropdownId(openDropdownId === classroom.id ? null : classroom.id)}
+                        className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
                       >
-                        All Students
+                        <TbDotsVertical className="w-5 h-5" />
                       </button>
-                      <span className="text-gray-300">|</span>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openAddStudentModal(classroom);
-                        }}
-                        className="font-medium text-gray-600 hover:text-gray-900"
-                      >
-                        Add Students
-                      </button>
-                      <span className="text-gray-300">|</span>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleDeleteClassroom(classroom.id);
-                        }}
-                        className="font-medium text-red-600 hover:text-red-800"
-                      >
-                        Delete
-                      </button>
+                      
+                      {openDropdownId === classroom.id && (
+                        <div className="absolute right-0 -top-28 md:top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                          <div className="py-1">
+                            <button
+                              onClick={() => {
+                                handleViewStudents(classroom);
+                                setOpenDropdownId(null);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              All Students
+                            </button>
+                            <button
+                              onClick={() => {
+                                openAddStudentModal(classroom);
+                                setOpenDropdownId(null);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Add Students
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleDeleteClassroom(classroom.id);
+                                setOpenDropdownId(null);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
@@ -386,6 +409,7 @@ const TeacherClassrooms = () => {
           setError('');
         }}
         title={selectedClassroom ? `Students in ${selectedClassroom.name}` : 'Students'}
+        maxWidth="max-w-4xl"
       >
         {loadingStudents ? (
           <div className="text-center py-4">Loading students...</div>
@@ -403,12 +427,12 @@ const TeacherClassrooms = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-transparent divide-y divide-gray-200">
                 {classroomStudents.map(student => (
                   <tr key={student.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{student.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-300">
                         {student.firstName} {student.lastName}
                       </div>
                     </td>
@@ -439,24 +463,25 @@ const TeacherClassrooms = () => {
           setError('');
         }}
         title={selectedClassroom ? `Add Student to ${selectedClassroom.name}` : 'Add Student'}
+        maxWidth="max-w-lg"
       >
         {error && isAddStudentModalOpen && (
           <div className="text-red-500 mb-3">{error}</div>
         )}
         <div className="flex flex-col gap-4">
           <div>
-            <Label htmlFor="studentSearch" className="block text-sm font-medium text-gray-700 mb-1">
+            <Label htmlFor="studentSearch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Search Students
             </Label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <CiSearch className="text-gray-400" />
+                <CiSearch className="text-gray-400 dark:text-gray-300" />
               </div>
               <Input
                 type="text"
                 id="studentSearch"
                 placeholder="Search by name or username"
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="w-full pl-10 pr-3 py-2 border dark:text-gray-300 border-gray-300 dark:border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={studentSearchTerm}
                 onChange={(e) => setStudentSearchTerm(e.target.value)}
               />
@@ -464,11 +489,11 @@ const TeacherClassrooms = () => {
           </div>
           
           {searchingStudents ? (
-            <div className="text-center py-2 text-sm text-gray-500">Searching...</div>
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">Searching...</div>
           ) : studentSearchTerm && studentSearchResults.length === 0 ? (
-            <div className="text-center py-2 text-sm text-gray-500">No students found matching '{studentSearchTerm}'</div>
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">No students found matching '{studentSearchTerm}'</div>
           ) : !studentSearchTerm ? (
-            <div className="text-center py-2 text-sm text-gray-500">Type to search for students</div>
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">Type to search for students</div>
           ) : (
             <div className="mt-2 max-h-60 overflow-y-auto">
               {studentSearchResults.map(student => (
@@ -482,8 +507,8 @@ const TeacherClassrooms = () => {
                   onClick={() => !student.inClassroom && handleAddStudent(student.id)}
                 >
                   <div className="flex-grow">
-                    <p className="font-medium text-gray-800">{student.firstName} {student.lastName}</p>
-                    <p className="text-sm text-gray-500">@{student.username}</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-300">{student.firstName} {student.lastName}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">@{student.username}</p>
                   </div>
                   {student.inClassroom ? (
                     <span className="text-sm text-green-600 font-medium">Already in classroom</span>

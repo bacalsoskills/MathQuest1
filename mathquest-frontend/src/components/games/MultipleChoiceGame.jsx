@@ -8,7 +8,6 @@ import gameService from '../../services/gameService';
 import { useRef } from 'react';
 import { FaPlay, FaPause, FaCog, FaRedo, FaTable, FaVolumeUp, FaVolumeMute, FaStar } from 'react-icons/fa';
 import { BsFullscreen } from "react-icons/bs";
-import MultiplicationTable from './MultiplicationTable';
 import Modal from '../../ui/modal';
 import { Button } from '../../ui/button';
 import { Header } from '../../ui/heading';
@@ -111,8 +110,6 @@ const MultipleChoiceGame = ({ game, onGameComplete }) => {
 
   // Add callGroqApi function
   const callGroqApi = useCallback(async (topic, numberOfQuestions) => {
-    console.log('[MultipleChoiceGame] callGroqApi called with:', { topic, numberOfQuestions });
-    
     if (!GROQ_API_KEY) {
       console.warn('[MultipleChoiceGame] Groq API key not found');
       return null;
@@ -139,7 +136,7 @@ const MultipleChoiceGame = ({ game, onGameComplete }) => {
       else if (topicLower.includes('subtract')) operationKeyword = 'subtract';
       else if (topicLower.includes('fraction')) operationKeyword = 'fraction';
 
-      console.log('[MultipleChoiceGame] Making API request to Groq...');
+
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -181,7 +178,7 @@ Respond ONLY with a JSON array where each object has:
         })
       });
 
-      console.log('[MultipleChoiceGame] Groq API response status:', response.status);
+
       if (!response.ok) {
         throw new Error(`Groq API error: ${response.status}`);
       }
@@ -190,11 +187,8 @@ Respond ONLY with a JSON array where each object has:
       apiState.lastCallTime = now;
 
       const data = await response.json();
-      console.log('[MultipleChoiceGame] Groq API raw response:', data);
       const content = data.choices[0].message.content;
-      console.log('[MultipleChoiceGame] Groq API content:', content);
       const parsedContent = parseGroqApiContent(content);
-      console.log('[MultipleChoiceGame] Parsed content:', parsedContent);
       
       // Filter problems to only include those matching the topic/operation
       let filteredProblems = parsedContent;
@@ -213,7 +207,7 @@ Respond ONLY with a JSON array where each object has:
         }
       }
       
-      console.log('[MultipleChoiceGame] Filtered problems:', filteredProblems);
+
       return filteredProblems;
     } catch (error) {
       console.error('[MultipleChoiceGame] Groq API error:', error);
@@ -223,8 +217,6 @@ Respond ONLY with a JSON array where each object has:
 
   // Update generateQuestions to use Groq API only
   const generateQuestions = useCallback(async () => {
-    console.log('[MultipleChoiceGame] generateQuestions called with:', { gameId: game?.id, topic: game?.topic, currentLevel });
-    
     if (!game?.id || !game?.topic || apiState.isGenerating) {
       console.warn('[MultipleChoiceGame] Game or topic not available yet, or already generating');
       return [];
@@ -237,20 +229,16 @@ Respond ONLY with a JSON array where each object has:
       const problemCount = 60; // Generate 60 questions for all levels (10 levels × 6 questions per level)
       const cacheKey = `${topicLower}-${currentLevel}`;
 
-      console.log('[MultipleChoiceGame] Checking cache for key:', cacheKey);
       if (apiState.problemsCache.has(cacheKey)) {
         const cached = apiState.problemsCache.get(cacheKey);
         if (cached.timestamp > Date.now() - 5 * 60 * 1000) {
-          console.log('[MultipleChoiceGame] Using cached problems');
           setQuestions(cached.problems);
           return cached.problems;
         }
       }
 
-      console.log('[MultipleChoiceGame] Calling Groq API for topic:', game.topic);
       // Use Groq API only - no fallback
       const problems = await callGroqApi(game.topic, problemCount);
-      console.log('[MultipleChoiceGame] Groq API response:', problems);
       
       if (Array.isArray(problems) && problems.length > 0) {
         // Filter out duplicate questions by question text
@@ -262,7 +250,7 @@ Respond ONLY with a JSON array where each object has:
           return true;
         });
         
-        console.log('[MultipleChoiceGame] Unique problems after filtering:', uniqueProblems.length);
+
         
         const formattedProblems = uniqueProblems.map((p, idx) => ({
           id: `${Date.now()}-${idx}`,
@@ -278,7 +266,7 @@ Respond ONLY with a JSON array where each object has:
           timestamp: Date.now()
         });
 
-        console.log('[MultipleChoiceGame] Setting questions:', formattedProblems.length);
+
         setQuestions(formattedProblems);
         return formattedProblems;
       }
@@ -287,10 +275,8 @@ Respond ONLY with a JSON array where each object has:
       console.error('[MultipleChoiceGame] No problems generated from Groq API');
       
       // Generate fallback questions based on topic
-      console.log('[MultipleChoiceGame] Generating fallback questions...');
       const fallbackQuestions = generateFallbackQuestions(game.topic, problemCount);
       if (fallbackQuestions.length > 0) {
-        console.log('[MultipleChoiceGame] Using fallback questions:', fallbackQuestions.length);
         setQuestions(fallbackQuestions);
         return fallbackQuestions;
       }
@@ -305,7 +291,6 @@ Respond ONLY with a JSON array where each object has:
       setQuestions([]);
       return [];
     } finally {
-      console.log('[MultipleChoiceGame] generateQuestions finished');
       setIsLoadingProblems(false);
       apiState.isGenerating = false;
     }
@@ -480,7 +465,6 @@ Respond ONLY with a JSON array where each object has:
 
   // Update startGame to use getLevelTime
   const startGame = () => {
-    console.log('[MultipleChoiceGame] startGame called');
     setGameStarted(false);
     setGameOver(false);
     setScore(0);
@@ -494,26 +478,19 @@ Respond ONLY with a JSON array where each object has:
     setIsPaused(false);
     setCountdownModal(3);
     
-    console.log('[MultipleChoiceGame] Generating questions...');
     generateQuestions().then((generatedQuestions) => {
-      console.log('[MultipleChoiceGame] Questions generated, checking count:', generatedQuestions.length);
-      
       // Check if questions were actually generated
       if (!generatedQuestions || generatedQuestions.length === 0) {
-        console.log('[MultipleChoiceGame] No questions available, not starting game');
         setCountdownModal(null);
         toast.error('Failed to generate questions. Please try again.');
         return;
       }
       
-      console.log('[MultipleChoiceGame] Questions available, starting countdown');
       let count = 3;
       const countdownInterval = setInterval(() => {
         count--;
-        console.log('[MultipleChoiceGame] Countdown:', count);
         setCountdownModal(count);
         if (count <= 0) {
-          console.log('[MultipleChoiceGame] Countdown finished, starting game');
           clearInterval(countdownInterval);
           setCountdownModal(null);
           setGameStarted(true);
@@ -835,7 +812,7 @@ Respond ONLY with a JSON array where each object has:
         
         // Only restore if saved within last 30 minutes and game was active
         if (now - savedTimestamp < 30 * 60 * 1000) {
-          console.log('[MultipleChoiceGame] Restoring saved game state:', parsedState);
+
           
           setScore(parsedState.score || 0);
           setCurrentLevel(parsedState.currentLevel || 1);
@@ -854,10 +831,10 @@ Respond ONLY with a JSON array where each object has:
           if (parsedState.score !== undefined && parsedState.lives > 0) {
             setGameStarted(true);
             setGameOver(false);
-            console.log('[MultipleChoiceGame] Game restored and started');
+
           }
         } else {
-          console.log('[MultipleChoiceGame] Saved state too old, clearing');
+
           localStorage.removeItem(lsKey);
         }
       } catch (error) {
@@ -884,18 +861,18 @@ Respond ONLY with a JSON array where each object has:
         questions: questions.slice(0, 10), // Save only first 10 questions to avoid localStorage size limits
         timestamp: Date.now()
       };
-      console.log('[MultipleChoiceGame] Saving game state to localStorage:', stateToSave);
+
       localStorage.setItem(lsKey, JSON.stringify(stateToSave));
     } else if (gameOver) {
       // Clear saved state when game is over
-      console.log('[MultipleChoiceGame] Game over, clearing saved state');
+
       localStorage.removeItem(lsKey);
     }
   }, [gameStarted, gameOver, score, currentLevel, lives, problemsSolvedThisLevel, timeLeft, selectedOption, currentQuestionIndex, questions.length, game?.id]);
 
   // Add fallback question generator
   const generateFallbackQuestions = (topic, count) => {
-    console.log('[MultipleChoiceGame] generateFallbackQuestions called with:', { topic, count });
+
     
     const questions = [];
     const topicLower = topic.toLowerCase();
@@ -995,7 +972,7 @@ Respond ONLY with a JSON array where each object has:
       });
     }
     
-    console.log('[MultipleChoiceGame] Generated fallback questions:', questions.length);
+
     return questions;
   };
 

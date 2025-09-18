@@ -7,7 +7,7 @@ const contentBlockService = {
   getContentBlocksByLessonId: async (lessonId) => {
     try {
       const response = await api.get(`${API_URL}/lesson/${lessonId}`);
-      console.log("Content blocks fetched:", response.data);
+
       return response.data;
     } catch (error) {
       console.error("Error fetching content blocks:", error);
@@ -19,7 +19,7 @@ const contentBlockService = {
   getContentBlockById: async (blockId) => {
     try {
       const response = await api.get(`${API_URL}/${blockId}`);
-      console.log("Content block fetched:", response.data);
+
       return response.data;
     } catch (error) {
       console.error("Error fetching content block:", error);
@@ -30,8 +30,6 @@ const contentBlockService = {
   // Create a new content block
   createContentBlock: async (blockData) => {
     try {
-      console.log("Creating content block with data:", blockData);
-
       // Create form data for multipart file upload if needed
       const formData = new FormData();
 
@@ -67,7 +65,7 @@ const contentBlockService = {
           "Content-Type": "multipart/form-data",
         },
       });
-      console.log("Content block created:", response.data);
+
       return response.data;
     } catch (error) {
       console.error("Error creating content block:", error);
@@ -78,8 +76,6 @@ const contentBlockService = {
   // Update an existing content block
   updateContentBlock: async (blockId, blockData) => {
     try {
-      console.log("Updating content block with data:", blockData);
-
       const formData = new FormData();
 
       if (blockData.title) {
@@ -114,7 +110,7 @@ const contentBlockService = {
           "Content-Type": "multipart/form-data",
         },
       });
-      console.log("Content block updated:", response.data);
+
       return response.data;
     } catch (error) {
       console.error("Error updating content block:", error);
@@ -126,7 +122,7 @@ const contentBlockService = {
   deleteContentBlock: async (blockId) => {
     try {
       await api.delete(`${API_URL}/${blockId}`);
-      console.log("Content block deleted successfully");
+
       return true;
     } catch (error) {
       console.error("Error deleting content block:", error);
@@ -140,7 +136,7 @@ const contentBlockService = {
       const response = await api.get(
         `${API_URL}/lesson/${lessonId}/with-dates`
       );
-      console.log("Content blocks with dates fetched:", response.data);
+
       return response.data;
     } catch (error) {
       console.error("Error fetching content blocks with dates:", error);

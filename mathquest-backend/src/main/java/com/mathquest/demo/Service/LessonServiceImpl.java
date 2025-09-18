@@ -8,6 +8,8 @@ import com.mathquest.demo.DTO.Request.CreateLessonRequest;
 import com.mathquest.demo.Exception.ResourceNotFoundException;
 import com.mathquest.demo.Model.*;
 import com.mathquest.demo.Repository.*;
+import com.mathquest.demo.Repository.LeaderboardEntryRepository;
+import com.mathquest.demo.Repository.QuizAttemptRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +70,12 @@ public class LessonServiceImpl implements LessonService {
 
     @Autowired
     private QuizRepository quizRepository;
+
+    @Autowired
+    private QuizAttemptRepository quizAttemptRepository;
+
+    @Autowired
+    private LeaderboardEntryRepository leaderboardEntryRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(LessonServiceImpl.class);
 
@@ -302,8 +310,19 @@ public class LessonServiceImpl implements LessonService {
         List<Quiz> quizzes = quizRepository.findByLesson(lesson);
         logger.info("Found {} quizzes associated with lesson {}", quizzes.size(), id);
 
-        // For each quiz, mark its activity as deleted
+        // For each quiz, delete all related data in the correct order
         for (Quiz quiz : quizzes) {
+            logger.info("Processing quiz {} for deletion", quiz.getId());
+
+            // 1. Delete all leaderboard entries for this quiz
+            logger.info("Deleting leaderboard entries for quiz {}", quiz.getId());
+            leaderboardEntryRepository.deleteByQuiz(quiz);
+
+            // 2. Delete all quiz attempts for this quiz
+            logger.info("Deleting quiz attempts for quiz {}", quiz.getId());
+            quizAttemptRepository.deleteByQuiz(quiz);
+
+            // 3. Mark the associated activity as deleted
             Activity activity = quiz.getActivity();
             if (activity != null) {
                 logger.info("Marking activity {} as deleted for quiz {}", activity.getId(), quiz.getId());
@@ -312,7 +331,8 @@ public class LessonServiceImpl implements LessonService {
             }
         }
 
-        // Delete the lesson (this will cascade delete content blocks)
+        // Delete the lesson (this will cascade delete content blocks and lesson
+        // completions)
         logger.info("Deleting lesson {}", id);
         lessonRepository.delete(lesson);
         logger.info("Successfully deleted lesson {} and all related data", id);

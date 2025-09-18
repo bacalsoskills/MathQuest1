@@ -322,7 +322,7 @@ export const ClassroomProvider = ({ children }) => {
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
-      console.log('Cleared classroom localStorage data');
+  
     } catch (error) {
       console.error('Failed to clear classroom localStorage:', error);
     }

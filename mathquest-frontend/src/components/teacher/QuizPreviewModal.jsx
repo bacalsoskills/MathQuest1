@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog } from '@headlessui/react';
 import { Header } from '../../ui/heading';
+import Modal from '../../ui/modal';
 import quizService from '../../services/quizService';
 
 const QuizPreviewModal = ({ isOpen, onClose, quizId }) => {
@@ -40,67 +40,129 @@ const QuizPreviewModal = ({ isOpen, onClose, quizId }) => {
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="relative bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="p-8">
-            <div className="flex justify-between items-center mb-4">
-              <Header type="h2" fontSize="2xl" weight="bold" className="mb-6">
-                Quiz Preview
-              </Header>
-              <button onClick={onClose} className="text-gray-500 hover:text-gray-700">&times;</button>
-            </div>
-            {loading ? (
-              <div>Loading...</div>
-            ) : error ? (
-              <div className="text-red-500">{error}</div>
-            ) : quiz ? (
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title="Quiz Preview"
+      maxWidth="max-w-4xl"
+    >
+      {loading ? (
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : error ? (
+        <div className="text-red-500 text-center py-8">{error}</div>
+      ) : quiz ? (
+        <div>
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 className="text-xl font-bold mb-2 text-gray-900">{quiz.quizName}</h3>
+            <p className="text-gray-700 mb-3">{quiz.description}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
               <div>
-                <div className="mb-4">
-                  <h3 className="text-xl font-bold mb-1">{quiz.quizName}</h3>
-                  <p className="text-gray-700 mb-2">{quiz.description}</p>
-                  <div className="text-xs text-gray-600 space-x-2">
-                    <span>Available From: {formatDate(quiz.availableFrom)}</span>
-                    <span>Available To: {formatDate(quiz.availableTo)}</span>
-                  </div>
-                  <div className="text-xs text-gray-600 space-x-2 mt-1">
-                    <span>Time Limit: {quiz.timeLimitMinutes} min</span>
-                    <span>Passing Score: {quiz.passingScore}/{quiz.overallScore}</span>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  {quiz.questions && quiz.questions.length > 0 ? quiz.questions.map((q, idx) => (
-                    <div key={idx} className="p-4 border rounded bg-gray-50">
-                      <div className="mb-2 font-semibold">Q{idx + 1}: {q.questionText}</div>
-                      <div className="mb-1 text-xs text-gray-600">Type: {q.questionType.replace('_', ' ')}</div>
-                      {q.questionType === 'MULTIPLE_CHOICE' && q.options && (
-                        <ul className="space-y-1">
-                          {q.options.map((opt, oIdx) => (
-                            <li key={oIdx} className={`p-2 rounded ${q.correctAnswer === opt ? 'bg-green-100 font-bold' : ''}`}>{opt}</li>
-                          ))}
-                        </ul>
-                      )}
-                      {q.questionType === 'CHECKBOX' && q.options && (
-                        <ul className="space-y-1">
-                          {q.options.map((opt, oIdx) => (
-                            <li key={oIdx} className={`p-2 rounded ${Array.isArray(q.correctAnswer) && q.correctAnswer.includes(opt) ? 'bg-green-100 font-bold' : ''}`}>{opt}</li>
-                          ))}
-                        </ul>
-                      )}
-                      {q.questionType === 'IDENTIFICATION' && (
-                        <div className="p-2 rounded bg-green-100 font-bold">Correct Answer: {q.correctAnswer}</div>
-                      )}
-                      <div className="mt-2 text-xs text-gray-500">Points: {q.points}</div>
-                    </div>
-                  )) : <div className="text-gray-500">No questions found.</div>}
-                </div>
+                <span className="font-semibold">Available From:</span>
+                <br />
+                {formatDate(quiz.availableFrom)}
               </div>
-            ) : null}
+              <div>
+                <span className="font-semibold">Available To:</span>
+                <br />
+                {formatDate(quiz.availableTo)}
+              </div>
+              <div>
+                <span className="font-semibold">Time Limit:</span>
+                <br />
+                {quiz.timeLimitMinutes} minutes
+              </div>
+              <div>
+                <span className="font-semibold">Passing Score:</span>
+                <br />
+                {quiz.passingScore}/{quiz.overallScore}
+              </div>
+            </div>
           </div>
-        </Dialog.Panel>
-      </div>
-    </Dialog>
+          
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold dark:text-gray-300 text-gray-900 border-b border-gray-200 pb-2">
+              Questions ({quiz.questions?.length || 0})
+            </h4>
+            
+            {quiz.questions && quiz.questions.length > 0 ? quiz.questions.map((q, idx) => (
+              <div key={idx} className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
+                <div className="mb-3">
+                  <div className="flex items-start gap-3">
+                    <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-2 py-1 rounded-full min-w-[2rem] text-center">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 mb-1">{q.questionText}</div>
+                      <div className="text-xs text-gray-500 mb-2">
+                        Type: {q.questionType.replace(/_/g, ' ')} | Points: {q.points}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {q.questionType === 'MULTIPLE_CHOICE' && q.options && (
+                  <div className="ml-11">
+                    <ul className="space-y-2">
+                      {q.options.map((opt, oIdx) => (
+                        <li key={oIdx} className={`p-3 rounded-lg border ${
+                          q.correctAnswer === opt 
+                            ? 'bg-green-50 border-green-200 text-green-800 font-medium' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <span className="mr-2 text-sm font-medium">
+                            {String.fromCharCode(65 + oIdx)}.
+                          </span>
+                          {opt}
+                          {q.correctAnswer === opt && (
+                            <span className="ml-2 text-green-600 text-sm">✓ Correct Answer</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {q.questionType === 'CHECKBOX' && q.options && (
+                  <div className="ml-11">
+                    <ul className="space-y-2">
+                      {q.options.map((opt, oIdx) => (
+                        <li key={oIdx} className={`p-3 rounded-lg border ${
+                          Array.isArray(q.correctAnswer) && q.correctAnswer.includes(opt)
+                            ? 'bg-green-50 border-green-200 text-green-800 font-medium' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <span className="mr-2 text-sm font-medium">
+                            {String.fromCharCode(65 + oIdx)}.
+                          </span>
+                          {opt}
+                          {Array.isArray(q.correctAnswer) && q.correctAnswer.includes(opt) && (
+                            <span className="ml-2 text-green-600 text-sm">✓ Correct Answer</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {q.questionType === 'IDENTIFICATION' && (
+                  <div className="ml-11">
+                    <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 font-medium">
+                      <span className="font-semibold">Correct Answer:</span> {q.correctAnswer}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )) : (
+              <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                No questions found for this quiz.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </Modal>
   );
 };
 

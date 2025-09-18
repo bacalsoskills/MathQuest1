@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useClassroom } from '../../context/ClassroomContext';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from "../../ui/button"
@@ -7,6 +7,7 @@ import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
 import { AiOutlinePlusCircle } from "react-icons/ai";
 import { CiSearch } from "react-icons/ci";
+import { HiDotsVertical, HiPencil, HiTrash, HiUserAdd } from "react-icons/hi";
 import ClassroomService from '../../services/classroomService';
 import UserService from '../../services/userService';
 import { Table } from '../../ui/table';
@@ -30,6 +31,8 @@ const ClassroomSection = () => {
   const [classrooms, setClassrooms] = useState([]);
   const [studentCounts, setStudentCounts] = useState({});
   const [teachers, setTeachers] = useState([]);
+  const [actionMenuOpen, setActionMenuOpen] = useState(null);
+  const menuRef = useRef();
   const [newClassroom, setNewClassroom] = useState({
     name: '',
     description: '',
@@ -46,6 +49,18 @@ const ClassroomSection = () => {
   useEffect(() => {
     fetchClassrooms();
     fetchTeachers();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setActionMenuOpen(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const fetchTeachers = async () => {
@@ -155,7 +170,7 @@ const ClassroomSection = () => {
         teacherId: teacherId
       };
 
-      console.log('Updating classroom with data:', updateData);
+
 
       const updatedClassroom = await ClassroomService.updateClassroomAsAdmin(classroomData.id, updateData);
       
@@ -255,11 +270,11 @@ const ClassroomSection = () => {
       accessor: 'shortCode',
     },
     {
-      header: 'Name',
+      header: 'Classroom Name',
       accessor: 'name',
     },
     {
-      header: 'Description',
+      header: 'Classroom Description',
       accessor: 'description',
     },
     {
@@ -282,34 +297,56 @@ const ClassroomSection = () => {
     {
       header: 'Actions',
       render: (row) => (
-        <div className="flex space-x-2">
-          <Button 
-            onClick={() => {
-              setSelectedClassroom(row);
-              setShowEditModal(true);
-            }} 
-            variant="secondary"
-            size="sm"
-          >
-            Edit
-          </Button>
-          <Button 
-            onClick={() => {
-              setSelectedClassroom(row);
-              setShowAddStudentModal(true);
-            }} 
-            variant="default"
-            size="sm"
-          >
-            Add Students
-          </Button>
-          <Button 
-            onClick={() => handleDeleteClassroom(row.id)} 
-            variant="danger"
-            size="sm"
-          >
-            Delete
-          </Button>
+        <div className="flex justify-start">
+          <div className="relative inline-block text-left" ref={actionMenuOpen === row.id ? menuRef : null}>
+            <button
+              onClick={() => setActionMenuOpen(actionMenuOpen === row.id ? null : row.id)}
+              className="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition duration-150"
+            >
+              <HiDotsVertical size={20} />
+            </button>
+            {actionMenuOpen === row.id && (
+         <div className="absolute right-0 bottom-[0%] mb-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                  <button
+                    onClick={() => { 
+                      setSelectedClassroom(row);
+                      setShowEditModal(true);
+                      setActionMenuOpen(null);
+                    }}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    role="menuitem"
+                  >
+                    <HiPencil className="mr-3 h-5 w-5 text-gray-400" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => { 
+                      setSelectedClassroom(row);
+                      setShowAddStudentModal(true);
+                      setActionMenuOpen(null);
+                    }}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    role="menuitem"
+                  >
+                    <HiUserAdd className="mr-3 h-5 w-5 text-gray-400" />
+                    Add Students
+                  </button>
+                  <button
+                    onClick={() => { 
+                      handleDeleteClassroom(row.id);
+                      setActionMenuOpen(null);
+                    }}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                    role="menuitem"
+                  >
+                    <HiTrash className="mr-3 h-5 w-5 text-red-400" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       ),
     }
@@ -323,44 +360,49 @@ const ClassroomSection = () => {
     );
   });
 
+  if (loading) return (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+    </div>
+  );
+
   return (
-    <div className="bg-[#E7EFFC] min-h-screen px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex-1">
-            <Header type="h1" fontSize="3xl" weight="bold" className="mb-6">Classrooms</Header>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none !text-gray-800">
-                <CiSearch />
+    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="max-w-6xl mx-auto">
+        <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white">Classroom Management</Header>
+        <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] mb-5 md:mb-8"></div>
+        
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 gap-4">
+          <div className="flex items-center gap-4 w-full sm:w-auto order-2 sm:order-1">
+            <div className="relative flex-1 sm:flex-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none dark:!text-gray-300 !text-gray-700">
+                <CiSearch className="dark:!text-gray-300 !text-gray-700" />
               </div>
               <Input
                 type="search"
                 name="search"
                 id="search"
-                className="block w-full sm:w-64 pl-10 pr-3 py-2 sm:text-sm !text-gray-800"
+                className="block w-full sm:w-96 pl-10 pr-3 py-2 sm:text-sm border-gray-700 dark:border-gray-300 text-gray-500 dark:text-gray-300"
                 placeholder="Search classrooms..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
+          
           <Button
             onClick={() => setShowCreateModal(true)}
             variant="secondary"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 order-1 sm:order-2  !px-0 md:px-6 dark:text-blue-300 text-secondary font-semibold"
           >
             <AiOutlinePlusCircle className="w-5 h-5" />
             Create New Classroom
           </Button>
         </div>
 
-        <div className="w-full">
-          {loading ? (
-            <div className="flex justify-center items-center h-screen">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          ) : error ? (
+        <div className="">
+          {error ? (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
@@ -371,7 +413,7 @@ const ClassroomSection = () => {
               className="w-full" 
             />
           ) : (
-            <p>No classrooms found.</p>
+            <p className="text-center py-10 text-gray-500">No classrooms found.</p>
           )}
         </div>
 
@@ -392,44 +434,46 @@ const ClassroomSection = () => {
           >
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Name</Label>
                 <Input
                   id="name"
+                  className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
                   value={newClassroom.name}
                   onChange={(e) => setNewClassroom({ ...newClassroom, name: e.target.value })}
                   placeholder="Enter classroom name"
                 />
               </div>
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Description</Label>
                 <textarea
                   id="description"
                   value={newClassroom.description}
                   onChange={(e) => setNewClassroom({ ...newClassroom, description: e.target.value })}
                   placeholder="Enter classroom description"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[100px]"
+                    className="mt-2 py-1 px-2 block w-full border border-gray-700 dark:border-gray-300 shadow-sm min-h-[100px] dark:text-gray-300 text-gray-700 !bg-transparent focus:border-blue-500 focus:ring-blue-500 rounded-none"
                 />
               </div>
               <div>
-                <Label htmlFor="shortCode">Short Code</Label>
+                <Label htmlFor="shortCode" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Short Code</Label>
                 <Input
                   id="shortCode"
+                  className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
                   value={newClassroom.shortCode}
                   onChange={(e) => setNewClassroom({ ...newClassroom, shortCode: e.target.value })}
                   placeholder="Enter short code"
                 />
               </div>
               <div>
-                <Label htmlFor="teacher">Teacher</Label>
+                <Label htmlFor="teacher" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Teacher</Label>
                 <select
                   id="teacher"
                   value={newClassroom.teacherId}
                   onChange={(e) => setNewClassroom({ ...newClassroom, teacherId: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="py-1 px-2 block w-full border border-gray-700 dark:border-gray-300 shadow-sm dark:text-gray-300 text-gray-700 !bg-transparent focus:border-blue-500 focus:ring-blue-500 rounded-none"
                 >
-                  <option value="">Select a teacher</option>
+                    <option value="" className="bg-gray-300 text-gray-700 hover:text-blue-600">Select a teacher</option>
                   {teachers.map(teacher => (
-                    <option key={teacher.id} value={teacher.id}>
+                    <option key={teacher.id} value={teacher.id} className="bg-gray-300 text-gray-700 hover:text-blue-600">
                       {`${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.username}
                     </option>
                   ))}
@@ -446,11 +490,12 @@ const ClassroomSection = () => {
                       teacherId: ''
                     });
                   }}
-                  variant="secondary"
+                  variant="cancel"
+                  rounded="full"
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleCreateClassroom} variant="default">
+                <Button onClick={handleCreateClassroom} variant="default" rounded="full">
                   Create
                 </Button>
               </div>
@@ -470,35 +515,37 @@ const ClassroomSection = () => {
           >
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-name">Name</Label>
+                <Label htmlFor="edit-name" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Name</Label>
                 <Input
                   id="edit-name"
+                  className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
                   value={selectedClassroom.name}
                   onChange={(e) => setSelectedClassroom({ ...selectedClassroom, name: e.target.value })}
                   placeholder="Enter classroom name"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-description">Description</Label>
+                <Label htmlFor="edit-description" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Description</Label>
                 <textarea
                   id="edit-description"
                   value={selectedClassroom.description}
                   onChange={(e) => setSelectedClassroom({ ...selectedClassroom, description: e.target.value })}
                   placeholder="Enter classroom description"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[100px]"
+                  className="mt-2 py-1 px-2 block w-full border border-gray-700 dark:border-gray-300 shadow-sm min-h-[100px] dark:text-gray-300 text-gray-700 !bg-transparent focus:border-blue-500 focus:ring-blue-500 rounded-none"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-shortCode">Short Code</Label>
+                <Label htmlFor="edit-shortCode" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Short Code</Label>
                 <Input
                   id="edit-shortCode"
+                  className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
                   value={selectedClassroom.shortCode}
                   onChange={(e) => setSelectedClassroom({ ...selectedClassroom, shortCode: e.target.value })}
                   placeholder="Enter short code"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-teacher">Teacher</Label>
+                <Label htmlFor="edit-teacher" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Teacher</Label>
                 <select
                   id="edit-teacher"
                   value={selectedClassroom.teacherId || (selectedClassroom.teacher && selectedClassroom.teacher.id) || ''}
@@ -510,11 +557,11 @@ const ClassroomSection = () => {
                       teacher: teachers.find(t => t.id === parseInt(teacherId)) || null
                     }));
                   }}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="py-1 px-2 block w-full border border-gray-700 dark:border-gray-300 shadow-sm dark:text-gray-300 text-gray-700 !bg-transparent focus:border-blue-500 focus:ring-blue-500 rounded-none"
                 >
-                  <option value="">Select a teacher</option>
+                  <option value="" className="bg-gray-300 text-gray-700 hover:text-blue-600">Select a teacher</option>
                   {teachers.map(teacher => (
-                    <option key={teacher.id} value={teacher.id}>
+                    <option key={teacher.id} value={teacher.id} className="bg-gray-300 text-gray-700 hover:text-blue-600">
                       {`${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.username}
                     </option>
                   ))}
@@ -526,22 +573,19 @@ const ClassroomSection = () => {
                     setShowEditModal(false);
                     setSelectedClassroom(null);
                   }}
-                  variant="secondary"
+                  variant="cancel"
+                  rounded="full"
                 >
                   Cancel
                 </Button>
                 <Button 
                   onClick={() => {
-                    console.log('Selected Classroom:', selectedClassroom);
+          
                     // Check if teacherId exists either directly or through the teacher object
                     const teacherId = selectedClassroom.teacherId || (selectedClassroom.teacher && selectedClassroom.teacher.id);
                     
                     if (!selectedClassroom.name || !selectedClassroom.description || !teacherId) {
-                      console.log('Validation failed:', {
-                        name: selectedClassroom.name,
-                        description: selectedClassroom.description,
-                        teacherId: teacherId
-                      });
+                    
                       toast.error('Please fill in all required fields');
                       return;
                     }
@@ -555,6 +599,7 @@ const ClassroomSection = () => {
                     handleUpdateClassroom(updatedClassroom);
                   }} 
                   variant="default"
+                  rounded="full"
                 >
                   Save Changes
                 </Button>
@@ -577,10 +622,10 @@ const ClassroomSection = () => {
           >
             <div className="space-y-4">
               <div>
-                <Label htmlFor="studentSearch">Search Students</Label>
+                <Label htmlFor="studentSearch" className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Search Students</Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <CiSearch className="text-gray-400" />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none dark:!text-gray-300 !text-gray-700">
+                    <CiSearch className="dark:!text-gray-300 !text-gray-700" />
                   </div>
                   <Input
                     id="studentSearch"
@@ -591,19 +636,21 @@ const ClassroomSection = () => {
                       handleSearchStudents(e.target.value);
                     }}
                     placeholder="Search by name or username"
-                    className="pl-10"
+                    className="pl-10 dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
                   />
                 </div>
               </div>
 
               {searchingStudents ? (
-                <div className="text-center py-2 text-sm text-gray-500">Searching...</div>
+                <div className="flex justify-center items-center h-12">
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600"></div>
+                </div>
               ) : studentSearchTerm && studentSearchResults.length === 0 ? (
-                <div className="text-center py-2 text-sm text-gray-500">
+                <div className="text-center py-2 text-sm dark:text-gray-300 text-gray-500">
                   No students found matching '{studentSearchTerm}'
                 </div>
               ) : !studentSearchTerm ? (
-                <div className="text-center py-2 text-sm text-gray-500">
+                <div className="text-center py-2 text-sm dark:text-gray-300 text-gray-500">
                   Type to search for students
                 </div>
               ) : (
@@ -618,10 +665,10 @@ const ClassroomSection = () => {
                       }`}
                     >
                       <div className="flex-grow">
-                        <p className="font-medium text-gray-800">
+                        <p className="font-medium dark:text-gray-300 text-gray-800">
                           {student.firstName} {student.lastName}
                         </p>
-                        <p className="text-sm text-gray-500">@{student.username}</p>
+                        <p className="text-sm dark:text-gray-400 text-gray-500">@{student.username}</p>
                       </div>
                       {student.inClassroom ? (
                         <span className="text-sm text-green-600 font-medium">
@@ -632,6 +679,7 @@ const ClassroomSection = () => {
                           onClick={() => handleAddStudent(student.id)}
                           variant="default"
                           size="sm"
+                          rounded="full"
                         >
                           Add
                         </Button>

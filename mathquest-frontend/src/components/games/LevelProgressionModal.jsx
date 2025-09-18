@@ -17,7 +17,7 @@ const LevelProgressionModal = ({ isOpen, onClose, gameId, gameName, maxGameLevel
   const effectiveGameId = gameId || (scoreData && scoreData.gameId);
 
   useEffect(() => {
-    console.log('[LevelProgressionModal] useEffect RUN', { isOpen, currentUser, effectiveGameId, maxGameLevel });
+
     // Only fetch when modal is open and both currentUser and gameId are available
     if (!isOpen || !currentUser || !effectiveGameId) {
       setLoading(false);
@@ -26,9 +26,9 @@ const LevelProgressionModal = ({ isOpen, onClose, gameId, gameName, maxGameLevel
     
     const fetchStudentLevel = async () => {
       try {
-        console.log('[LevelProgressionModal] Fetching level for user', currentUser.id, 'and game', effectiveGameId);
+     
         let level = await gameService.getStudentGameLevel(effectiveGameId, currentUser.id);
-        console.log('[LevelProgressionModal] API response for getStudentGameLevel:', level);
+
         if (typeof level === 'object' && level !== null) {
           level = level.level_achieved || level.level || 1;
         }
@@ -36,7 +36,7 @@ const LevelProgressionModal = ({ isOpen, onClose, gameId, gameName, maxGameLevel
         const newUnlockedLevels = Math.min(Number(level), maxGameLevel);
         setUnlockedLevels(newUnlockedLevels);
         setLoading(false);
-        console.log('[LevelProgressionModal] Computed unlockedLevels:', newUnlockedLevels);
+
       } catch (error) {
         setUnlockedLevels(1);
         setLoading(false);
@@ -54,7 +54,7 @@ const LevelProgressionModal = ({ isOpen, onClose, gameId, gameName, maxGameLevel
       try {
         const response = await api.get(`/games/${effectiveGameId}`);
         setGame(response.data);
-        console.log('Fetched game data:', response.data);
+
       } catch (error) {
         console.error('Error fetching game:', error);
         setError('Failed to load game. Please try again later.');

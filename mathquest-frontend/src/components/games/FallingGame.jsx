@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import MultiplicationTable from './MultiplicationTable';
 import { FaPlay, FaPause, FaCog, FaRedo, FaTable, FaVolumeUp, FaVolumeMute, FaStar } from 'react-icons/fa';
 import { BsFullscreen } from "react-icons/bs";
 import gameService from "../../services/gameService";
@@ -203,7 +202,7 @@ const FallingGame = ({ game, onGameComplete }) => {
     // Mark that game is over and clear saved state
     hasLeftGameRef.current = true;
     localStorage.removeItem(lsKey);
-    console.log('[FallingGame] Game over - clearing saved state');
+
 
     try {
       const currentDate = new Date().toISOString();
@@ -751,13 +750,13 @@ const FallingGame = ({ game, onGameComplete }) => {
   }, [currentUser, game, currentLevel, score, gameTime, submitScore]);
 
   const handleStayOnPage = () => {
-    console.log('[FallingGame] User chose to stay on page');
+
     setNextLocation(null);
     setShowExitConfirmModal(false);
   };
 
   const handleRestartConfirm = () => {
-    console.log('[FallingGame] Restart confirmed - clearing game state');
+
     setShowRestartConfirmModal(false);
     // Clear saved state and restart fresh
     hasLeftGameRef.current = true;
@@ -800,10 +799,10 @@ const FallingGame = ({ game, onGameComplete }) => {
   };
 
   const handleExitGameConfirm = () => {
-    console.log('[FallingGame] Exit Game confirmed - starting exit process');
+
     setShowExitConfirmModal(false);
     setIsPaused(false); // Close the pause modal
-    console.log('[FallingGame] Pause modal closed, submitting score...');
+
     submitScore();
     setGameOver(true);
     setGameStarted(false);
@@ -811,14 +810,14 @@ const FallingGame = ({ game, onGameComplete }) => {
     // Mark that user has left the game and clear saved state
     hasLeftGameRef.current = true;
     localStorage.removeItem(lsKey);
-    console.log('[FallingGame] Game state reset, marked as left game, attempting navigation...');
+
     
     // Navigate back to the previous page or classroom
     if (window.history.length > 1) {
-      console.log('[FallingGame] Using window.history.back() to navigate');
+  
       window.history.back();
     } else {
-      console.log('[FallingGame] No history available, navigating to /student/classrooms');
+  
       // If no history, navigate to a default location
       window.location.href = '/student/classrooms';
     }
@@ -1010,11 +1009,6 @@ const FallingGame = ({ game, onGameComplete }) => {
 
     if (matchIndex !== -1) {
       const solvedProblem = activeProblems[matchIndex];
-      console.log('[FallingGame] Correct answer:', {
-        question: solvedProblem.question,
-        userAnswer: normalizedAnswer,
-        correctAnswer: solvedProblem.answer
-      });
 
       // Accept any correct answer
       solvedProblemsRef.current.add(solvedProblem.id);
@@ -1037,7 +1031,6 @@ const FallingGame = ({ game, onGameComplete }) => {
       const wrongProblem = activeProblems.find(p => !deductedProblems.has(p.id));
       
       if (wrongProblem) {
-        console.log('[FallingGame] Wrong answer - deducting life');
         // Add to deducted problems immediately
         setDeductedProblems(prev => {
           const newSet = new Set(prev);
@@ -1136,11 +1129,6 @@ const FallingGame = ({ game, onGameComplete }) => {
 
   // Update the handleLevelSelect function
   const handleLevelSelect = (selectedLevel) => {
-    console.log('[FallingGame] Manual Level Change:', {
-      fromLevel: currentLevel,
-      toLevel: selectedLevel
-    });
-    
     // Close the level selector modal
     setShowLevelSelector(false);
     

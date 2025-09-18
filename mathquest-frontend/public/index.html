@@ -11,7 +11,40 @@
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/images/new-logo.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <title>Math Properties Adventure</title>
+    <title>MathQuest - Math Properties Adventure</title>
+    <script>
+      // Prevent theme flashing by applying theme before React renders
+      (function() {
+        try {
+          const savedTheme = localStorage.getItem('theme');
+          const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          
+          // Determine the correct theme
+          let shouldBeDark = false;
+          if (savedTheme) {
+            shouldBeDark = savedTheme === 'dark';
+          } else {
+            shouldBeDark = systemPrefersDark;
+          }
+          
+          // Apply theme to DOM
+          if (shouldBeDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+          
+          // Ensure localStorage is consistent
+          localStorage.setItem('theme', shouldBeDark ? 'dark' : 'light');
+          
+          // Show the body once theme is applied
+          document.body.classList.add('theme-ready');
+        } catch (error) {
+          // Fallback if localStorage is not available
+          document.body.classList.add('theme-ready');
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

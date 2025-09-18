@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Header } from '../../ui/heading';
 import UserService from '../../services/userService';
 import { Table } from '../../ui/table';
@@ -6,6 +6,7 @@ import { Button } from '../../ui/button';
 import Modal from '../../ui/modal';
 import { Input } from '../../ui/input';
 import { CiSearch } from 'react-icons/ci';
+import { HiDotsVertical, HiPencil, HiTrash } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
 const UserManagement = () => {
@@ -15,6 +16,8 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [actionMenuOpen, setActionMenuOpen] = useState(null);
+  const menuRef = useRef();
   const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
@@ -28,15 +31,23 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setActionMenuOpen(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const allUsers = await UserService.getAllUsers();
-      console.log('Fetched all users:', {
-        total: allUsers.length,
-        deleted: allUsers.filter(user => user.isDeleted || user.deleted).length,
-        active: allUsers.filter(user => !user.isDeleted && !user.deleted).length
-      });
+
       
       // Sort users: admins first, then alphabetically by last name
       const sortedUsers = allUsers
@@ -60,18 +71,7 @@ const UserManagement = () => {
           return a.id - b.id;
         });
 
-      console.log('Filtered and sorted users:', {
-        total: sortedUsers.length,
-        admins: sortedUsers.filter(user => user.roles?.some(r => {
-          const roleName = typeof r === 'string' ? r : r.name;
-          return roleName === 'ROLE_ADMIN' || roleName === 'ADMIN';
-        })).length,
-        nonAdmins: sortedUsers.filter(user => !user.roles?.some(r => {
-          const roleName = typeof r === 'string' ? r : r.name;
-          return roleName === 'ROLE_ADMIN' || roleName === 'ADMIN';
-        })).length,
-        userIds: sortedUsers.map(u => u.id)
-      });
+
 
       setUsers(sortedUsers);
       setError(null);
@@ -101,37 +101,11 @@ const UserManagement = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         const userToDelete = users.find(user => user.id === userId);
-        console.log('Attempting to delete user:', {
-          id: userId,
-          name: `${userToDelete?.firstName || ''} ${userToDelete?.lastName || ''}`.trim(),
-          email: userToDelete?.email,
-          roles: userToDelete?.roles,
-          isDeleted: userToDelete?.isDeleted
-        });
-        
         const response = await UserService.deleteUserByAdmin(userId);
-        console.log('Delete API Response:', response);
-        
-        // Verify deletion in the current list
-        const deletedUser = users.find(user => user.id === userId);
-        console.log('Verification after deletion:', {
-          userId,
-          stillExists: !!deletedUser,
-          isDeleted: deletedUser?.isDeleted
-        });
-        
-        console.log('Successfully deleted user with ID:', userId);
         toast.success('User deleted successfully');
         await fetchUsers(); // Wait for the fetch to complete
         
-        // Verify after refresh
-        const allUsers = await UserService.getAllUsers();
-        const deletedUserAfterRefresh = allUsers.find(user => user.id === userId);
-        console.log('Verification after refresh:', {
-          userId,
-          stillExists: !!deletedUserAfterRefresh,
-          isDeleted: deletedUserAfterRefresh?.isDeleted
-        });
+
       } catch (error) {
         console.error('Failed to delete user:', error);
         toast.error('Failed to delete user');
@@ -184,45 +158,78 @@ const UserManagement = () => {
     {
       header: 'Actions',
       accessor: (user) => (
-        <div className="flex space-x-2">
-          <Button onClick={() => handleEditUser(user)} variant="secondary">
-            Edit
-          </Button>
-          <Button onClick={() => handleDeleteUser(user.id)} variant="danger">
-            Delete
-          </Button>
+        <div className="flex justify-start">
+          <div className="relative inline-block text-left" ref={actionMenuOpen === user.id ? menuRef : null}>
+            <button
+              onClick={() => setActionMenuOpen(actionMenuOpen === user.id ? null : user.id)}
+              className="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition duration-150"
+            >
+              <HiDotsVertical size={20} />
+            </button>
+            {actionMenuOpen === user.id && (
+            <div className="absolute right-0 bottom-[5%] mb-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                  <button
+                    onClick={() => { handleEditUser(user); setActionMenuOpen(null); }}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    role="menuitem"
+                  >
+                    <HiPencil className="mr-3 h-5 w-5 text-gray-400" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => { handleDeleteUser(user.id); setActionMenuOpen(null); }}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                    role="menuitem"
+                  >
+                    <HiTrash className="mr-3 h-5 w-5 text-red-400" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )
     }
   ];
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+    </div>
+  );
+  
   if (error) return <div>{error}</div>;
 
   const filteredUsers = filterUsers(users);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Header type="h1" fontSize="3xl" weight="bold" className="mb-6">User Management</Header>
+    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+    <div className="max-w-6xl mx-auto">
+    <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white"> User Management</Header>
+    <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] mb-5 md:mb-8"></div>
       
-      <div className="mb-6">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none !text-gray-800">
-            <CiSearch />
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 gap-4">
+          <div className="flex items-center gap-4 w-full sm:w-auto order-2 sm:order-1">
+            <div className="relative flex-1 sm:flex-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none dark:!text-gray-300 !text-gray-700">
+                <CiSearch className="dark:!text-gray-300 !text-gray-700" />
+              </div>
+              <Input
+                type="search"
+                name="search"
+                id="search"
+                className="block w-full sm:w-96 pl-10 pr-3 py-2 sm:text-sm border-gray-700 dark:border-gray-300 text-gray-500 dark:text-gray-300"
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
-          <Input
-            type="search"
-            name="search"
-            id="search"
-            className="block w-full sm:w-64 pl-10 pr-3 py-2 sm:text-sm !text-gray-800"
-            placeholder="Search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
         </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="">
         <Table columns={columns} data={filteredUsers} />
       </div>
 
@@ -233,59 +240,65 @@ const UserManagement = () => {
       >
         <form onSubmit={handleUpdateUser} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">First Name</label>
+            <label className="block mb-2text-sm font-medium dark:text-gray-300 text-gray-700">First Name</label>
             <Input
               type="text"
+              className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
               value={editForm.firstName}
               onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Last Name</label>
+            <label className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Last Name</label>
             <Input
               type="text"
+              className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
               value={editForm.lastName}
               onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
+            <label className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Username</label>
             <Input
               type="text"
+              className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
               value={editForm.username}
               onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">Email</label>
             <Input
               type="email"
+              className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
               value={editForm.email}
               onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">New Password (optional)</label>
+            <label className="block mb-2 text-sm font-medium dark:text-gray-300 text-gray-700">New Password (optional)</label>
             <Input
               type="password"
+              className="dark:text-gray-300 text-gray-700 dark:border-gray-300 border-gray-700"
               value={editForm.password}
               onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
             />
           </div>
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="secondary" onClick={() => setIsEditModalOpen(false)}>
+            <Button type="button" variant="cancel" rounded="full" onClick={() => setIsEditModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="default" rounded="full">
               Save Changes
             </Button>
           </div>
         </form>
       </Modal>
+    </div>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import AddQuizModal from './AddQuizModal';
 import QuizPreviewModal from './QuizPreviewModal';
 import { FaCheck, FaStar } from 'react-icons/fa';
+import { TbDotsVertical } from 'react-icons/tb';
 import { Button } from '../../ui/button';
 
 const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => {
@@ -18,6 +19,7 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
   const [editQuizId, setEditQuizId] = useState(null);
   const [previewQuizId, setPreviewQuizId] = useState(null);
   const [quizAttempts, setQuizAttempts] = useState({}); // Store attempts by quizId
+  const [openDropdownId, setOpenDropdownId] = useState(null); // Track which dropdown is open
 
   useEffect(() => {
     if (!classroomId) return;
@@ -27,7 +29,7 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
         setLoading(true);
         setError(null); // Clear any previous errors
         
-        console.log(`Fetching quizzes for classroom ${classroomId} with isStudent=${isStudent}`);
+    
         
         // Different endpoint for students to only get available quizzes
         let fetchedQuizzes = [];
@@ -39,7 +41,7 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
             : await quizService.getQuizzesByClassroom(classroomId);
           
           if (isStudent) {
-            console.log("Raw available quizzes response:", fetchedQuizzes);
+    
             
             // Fetch student's attempts for all quizzes
             if (currentUser?.id) {
@@ -57,25 +59,22 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
             }
           }
 
-          console.log(`Retrieved ${fetchedQuizzes.length} quizzes for classroom ${classroomId}`);
+  
         } catch (err) {
           console.error(`Error fetching quizzes for classroom ${classroomId}:`, err);
           
           // Fallback approach - get activities then get quizzes for each activity
-          console.log('Using fallback approach to fetch quizzes through activities');
+  
           
           try {
             // Fetch all activities for this classroom
             const activitiesResponse = await api.get(`/activities/classroom/${classroomId}`);
             const activities = activitiesResponse.data;
             
-            console.log('Activities fetched:', activities);
+
             
             // Filter quiz activities
             const quizActivities = activities.filter(a => a.type === 'QUIZ');
-            console.log('Filtered quiz activities:', quizActivities);
-            // Filter quiz activities
-            console.log(`Found ${quizActivities.length} quiz activities`);
             
             // Get quizzes for each activity
             const quizPromises = quizActivities.map(activity => 
@@ -84,7 +83,7 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
             
             const quizResults = await Promise.all(quizPromises);
             fetchedQuizzes = quizResults.filter(q => q !== null);
-            console.log(`Retrieved ${fetchedQuizzes.length} quizzes via activities`);
+
           } catch (fallbackErr) {
             console.error('Fallback quiz fetch also failed:', fallbackErr);
             throw err; // Throw the original error
@@ -92,7 +91,6 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
         }
         
         if (fetchedQuizzes && Array.isArray(fetchedQuizzes)) {
-          console.log('Fetched quizzes:', fetchedQuizzes);
           setQuizzes(fetchedQuizzes);
         } else {
           console.warn('Response is not an array:', fetchedQuizzes);
@@ -110,6 +108,20 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
 
     fetchQuizzes();
   }, [classroomId, token, isStudent, refreshTrigger]);
+
+  // Handle clicking outside dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdownId && !event.target.closest('.dropdown-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdownId]);
 
   const handleStartQuiz = async (quizId) => {
     try {
@@ -287,21 +299,69 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
             <div key={quiz.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
               <div className="bg-blue-900 text-white px-4 py-3 flex justify-between items-center">
                 <h4 className="font-semibold break-words max-w-sm">{quiz.quizName}</h4>
-                {isStudent && status && (
-                  <div className="flex items-center gap-2">
-                    {status.hasPassed ? (
-                      <div className="flex items-center gap-1 bg-green-500 px-2 py-1 rounded-full">
-                        <FaCheck className="text-white" />
-                        <span className="text-sm">Passed!</span>
-                      </div>
-                    ) : status.attemptCount > 0 ? (
-                      <div className="flex items-center gap-1 bg-blue-600 px-2 py-1  rounded-full">
-                        <FaStar className="text-yellow-300" />
-                        <span className="text-sm">Best: {status.bestScore}%</span>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {isStudent && status && (
+                    <div className="flex items-center gap-2">
+                      {status.hasPassed ? (
+                        <div className="flex items-center gap-1 bg-green-500 px-2 py-1 rounded-full">
+                          <FaCheck className="text-white" />
+                          <span className="text-sm">Passed!</span>
+                        </div>
+                      ) : status.attemptCount > 0 ? (
+                        <div className="flex items-center gap-1 bg-blue-600 px-2 py-1  rounded-full">
+                          <FaStar className="text-yellow-300" />
+                          <span className="text-sm">Best: {status.bestScore}%</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                  
+                  {/* Dropdown Menu for Teachers */}
+                  {!isStudent && (
+                    <div className="relative dropdown-container">
+                      <button
+                        onClick={() => setOpenDropdownId(openDropdownId === quiz.id ? null : quiz.id)}
+                        className="p-2 text-gray-300 hover:text-white rounded-full hover:bg-blue-800 transition-colors"
+                      >
+                        <TbDotsVertical className="w-5 h-5" />
+                      </button>
+                      
+                      {openDropdownId === quiz.id && (
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                          <div className="py-1">
+                            <button
+                              onClick={() => {
+                                setPreviewQuizId(quiz.id);
+                                setOpenDropdownId(null);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Preview
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditQuizId(quiz.id);
+                                setOpenDropdownId(null);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleDeleteQuiz(quiz.id);
+                                setOpenDropdownId(null);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="p-4 text-base">
@@ -340,31 +400,7 @@ const QuizManager = ({ classroomId, isStudent = false, refreshTrigger = 0 }) => 
                        : 'Start Quiz'}
                    </button>
                   ) : (
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setEditQuizId(quiz.id)}
-                        className="text-gray-600 hover:text-gray-900 text-base focus:outline-none"
-                        style={{ background: 'none', border: 'none', padding: 0 }}
-                      >
-                        Edit
-                      </button>
-                      <span className="mx-1 text-gray-400">|</span>
-                      <button
-                        onClick={() => setPreviewQuizId(quiz.id)}
-                        className="text-gray-600 hover:text-gray-900 text-base focus:outline-none"
-                        style={{ background: 'none', border: 'none', padding: 0 }}
-                      >
-                        Preview
-                      </button>
-                      <span className="mx-1 text-gray-400">|</span>
-                      <button
-                        onClick={() => handleDeleteQuiz(quiz.id)}
-                        className="text-red-600 hover:text-red-900 text-base focus:outline-none"
-                        style={{ background: 'none', border: 'none', padding: 0 }}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <div className="w-full"></div>
                   )}
                 </div>
               </div>

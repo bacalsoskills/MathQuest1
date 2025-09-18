@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Button } from "../ui/button"
 import { CgProfile } from "react-icons/cg";
 import { BiGroup } from "react-icons/bi";
@@ -12,13 +13,14 @@ import UserService from '../services/userService';
 import { LiaSchoolSolid } from "react-icons/lia";
 import ClassroomService from '../services/classroomService';
 import { LuNotebookPen } from "react-icons/lu";
-import SystemSettingsService from '../services/systemSettingsService';
 import { BsPersonFillCheck } from "react-icons/bs";
 import { MdOutlineFeedback } from "react-icons/md";
 import { FaMoon, FaSun, FaBars, FaQuestionCircle } from "react-icons/fa";
 import { HiMenuAlt1 } from "react-icons/hi";
 import { MdOutlineDashboard } from "react-icons/md";
 import { useSidebar } from '../context/SidebarContext';
+import { GrAnnounce } from "react-icons/gr";
+import { MdOutlineGames } from "react-icons/md";
 
 // Helper function to get initials
 const getInitials = (firstName, lastName) => {
@@ -48,21 +50,18 @@ const Navbar = () => {
   const [profileImageSrc, setProfileImageSrc] = useState('');
   const [imageLoaded, setImageLoaded] = useState(false);
   const [classrooms, setClassrooms] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
 
   const { currentUser, logout, isAdmin, isTeacher, isStudent } = useAuth();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
-
-  // Dark mode state
-  const [darkMode, setDarkMode] = useState(true);
+  const { darkMode, setDarkMode, isInitialized } = useTheme();
   
   // Check if device is mobile
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      console.log('Mobile detection:', mobile, 'Window width:', window.innerWidth);
+      
     };
     
     checkMobile();
@@ -71,13 +70,7 @@ const Navbar = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+  // Remove the local dark mode effect since it's now handled by ThemeContext
 
   // Function to fetch the profile image directly
   const fetchProfileImage = async () => {
@@ -121,7 +114,6 @@ const Navbar = () => {
       
       // Fetch classrooms when component mounts
       fetchClassrooms();
-      loadAnnouncements();
     }
   }, [currentUser, isTeacher, isStudent]);
 
@@ -163,25 +155,7 @@ const Navbar = () => {
     }
   };
 
-  const loadAnnouncements = async () => {
-    try {  
-      const userRole = isAdmin() ? 'ADMIN' : isTeacher() ? 'TEACHERS' : 'STUDENTS';
-      const now = new Date();
-      const announcements = await SystemSettingsService.getActiveAnnouncements(userRole);
 
-      if (announcements && announcements.length > 0) {
-        announcements.forEach((announcement, index) => {
-        });
-      } else {
-        console.log("- No announcements received");
-      }
-      if (announcements) {
-        setAnnouncements(announcements);
-      }
-    } catch (error) {
-      console.error('Failed to load announcements:', error);
-    }
-  };
 
   if (!currentUser) {
     return (
@@ -255,6 +229,12 @@ const Navbar = () => {
         name: classroom.name
       }))
     },
+    {
+      path: '/student/learning-multiplication',
+      // icon: <span className="mr-3 text-xl font-bold">×</span>,
+      icon: <MdOutlineGames className="mr-3 text-xl" />,
+      name: 'Learning Multiplication',
+    },
   ];
 
   const teacherLinks = [
@@ -281,7 +261,7 @@ const Navbar = () => {
     },
     { path: '/admin/classrooms', icon: <LiaSchoolSolid className="mr-3 text-xl" />, name: 'Classrooms' },
     { path: '/admin/feedback', icon: <MdOutlineFeedback className="mr-3 text-xl" />, name: 'Feedback Management' },
-    { path: '/admin/settings', icon: <MdOutlineAdminPanelSettings className="mr-3 text-xl" />, name: 'System Settings' },
+    { path: '/admin/announcements', icon: <GrAnnounce className="mr-3 text-xl" />, name: 'System Announcements' },
   ];
 
   // Use role-specific dashboard for all roles
@@ -348,14 +328,14 @@ const Navbar = () => {
             </button>
           </div>
           {/* Search Bar */}
-          {sidebarOpen && (
+          {/* {sidebarOpen && (
             <div className="px-6 pt-2 pb-4">
               <div className="flex items-center bg-[#101233] dark:bg-[#101233] rounded-lg px-3 py-2">
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"/></svg>
                 <input type="text" placeholder="Search" className="bg-transparent outline-none ml-2 text-sm w-full text-white placeholder-gray-400" />
               </div>
             </div>
-          )}
+          )} */}
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1 px-2">
             {linksToShow.map((link) => (
@@ -405,7 +385,7 @@ const Navbar = () => {
               <Link
                 to={isStudent() ? '/student/join-classroom' : '/teacher/add-classroom'}
                 onClick={handleMobileLinkClick}
-                className={`flex items-center ${sidebarOpen ? 'px-6 py-3' : 'justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
+                className={`flex items-center ${sidebarOpen ? 'px-4 py-3' : 'mr-4 justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
                   (isStudent() && isActive('/student/join-classroom')) || (isTeacher() && isActive('/teacher/add-classroom'))
                     ? 'bg-white text-[#070926]'
                     : 'text-white hover:bg-[#101233]'
@@ -419,42 +399,46 @@ const Navbar = () => {
               </Link>
             )}
             {/* Help link at the end */}
-            <Link
-              to={isAdmin() ? '/admin/help' : isTeacher() ? '/teacher/help' : '/student/help'}
-              onClick={handleMobileLinkClick}
-              className={`flex items-center ${sidebarOpen ? 'px-6 py-3' : 'justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
-                isActive(isAdmin() ? '/admin/help' : isTeacher() ? '/teacher/help' : '/student/help')
-                  ? 'bg-white text-[#070926]' 
-                  : 'text-white hover:bg-[#101233]'
-              }`}
-              style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
-            >
-              <span className={`inline-block text-xl ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>
-                <FaQuestionCircle />
-              </span>
-              {sidebarOpen && <span>Help</span>}
-            </Link>
+            {!isAdmin() && (
+              <Link
+                to={isTeacher() ? '/teacher/help' : '/student/help'}
+                onClick={handleMobileLinkClick}
+                className={`flex items-center ${sidebarOpen ? 'px-4 py-3' : 'mr-4 justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
+                  isActive(isTeacher() ? '/teacher/help' : '/student/help')
+                    ? 'bg-white text-[#070926]' 
+                    : 'text-white hover:bg-[#101233]'
+                }`}
+                style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
+              >
+                <span className={`inline-block text-2xl ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>
+                  <FaQuestionCircle />
+                </span>
+                {sidebarOpen && <span>Help</span>}
+              </Link>
+            )}
           </nav>
         </div>
         {/* Bottom: Dark/Light Toggle & User Profile & Logout */}
         <div className={`px-3 pb-6 pt-2 ${sidebarOpen ? '' : 'px-0'}`}>
           {/* Dark/Light Mode Toggle */}
-          <div className={`flex items-center justify-center mb-4 bg-[#101233] rounded-lg p-1 ${sidebarOpen ? '' : 'justify-center'}`}>
-            <button
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${darkMode ? 'bg-blue-800 text-white' : 'text-gray-400'}`}
-              onClick={() => setDarkMode(true)}
-            >
-              <FaMoon className="mr-2" />
-              {sidebarOpen && 'Dark'}
-            </button>
-            <button
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${!darkMode ? 'bg-blue-800 text-white' : 'text-gray-400'}`}
-              onClick={() => setDarkMode(false)}
-            >
-              <FaSun className="mr-2" />
-              {sidebarOpen && 'Light'}
-            </button>
-          </div>
+          {isInitialized && (
+            <div className={`flex items-center justify-center mb-4 bg-[#101233] rounded-lg p-1 ${sidebarOpen ? '' : 'justify-center'}`}>
+              <button
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${darkMode ? 'bg-blue-800 text-white' : 'text-gray-400'}`}
+                onClick={() => setDarkMode(true)}
+              >
+                <FaMoon className="mr-2" />
+                {sidebarOpen && 'Dark'}
+              </button>
+              <button
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${!darkMode ? 'bg-blue-800 text-white' : 'text-gray-400'}`}
+                onClick={() => setDarkMode(false)}
+              >
+                <FaSun className="mr-2" />
+                {sidebarOpen && 'Light'}
+              </button>
+            </div>
+          )}
           {/* User Profile & Logout */}
           <div className={`flex items-center ${sidebarOpen ? 'gap-3 bg-[#101233] rounded-xl p-3' : 'justify-center'} relative`}>
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#070926] text-lg font-semibold overflow-hidden">

@@ -114,11 +114,7 @@ export const ContentProvider = ({ children }) => {
       const storedPracticeProblems = localStorage.getItem('practiceProblems');
       const storedChallengeQuestions = localStorage.getItem('challengeQuestions');
 
-      console.log('Loading from localStorage:', {
-        storedProperties,
-        storedPracticeProblems,
-        storedChallengeQuestions
-      });
+
 
       // Initialize with default data if nothing is stored
       if (!storedProperties) {
@@ -144,7 +140,7 @@ export const ContentProvider = ({ children }) => {
   const updateContent = (type, id, data) => {
     if (!isAdmin()) return;
 
-    console.log('Updating content in context:', { type, id, data });
+
 
     switch (type) {
       case 'properties':
@@ -160,7 +156,7 @@ export const ContentProvider = ({ children }) => {
           // Update property
           updatedProperties = properties.map(p => p.id === id ? { ...p, ...data } : p);
         }
-        console.log('Updated properties:', updatedProperties);
+
         setProperties(updatedProperties);
         localStorage.setItem('properties', JSON.stringify(updatedProperties));
         break;
@@ -178,7 +174,7 @@ export const ContentProvider = ({ children }) => {
           // Update problem
           updatedPracticeProblems = practiceProblems.map(p => p.id === id ? { ...p, ...data } : p);
         }
-        console.log('Updated practice problems:', updatedPracticeProblems);
+
         setPracticeProblems(updatedPracticeProblems);
         localStorage.setItem('practiceProblems', JSON.stringify(updatedPracticeProblems));
         break;
@@ -196,7 +192,7 @@ export const ContentProvider = ({ children }) => {
           // Update question
           updatedChallengeQuestions = challengeQuestions.map(q => q.id === id ? { ...q, ...data } : q);
         }
-        console.log('Updated challenge questions:', updatedChallengeQuestions);
+
         setChallengeQuestions(updatedChallengeQuestions);
         localStorage.setItem('challengeQuestions', JSON.stringify(updatedChallengeQuestions));
         break;

@@ -73,15 +73,7 @@ const CreateClassroom = () => {
         requestData.append('image', formData.image);
       }
       
-      console.log("Sending create classroom request:", {
-        name: formData.name,
-        description: formData.description,
-        shortCode: formData.shortCode,
-        hasImage: !!formData.image
-      });
-      
       const result = await ClassroomService.createClassroom(requestData);
-      console.log("Create classroom response:", result);
       
       setCreatedClassroom(result);
       setSuccess(`Classroom "${result.name}" created successfully!`);
@@ -106,18 +98,9 @@ const CreateClassroom = () => {
   };
 
   return (
-    <div className="bg-[#E7EFFC] min-h-screen px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
-    <div className="max-w-5xl mx-auto">
-    {/* <button
-              onClick={() => {
-                navigate('/classrooms');
-              }}
-              className="text-sm py-5 flex items-center gap-2"
-            >
-                 <MdKeyboardBackspace />
-              Back to Classrooms
-            </button> */}
-      <Header type="h1" fontSize="3xl" weight="bold" className="mb-6">Create a New Classroom</Header>
+    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="max-w-6xl mx-auto">
+      <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white">Create a New Classroom</Header>
       
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         <div className="p-8">
@@ -145,7 +128,7 @@ const CreateClassroom = () => {
               </div>
               <button
                 onClick={handleGoToClassrooms}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                className="w-full flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 rounded-full"
               >
                 Go to My Classrooms
               </button>
@@ -154,7 +137,7 @@ const CreateClassroom = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                 <Label htmlFor="shortCode" className="block text-sm font-medium text-gray-700 mb-1">
-                  Classroom Code*
+                  Classroom Code <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="shortCode"
@@ -163,14 +146,14 @@ const CreateClassroom = () => {
                   required
                   placeholder="e.g. Math 101"
                   variant="gray"
-                  className="mt-1 block w-full "
+                  className="mt-1 block w-full rounded-none"
                   value={formData.shortCode}
                   onChange={handleChange}
                 />
               </div>
               <div>
                 <Label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Classroom Name*
+                  Classroom Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -179,7 +162,7 @@ const CreateClassroom = () => {
                   required
                   variant="gray"
                   placeholder="e.g. Mathematics for Beginners"
-                  className="mt-1 block w-full  "
+                  className="mt-1 block w-full rounded-none"
                   value={formData.name}
                   onChange={handleChange}
                 />
@@ -187,7 +170,7 @@ const CreateClassroom = () => {
               
               <div>
                 <Label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  Description <span className="text-red-500">*</span>
                 </Label>
                 <Textarea
                   id="description"
@@ -195,8 +178,9 @@ const CreateClassroom = () => {
                   rows="3"
                   placeholder="Brief description of the classroom"
                   variant="gray"
-                  className="mt-1 block w-full"
+                  className="mt-1 block w-full rounded-none"
                   value={formData.description}
+                  required
                   onChange={handleChange}
                 />
               </div>
@@ -216,7 +200,7 @@ const CreateClassroom = () => {
                     file:rounded-md file:border-0
                     file:text-sm file:font-semibold
                     file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100 !border-none "
+                    hover:file:bg-blue-100 !border-none rounded-none"
                   onChange={handleImageChange}
                 />
                 <p className="mt-1 text-sm text-gray-500">Maximum file size: 5MB</p>
@@ -229,6 +213,7 @@ const CreateClassroom = () => {
                   variant="default"
                   size="sm"
                   className="w-full "
+                  rounded="full"
                 >
                   {loading ? 'Creating...' : 'Create Classroom'}
                 </Button>
@@ -237,9 +222,9 @@ const CreateClassroom = () => {
           )}
           
           {!createdClassroom && (
-            <div className="mt-6">
+            <div className="mt-6 max-w-[200px] md:max-w-none ">
               <p className="text-sm text-gray-600">
-                Already have classrooms? <a href="/classrooms" className="text-blue-600 hover:text-blue-800">View your classrooms</a>
+                Already have classrooms? <a href="/classrooms" className="text-blue-600 underline-offset-2 underline hover:text-blue-800">View your classrooms</a>
               </p>
             </div>
           )}

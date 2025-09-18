@@ -227,26 +227,22 @@ const QuizAttemptPage = () => {
         JSON.stringify(answers)
       );
       
-      console.log("Quiz submission successful:", result);
+  
       toast.success('Quiz submitted successfully!');
       
       // Get the classroom ID from the result or from quizDetails
       const resultClassroomId = result?.classroomId;
       const effectiveClassroomId = resultClassroomId || quizDetails?.classroomId;
       
-      console.log("Navigation info:", {
-        resultClassroomId,
-        quizDetailsClassroomId: quizDetails?.classroomId,
-        effectiveClassroomId
-      });
+
       
       // Only offer leaderboard navigation if we have a valid classroom ID
       if (effectiveClassroomId) {
         if (window.confirm("View leaderboard for this quiz?")) {
-          console.log("Navigating to leaderboard:", `/classroom/${effectiveClassroomId}/leaderboard`);
+
           navigate(`/classroom/${effectiveClassroomId}/leaderboard`);
         } else {
-          console.log("Navigating to classroom:", `/student/classrooms/${effectiveClassroomId}`);
+
           navigate(`/student/classrooms/${effectiveClassroomId}`);
         }
       } else {

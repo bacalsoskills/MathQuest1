@@ -40,10 +40,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      // Directly use the complete userData object that contains all the required fields
-      // from RegisterPage (username, email, password, firstName, lastName, role)
-      console.log("Registration data:", userData);
-      
+
       const response = await AuthService.register(userData);
       return response; // Just return the backend response which contains message
     } catch (error) {

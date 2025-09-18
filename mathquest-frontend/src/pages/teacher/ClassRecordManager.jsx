@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { reportService } from "../../services/reportService";
 import { Header } from '../../ui/heading';
-import { FaDownload, FaSpinner, FaFileExcel, FaFileCsv, FaInfoCircle } from "react-icons/fa";
+import { FaDownload, FaSpinner, FaFileExcel, FaFileCsv, FaInfoCircle, FaChevronDown } from "react-icons/fa";
 import { BiAnalyse } from "react-icons/bi";
+import { MdOutlineQuiz } from "react-icons/md";
+import { GoScreenFull } from "react-icons/go";
 import { toast } from "react-hot-toast";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
-import { Pie, Bar, Line } from 'react-chartjs-2';
+import { Pie, Bar, Line, Chart } from 'react-chartjs-2';
 import { useAuth } from "../../context/AuthContext";
 import Modal from "../../ui/modal.jsx";
 import classroomService from "../../services/classroomService";
@@ -16,17 +18,16 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tool
 
 // Calculate student ranks based on average score
 const calculateRanks = (students, quizzes) => {
-  // Log quiz data for debugging
-  console.log("[ClassRecordManager] Raw quiz data:", JSON.stringify(quizzes, null, 2));
+
   
   // Calculate total possible points across all quizzes
   const totalPossiblePoints = quizzes.reduce((sum, quiz) => {
     const quizPoints = Number(quiz.overallScore) || 0;
-    console.log(`[ClassRecordManager] Quiz ${quiz.id} (${quiz.quizName}): overallScore = ${quiz.overallScore}, parsed as ${quizPoints}`);
+
     return sum + quizPoints;
   }, 0);
   
-  console.log("[ClassRecordManager] Total possible points across all quizzes:", totalPossiblePoints);
+ 
 
   return students
     .map((student, index) => ({ ...student, index }))
@@ -35,18 +36,18 @@ const calculateRanks = (students, quizzes) => {
       const totalScore = student.quizScores?.reduce((sum, score) => {
         // Handle both object and number scores
         const scoreValue = typeof score === 'object' ? (score?.score || 0) : (Number(score) || 0);
-        console.log(`[ClassRecordManager] Adding score ${score} (parsed as ${scoreValue}) to total`);
+    
         return sum + scoreValue;
       }, 0) || 0;
       
-      console.log(`[ClassRecordManager] Student ${student.id} total score: ${totalScore}`);
+      
       
       // Calculate average based on total possible points
       const averageScore = totalPossiblePoints > 0 
         ? ((totalScore / totalPossiblePoints) * 100).toFixed(2) 
         : 0;
       
-      console.log(`[ClassRecordManager] Student ${student.id} average score: ${averageScore}% (${totalScore}/${totalPossiblePoints})`);
+    
       
       const isComplete = student.quizScores?.every(score => score !== null && score !== undefined);
       
@@ -64,18 +65,11 @@ const calculateRanks = (students, quizzes) => {
 
 const calculateAnalytics = (quizData, quizAttempts) => {
   if (!quizData?.quizzes || !quizAttempts?.attempts || !quizAttempts?.students) {
-    console.log("[Analytics] Missing required data:", {
-      hasQuizzes: !!quizData?.quizzes,
-      hasAttempts: !!quizAttempts?.attempts,
-      hasStudents: !!quizAttempts?.students
-    });
+   
     return null;
   }
 
-  console.log("[Analytics] Calculating analytics for all students");
-  console.log("[Analytics] Total students:", quizAttempts.students.length);
-  console.log("[Analytics] Total quizzes:", quizData.quizzes.length);
-  console.log("[Analytics] Total attempts:", quizAttempts.attempts.length);
+
 
   const { quizzes } = quizData;
   const { attempts, students } = quizAttempts;
@@ -127,30 +121,20 @@ const calculateAnalytics = (quizData, quizAttempts) => {
         // Calculate passing percentage
         const passingPercentage = (quiz.passingScore / quiz.overallScore) * 100;
         
-        console.log(`[Analytics] Student ${student.id} Quiz ${quiz.id}:`, {
-          average: studentData.average,
-          overallScore: quiz.overallScore,
-          percentageScore,
-          passingPercentage,
-          passed: percentageScore >= passingPercentage
-        });
+  
         
         return percentageScore >= passingPercentage;
       });
       
       if (allPassed) {
         studentsWithMastery++;
-        console.log(`[Analytics] Student ${student.id} achieved mastery`);
+    
       }
     }
   });
 
   const masteryRate = students.length > 0 ? (studentsWithMastery / students.length) * 100 : 0;
-  console.log("[Analytics] Mastery rate calculation:", {
-    studentsWithMastery,
-    totalStudents: students.length,
-    masteryRate
-  });
+
 
   // Calculate quiz performance metrics using student averages
   const quizPerformance = quizzes.map(quiz => {
@@ -320,28 +304,51 @@ const ClassRecordManager = ({ classroomId }) => {
   const [quizDataLoading, setQuizDataLoading] = useState(true);
   const [classroom, setClassroom] = useState(null);
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for highest to lowest, 'asc' for lowest to highest
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [activeQuizTab, setActiveQuizTab] = useState('overall');
+  const dropdownRef = useRef(null);
+  const [isDownloadDropdownOpen, setIsDownloadDropdownOpen] = useState(false);
+  const downloadDropdownRef = useRef(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Add new useEffect for analytics calculation
   useEffect(() => {
     if (quizData?.quizzes && quizAttempts?.attempts && quizAttempts?.students) {
-      console.log("[Analytics] Calculating analytics with new data");
+ 
       const calculatedAnalytics = calculateAnalytics(quizData, quizAttempts);
       setAnalytics(calculatedAnalytics);
       setAnalyticsLoading(false);
     }
   }, [quizData, quizAttempts]);
 
+  // Add useEffect to handle clicking outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDropdownOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+      if (isDownloadDropdownOpen && downloadDropdownRef.current && !downloadDropdownRef.current.contains(event.target)) {
+        setIsDownloadDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen, isDownloadDropdownOpen]);
+
   useEffect(() => {
     if (!currentUser?.id) {
       console.error("No user found in context");
-      console.log("Auth context:", { currentUser, token });
+  
       toast.error("Please log in to access this feature");
       return;
     }
 
     if (!token) {
       console.error("No authentication token found");
-      console.log("Current token state:", token);
+  
       const storedToken = localStorage.getItem('token');
       if (!storedToken) {
         toast.error("Please log in to access this feature");
@@ -349,8 +356,7 @@ const ClassRecordManager = ({ classroomId }) => {
       }
     }
 
-    console.log("Current user:", currentUser);
-    console.log("Current token:", token ? "Present" : "Not present");
+
     fetchData();
   }, [classroomId, currentUser, token]);
 
@@ -360,8 +366,7 @@ const ClassRecordManager = ({ classroomId }) => {
     }
 
     try {
-      console.log("Fetching data for classroom:", classroomId);
-      console.log("Current user ID:", currentUser.id);
+
       setLoading(true);
       setAnalyticsLoading(true);
       setQuizDataLoading(true);
@@ -378,11 +383,11 @@ const ClassRecordManager = ({ classroomId }) => {
       }
       const classroomData = await classroomResponse.json();
       setClassroom(classroomData);
-      console.log("Fetched classroom data:", classroomData);
+     
 
       // Fetch reports
       const reportData = await reportService.getReportsByClassroom(classroomId);
-      console.log("Fetched reports:", reportData);
+ 
       
       // Parse report data for each report
       const parsedReports = reportData.map(report => {
@@ -422,7 +427,7 @@ const ClassRecordManager = ({ classroomId }) => {
 
       // Fetch analytics
       const analyticsData = await reportService.getClassRecordAnalytics(classroomId);
-      console.log("Fetched analytics:", analyticsData);
+     
 
       // Get actual student count from classroom data
       const studentCount = classroomData.students?.length || await classroomService.getStudentCountInClassroom(classroomId);
@@ -460,13 +465,13 @@ const ClassRecordManager = ({ classroomId }) => {
 
   const handleGenerateReport = async (fileType) => {
     if (!currentUser?.id) {
-      console.error("No user found in context");
+   
       toast.error("Please log in to generate reports");
       return;
     }
 
     if (!classroom) {
-      console.error("No classroom data available");
+
       toast.error("Failed to load classroom data");
       return;
     }
@@ -477,29 +482,19 @@ const ClassRecordManager = ({ classroomId }) => {
       } else if (fileType === 'CSV') {
         setGeneratingCsvReport(true);
       }
-      console.log("%c=== STARTING NEW REPORT GENERATION ===", "background: blue; color: white; font-size: 16px");
+
       
       // Validate required data
       if (!quizData?.quizzes || !quizAttempts?.attempts || !quizAttempts?.students) {
-        console.error("Missing required data:", {
-          hasQuizzes: !!quizData?.quizzes,
-          hasAttempts: !!quizAttempts?.attempts,
-          hasStudents: !!quizAttempts?.students
-        });
+     
         throw new Error("Required data is not available");
       }
 
-      // Log data for debugging
-      console.log("Data for report generation:", {
-        quizzes: quizData.quizzes,
-        attempts: quizAttempts.attempts,
-        students: quizAttempts.students,
-        classroom: classroom
-      });
+  
 
       // Create quiz metadata and validate quiz IDs
       const quizMap = new Map(quizData.quizzes.map(quiz => [quiz.id, quiz]));
-      console.log("Quiz map:", quizMap);
+
 
       // Validate attempts have matching quizzes
       const validAttempts = quizAttempts.attempts.filter(attempt => {
@@ -510,7 +505,7 @@ const ClassRecordManager = ({ classroomId }) => {
         return hasMatchingQuiz;
       });
 
-      console.log("Valid attempts:", validAttempts);
+
 
       // Organize attempts by student
       const attemptsByStudent = {};
@@ -635,13 +630,7 @@ const ClassRecordManager = ({ classroomId }) => {
         generatedAt: new Date().toISOString()
       });
 
-      console.log("Sending report generation request:", {
-        classroomId,
-        teacherId: currentUser.id,
-        reportName,
-        fileType,
-        reportDescription: JSON.parse(reportDescription) // Log parsed version for readability
-      });
+
 
       // Generate new report
       const newReport = await reportService.generateClassRecordReport(
@@ -656,7 +645,7 @@ const ClassRecordManager = ({ classroomId }) => {
         throw new Error("Failed to generate report: No report ID returned");
       }
 
-      console.log("New report generated:", newReport);
+     
 
       // Download the newly generated report
       const getFileExtension = (type) => {
@@ -677,8 +666,7 @@ const ClassRecordManager = ({ classroomId }) => {
       await fetchData(); // Refresh the reports list
 
     } catch (error) {
-      console.error("%c=== ERROR IN REPORT GENERATION ===", "color: red; font-weight: bold");
-      console.error("Full error:", error);
+
       
       // Extract error message from response if available
       const errorMessage = error.response?.data?.message || error.message;
@@ -701,17 +689,17 @@ const ClassRecordManager = ({ classroomId }) => {
   };
 
   const handleAttemptClick = async (attempt, attemptsByStudent) => {
-    console.log('[ClassRecordManager] Handling attempt click:', { attempt, attemptsByStudent });
+
     
     try {
       // Get all attempts for this student and quiz
       const studentAttempts = attemptsByStudent[attempt.studentId]?.attempts[attempt.quizId]?.attempts || [];
       const totalAttempts = studentAttempts.length;
-      console.log('[ClassRecordManager] Student attempts:', { studentAttempts, totalAttempts });
+     
       
       // Calculate average score
       const averageScore = studentAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalAttempts;
-      console.log('[ClassRecordManager] Average score calculation:', { averageScore });
+ 
 
       // Find highest score and its attempt number
       const highestScoreAttempt = studentAttempts.reduce((best, current, index) => {
@@ -723,13 +711,13 @@ const ClassRecordManager = ({ classroomId }) => {
 
       // Fetch the leaderboard for this specific quiz
       const quizLeaderboard = await leaderboardService.getLeaderboardByQuiz(attempt.quizId);
-      console.log('[ClassRecordManager] Quiz leaderboard:', quizLeaderboard);
+      
 
       // Find the student's rank in this quiz
       const studentRank = quizLeaderboard?.findIndex(
         entry => entry.studentId === attempt.studentId
       ) + 1;
-      console.log('[ClassRecordManager] Student rank:', studentRank);
+    
       
       // Calculate time spent in minutes and seconds
       const timeSpentSeconds = attempt.timeSpentSeconds || attempt.timeSpent || 0;
@@ -737,12 +725,7 @@ const ClassRecordManager = ({ classroomId }) => {
       const seconds = timeSpentSeconds % 60;
       const formattedTime = `${minutes}.${seconds.toString().padStart(2, '0')}`;
       
-      console.log('[ClassRecordManager] Time calculation:', {
-        timeSpentSeconds,
-        minutes,
-        seconds,
-        formattedTime
-      });
+
       
       setSelectedAttempt({
         ...attempt,
@@ -755,7 +738,7 @@ const ClassRecordManager = ({ classroomId }) => {
       });
       setIsAttemptModalOpen(true);
     } catch (error) {
-      console.error('[ClassRecordManager] Error fetching leaderboard:', error);
+      
       toast.error('Failed to fetch student rank');
     }
   };
@@ -763,7 +746,6 @@ const ClassRecordManager = ({ classroomId }) => {
   const renderAttemptModal = () => {
     if (!selectedAttempt) return null;
     
-    console.log('[ClassRecordManager] Rendering attempt modal with data:', selectedAttempt);
 
     return (
       <Modal
@@ -774,14 +756,14 @@ const ClassRecordManager = ({ classroomId }) => {
         <div className="p-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="text-sm">
-              <p><strong>Average Score:</strong> {selectedAttempt.averageScore}</p>
-              <p><strong>Highest Score:</strong> {selectedAttempt.highestScore}</p>
-              <p><strong>Best Score Attempt:</strong> #{selectedAttempt.bestScoreAttemptNumber}</p>
-              <p><strong>Total Attempts:</strong> {selectedAttempt.totalAttempts}</p>
-              <p><strong>Status:</strong> {selectedAttempt.passed ? 'Passed' : 'Failed'}</p>
-              <p><strong>Time Spent:</strong> {selectedAttempt.timeSpent || 'N/A'}</p>
-              <p><strong>Rank:</strong> {selectedAttempt.rank || 'N/A'}</p>
-              <p><strong>Completed:</strong> {selectedAttempt.completedAt ? new Date(selectedAttempt.completedAt).toLocaleString() : 'N/A'}</p>
+              <p className="dark:text-gray-300"><strong>Average Score:</strong> {selectedAttempt.averageScore}</p>
+              <p className="dark:text-gray-300"><strong>Highest Score:</strong> {selectedAttempt.highestScore}</p>
+              <p className="dark:text-gray-300"><strong>Best Score Attempt:</strong> #{selectedAttempt.bestScoreAttemptNumber}</p>
+              <p className="dark:text-gray-300"><strong>Total Attempts:</strong> {selectedAttempt.totalAttempts}</p>
+              <p className="dark:text-gray-300"><strong>Status:</strong> {selectedAttempt.passed ? 'Passed' : 'Failed'}</p>
+              <p className="dark:text-gray-300"><strong>Time Spent:</strong> {selectedAttempt.timeSpent || 'N/A'}</p>
+              <p className="dark:text-gray-300"><strong>Rank:</strong> {selectedAttempt.rank || 'N/A'}</p>
+              <p className="dark:text-gray-300"><strong>Completed:</strong> {selectedAttempt.completedAt ? new Date(selectedAttempt.completedAt).toLocaleString() : 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -794,6 +776,14 @@ const ClassRecordManager = ({ classroomId }) => {
     // Always sort by rank, just change the order
     sorted.sort((a, b) => sortOrder === 'desc' ? a.rank - b.rank : b.rank - a.rank);
     return sorted;
+  };
+
+  const getCurrentQuizName = () => {
+    if (activeQuizTab === 'overall') {
+      return 'Overall Analytics';
+    }
+    const quiz = analytics?.quizPerformance?.find(q => q.quizId === activeQuizTab);
+    return quiz ? quiz.quizName : 'Overall Analytics';
   };
 
   const renderClassRecord = () => {
@@ -813,15 +803,11 @@ const ClassRecordManager = ({ classroomId }) => {
       );
     }
 
-    console.log("Quiz Data Structure:", quizData);
-    console.log("Quiz Attempts Structure:", quizAttempts);
+
 
     const { quizzes } = quizData;
     const { attempts, students } = quizAttempts;
 
-    console.log("First quiz sample:", quizzes[0]);
-    console.log("First attempt sample:", attempts[0]);
-    console.log("First student sample:", students[0]);
 
     // Organize attempts by student
     const attemptsByStudent = {};
@@ -908,114 +894,188 @@ const ClassRecordManager = ({ classroomId }) => {
 
     return (
       <div>
-        {/* Sort button moved outside the table */}
-        <div className="mb-4 flex justify-end">
-          <button
-            onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-            className="px-3 py-2 border rounded-md flex items-center bg-white shadow-sm hover:bg-gray-50"
-          >
-            Sort: {sortOrder === 'desc' ? 'Highest Rank' : 'Lowest Rank'}
-            {sortOrder === 'desc' ? ' ↓' : ' ↑'}
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Rank {sortOrder === 'desc' ? '↓' : '↑'}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Student Name
-                </th>
-                {quizzes.map(quiz => (
-                  <th key={quiz.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {quiz.quizName}
+        <div className={`overflow-x-auto ${isFullScreen ? 'fixed inset-0 z-50 bg-white p-4' : ''}`}>
+          {isFullScreen && (
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Class Record - Full Screen View</h3>
+              <button
+                onClick={() => setIsFullScreen(false)}
+                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          
+          {/* Sort button and Download dropdown - visible in both normal and full-screen modes */}
+          <div className="mt-2 mb-6 flex flex-col md:flex-row justify-end  items-start md:items-center gap-4 px-1">
+              {/* Full Screen Button - only show in normal mode */}
+              {!isFullScreen && (
+              <button
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full md:w-auto"
+              >
+                <GoScreenFull className="mr-2 h-4 w-4" />
+                Full Screen
+              </button>
+            )}
+            <button
+              onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                  className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full md:w-auto"
+            >
+              Sort: {sortOrder === 'desc' ? 'Highest Rank' : 'Lowest Rank'}
+              {sortOrder === 'desc' ? ' ↓' : ' ↑'}
+            </button>
+            
+          
+            
+            {/* Download Dropdown */}
+            <div className="relative w-full md:w-auto" ref={downloadDropdownRef}>
+              <button
+                onClick={() => setIsDownloadDropdownOpen(!isDownloadDropdownOpen)}
+                className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full md:w-auto"
+              >
+                <div className="flex items-center">
+                  <FaDownload className="mr-2 h-4 w-4" />
+                  Download Report
+                </div>
+                <FaChevronDown className="ml-2 h-4 w-4" />
+              </button>
+              
+              {isDownloadDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200 md:right-0">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        handleGenerateReport('EXCEL');
+                        setIsDownloadDropdownOpen(false);
+                      }}
+                      disabled={generatingExcelReport}
+                      className={`block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center ${
+                        generatingExcelReport ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <FaFileExcel className="mr-2 h-4 w-4" />
+                      {generatingExcelReport ? 'Generating Excel...' : 'Download Excel'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleGenerateReport('CSV');
+                        setIsDownloadDropdownOpen(false);
+                      }}
+                      disabled={generatingCsvReport}
+                      className={`block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center ${
+                        generatingCsvReport ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <FaFileCsv className="mr-2 h-4 w-4" />
+                      {generatingCsvReport ? 'Generating CSV...' : 'Download CSV'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className={`${isFullScreen ? 'h-[calc(100vh-120px)]' : 'max-h-96'} overflow-y-auto`}>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"
+                  >
+                    Rank {sortOrder === 'desc' ? '↓' : '↑'}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                    Student Name
+                  </th>
+                  {quizzes.map(quiz => (
+                    <th key={quiz.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                      <div className="break-words">
+                        {quiz.quizName}
+                      </div>
+                      <div className="text-xxs font-normal normal-case text-gray-400 mt-1">
+                        Items: {quiz.totalItems} | Score: {quiz.overallScore} | Pass: {quiz.passingScore}
+                      </div>
+                    </th>
+                  ))}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                    Total Points
                     <div className="text-xxs font-normal normal-case text-gray-400">
-                      Quiz Items: {quiz.totalItems} | Overall Score: {quiz.overallScore} | Passing: {quiz.passingScore}
+                      (Max: {quizzes.reduce((sum, quiz) => sum + (Number(quiz.overallScore) || 0), 0)})
                     </div>
                   </th>
-                ))}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Points
-                  <div className="text-xxs font-normal normal-case text-gray-400">
-                    (Max: {quizzes.reduce((sum, quiz) => sum + (Number(quiz.overallScore) || 0), 0)})
-                  </div>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Average Score
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sortedStudents.map(student => (
-                <tr key={student.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {student.rank}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {capitalizeName(student.lastName)}, {capitalizeName(student.firstName)}
-                    </div>
-                  </td>
-                  {quizzes.map(quiz => {
-                    const quizAttempts = attemptsByStudent[student.id]?.attempts[quiz.id];
-                    const averageScore = quizAttempts ? 
-                      (quizAttempts.attempts.reduce((sum, a) => sum + (a.score || 0), 0) / quizAttempts.attempts.length).toFixed(2) : 
-                      null;
-                    return (
-                      <td key={quiz.id} className="px-6 py-4 whitespace-nowrap">
-                        {quizAttempts ? (
-                          <button
-                            onClick={() => handleAttemptClick(quizAttempts.attempts[0], attemptsByStudent)}
-                            className={`text-sm flex items-center ${
-                              averageScore >= quiz.passingScore ? 'text-green-600' : 'text-red-600'
-                            }`}
-                          >
-                            {averageScore}
-                            <FaInfoCircle className="ml-1" />
-                          </button>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-gray-900">
-                      {student.totalScore.toFixed(2)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm font-medium ${
-                      student.averageScore >= 60 
-                        ? 'text-green-600' 
-                        : 'text-red-600'
-                    }`}>
-                      {student.averageScore}%
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm font-medium ${
-                      student.status === 'Complete' 
-                        ? 'text-green-600' 
-                        : 'text-red-600'
-                    }`}>
-                      {student.status}
-                    </span>
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                    Average Score
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                    Status
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedStudents.map(student => (
+                  <tr key={student.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap w-20">
+                      <div className="text-sm font-medium text-gray-900">
+                        {student.rank}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap w-48">
+                      <div className="text-sm font-medium text-gray-900">
+                        {capitalizeName(student.lastName)}, {capitalizeName(student.firstName)}
+                      </div>
+                    </td>
+                    {quizzes.map(quiz => {
+                      const quizAttempts = attemptsByStudent[student.id]?.attempts[quiz.id];
+                      const averageScore = quizAttempts ? 
+                        (quizAttempts.attempts.reduce((sum, a) => sum + (a.score || 0), 0) / quizAttempts.attempts.length).toFixed(2) : 
+                        null;
+                      return (
+                        <td key={quiz.id} className="px-6 py-4 whitespace-nowrap w-40">
+                          {quizAttempts ? (
+                            <button
+                              onClick={() => handleAttemptClick(quizAttempts.attempts[0], attemptsByStudent)}
+                              className={`text-sm flex items-center ${
+                                averageScore >= quiz.passingScore ? 'text-green-600' : 'text-red-600'
+                              }`}
+                            >
+                              {averageScore}
+                              <FaInfoCircle className="ml-1" />
+                            </button>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="px-6 py-4 whitespace-nowrap w-32">
+                      <span className="text-sm font-medium text-gray-900">
+                        {student.totalScore.toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap w-32">
+                      <span className={`text-sm font-medium ${
+                        student.averageScore >= 60 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {student.averageScore}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap w-32">
+                      <span className={`text-sm font-medium ${
+                        student.status === 'Complete' 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {student.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -1031,7 +1091,7 @@ const ClassRecordManager = ({ classroomId }) => {
     }
 
     if (!analytics) {
-      console.log("[Analytics] No analytics data available");
+   
       return (
         <div className="text-center py-8 text-gray-500">
           No analytics data available.
@@ -1039,36 +1099,51 @@ const ClassRecordManager = ({ classroomId }) => {
       );
     }
 
-    console.log("[Analytics] Raw analytics data:", analytics);
-    console.log("[Analytics] Quiz Performance data:", analytics.quizPerformance);
-    console.log("[Analytics] Quiz Attempts data:", quizAttempts);
-
     // Prepare data for the line graph (Overall Progress)
     const lineData = {
       labels: analytics.quizPerformance?.map(q => q.quizName) || [],
       datasets: [
         {
+          type: 'bar',
           label: 'Class Average Score',
           data: analytics.quizPerformance?.map(q => q.averageScore) || [],
-          borderColor: '#2196F3',
-          tension: 0.4,
+          backgroundColor: (context) => {
+            const ctx = context.chart.ctx;
+            if (!ctx) return 'rgba(125, 211, 252, 0.7)';
+            const gradient = ctx.createLinearGradient(0, context.chart.height, 0, 0);
+            gradient.addColorStop(0, 'rgba(125, 211, 252, 0.6)');
+            gradient.addColorStop(1, 'rgba(125, 211, 252, 0.9)');
+            return gradient;
+          },
+          borderColor: 'rgba(125, 211, 252, 1)',
+          barPercentage: 0.7,
+          categoryPercentage: 0.7,
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: 'Class Average Score',
+          data: analytics.quizPerformance?.map(q => q.averageScore) || [],
+          borderColor: 'rgb(30, 58, 138)',
+          backgroundColor: 'rgb(30, 58, 138)',
+          tension: 0,
           fill: false,
-           // Customize the dots (points)
-          pointBackgroundColor: '#fb923c', 
-          pointBorderColor: '#1e3a8a',     
+          pointBackgroundColor: 'rgb(30, 58, 138)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgb(30, 58, 138)',
           pointRadius: 6,                   
-          pointHoverRadius: 8   ,          
-
-          clip: { top: 10, bottom: 0, left: 0, right: 0 }
+          pointHoverRadius: 8,
+          pointBorderWidth: 2,
+          order: 1,
         }
       ]
     };
 
-    console.log("[Analytics] Line graph data:", lineData);
 
     // Function to generate bell curve data
     const generateBellCurveData = (studentAverages, quiz) => {
-      console.log("[Analytics] Generating bell curve data for student averages:", studentAverages);
+    
       
       // Get the max score and passing score from the quiz
       const maxScore = Number(quiz.overallScore) || 100;
@@ -1090,7 +1165,7 @@ const ClassRecordManager = ({ classroomId }) => {
 
       const distribution = ranges.map(range => {
         const count = studentAverages.filter(avg => avg >= range.min && avg <= range.max).length;
-        console.log(`[Analytics] Range ${range.label}: ${count} students`);
+        
         return {
           label: range.label,
           count,
@@ -1098,7 +1173,7 @@ const ClassRecordManager = ({ classroomId }) => {
         };
       });
 
-      console.log("[Analytics] Final bell curve distribution:", distribution);
+
 
       return {
         labels: distribution.map(d => d.label),
@@ -1114,15 +1189,26 @@ const ClassRecordManager = ({ classroomId }) => {
 
     // Function to generate pie chart data for pass/fail
     const generatePassFailData = (studentAverages, passingScore) => {
-      console.log("[Analytics] Generating pass/fail data:", { studentAverages, passingScore });
+
+      
+      // Check if there's any data
+      if (!studentAverages || studentAverages.length === 0) {
+       
+        return {
+          labels: ['No Data'],
+          datasets: [{
+            data: [1],
+            backgroundColor: ['#9CA3AF'] // gray-400
+          }]
+        };
+      }
       
       // Always calculate pass/fail based on total students who took the quiz
       const totalStudents = studentAverages.length;
       const passed = studentAverages.filter(avg => avg >= passingScore).length;
       const failed = totalStudents - passed;
       
-      console.log("[Analytics] Pass/Fail counts:", { passed, failed, total: totalStudents });
-      
+
       return {
         labels: ['Passed', 'Failed'],
         datasets: [{
@@ -1134,10 +1220,10 @@ const ClassRecordManager = ({ classroomId }) => {
 
     // Get all student scores for each quiz
     const getQuizScores = (quizId) => {
-      console.log("[Analytics] Getting scores for quiz:", quizId);
+  
       
       if (!quizAttempts?.attempts || !quizAttempts?.students) {
-        console.log("[Analytics] No quiz attempts or students data available");
+
         return [];
       }
       
@@ -1167,275 +1253,353 @@ const ClassRecordManager = ({ classroomId }) => {
       // Return array of student averages
       const scores = Object.values(studentAverages).map(data => data.average);
       
-      console.log("[Analytics] Found average scores for quiz:", scores);
+    
       return scores;
     };
 
     return (
       <div className="space-y-8">
-        {/* Analytics Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+        {/* Quiz Filter Dropdown - Upper Right */}
+        <div className="flex justify-end mb-6">
+          <div className="relative" ref={dropdownRef}>
             <button
-              onClick={() => {
-                console.log("[Analytics] Switching to Overall tab");
-                setVisibleSection("analytics");
-              }}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                visibleSection === "analytics"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Overall
+              <div className="flex items-center">
+                <MdOutlineQuiz className="mr-2 h-4 w-4" />
+                {getCurrentQuizName()}
+              </div>
+              <FaChevronDown className="ml-2 h-4 w-4" />
             </button>
-            {analytics?.quizPerformance?.map((quiz, index) => (
-              <button
-                key={quiz.quizId || index}
-                onClick={() => {
-                  console.log(`[Analytics] Switching to quiz tab:`, { quizName: quiz.quizName, index });
-                  setVisibleSection(`quiz-${index}`);
-                }}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  visibleSection === `quiz-${index}`
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {quiz.quizName || `Quiz ${index + 1}`}
-              </button>
-            ))}
-          </nav>
+            
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setActiveQuizTab('overall');
+                      setIsDropdownOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Overall Analytics
+                  </button>
+                  {analytics?.quizPerformance?.map((quiz, index) => (
+                    <button
+                      key={quiz.quizId || index}
+                      onClick={() => {
+                        setActiveQuizTab(quiz.quizId);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      {quiz.quizName || `Quiz ${index + 1}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Overall Analytics */}
-        {visibleSection === "analytics" && (
+        {activeQuizTab === "overall" && (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
                 <h3 className="text-lg font-semibold mb-2">Total Students</h3>
-                <p className="text-3xl font-bold text-blue-600">{analytics?.totalStudents || 0}</p>
+                <p className="text-3xl font-bold text-blue-800">{analytics?.totalStudents || 0}</p>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
                 <h3 className="text-lg font-semibold mb-2">Average Score</h3>
-                <p className="text-3xl font-bold text-green-600">{analytics?.averageScore?.toFixed(2) || '0.00'}%</p>
+                <p className="text-3xl font-bold text-blue-800">{analytics?.averageScore?.toFixed(2) || '0.00'}%</p>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
                 <h3 className="text-lg font-semibold mb-2">Mastery Rate</h3>
-                <p className="text-3xl font-bold text-purple-600">{analytics?.masteryRate?.toFixed(2) || '0.00'}%</p>
+                <p className="text-3xl font-bold text-blue-800">{analytics?.masteryRate?.toFixed(2) || '0.00'}%</p>
                 <p className="text-sm text-gray-500 mt-1">
                   Among {analytics?.totalStudents || 0} students in the classroom, {analytics?.studentsWithMastery || 0} {analytics?.studentsWithMastery === 1 ? 'student has' : 'students have'} passed all quizzes
                 </p>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
                 <h3 className="text-lg font-semibold mb-2">Quizzes Taken</h3>
-                <p className="text-3xl font-bold text-orange-600">{analytics?.uniqueQuizzesTaken || 0}</p>
+                <p className="text-3xl font-bold text-blue-800">{analytics?.uniqueQuizzesTaken || 0}</p>
                 <p className="text-sm text-gray-500 mt-1">Unique quizzes attempted</p>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold mb-4">Class Progress Over Time</h3>
-              <div className="h-96">
-                <Line 
-                  data={lineData}
-                  options={{
-                    maintainAspectRatio: false,
-                    layout: {
-                      padding: {
-                        top: 10
+              <div className="h-64 sm:h-80 lg:h-96 pr-2 lg:pr-4">
+                <Chart
+                  type="bar"
+                  data={{
+                    labels: (analytics.quizPerformance?.map(q => {
+                      const label = q.quizName || '';
+                      return label.length > 18 ? label.slice(0, 15) + '...' : label;
+                    })) || [],
+                    datasets: [
+                      {
+                        type: 'bar',
+                        label: 'Class Average Score',
+                        data: analytics.quizPerformance?.map(q => q.averageScore) || [],
+                        backgroundColor: (context) => {
+                          const ctx = context.chart.ctx;
+                          if (!ctx) return 'rgba(125, 211, 252, 0.7)';
+                          const gradient = ctx.createLinearGradient(0, context.chart.height, 0, 0);
+                          gradient.addColorStop(0, 'rgba(125, 211, 252, 0.6)');
+                          gradient.addColorStop(1, 'rgba(125, 211, 252, 0.9)');
+                          return gradient;
+                        },
+                        borderColor: 'rgba(125, 211, 252, 1)',
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.7,
+                        order: 2,
+                      },
+                      {
+                        type: 'line',
+                        label: 'Class Average Score',
+                        data: analytics.quizPerformance?.map(q => q.averageScore) || [],
+                        borderColor: 'rgb(30, 58, 138)',
+                        backgroundColor: 'rgb(30, 58, 138)',
+                        tension: 0,
+                        fill: false,
+                        pointBackgroundColor: 'rgb(30, 58, 138)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(30, 58, 138)',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBorderWidth: 2,
+                        order: 1,
                       }
+                    ]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      title: { display: false },
+                      tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        titleColor: '#333',
+                        bodyColor: '#666',
+                        borderColor: 'rgba(0,0,0,0.1)',
+                        borderWidth: 1,
+                        padding: 15,
+                        displayColors: true,
+                        mode: 'index',
+                        intersect: false,
+                        filter: (context) => context.dataset.type === 'line',
+                        callbacks: {
+                          title: function(context) {
+                            // Use the full quiz name from the original data instead of the truncated label
+                            const quizIndex = context[0].dataIndex;
+                            const fullQuizName = analytics.quizPerformance?.[quizIndex]?.quizName || context[0].label;
+                            return fullQuizName;
+                          },
+                          label: function(context) {
+                            const datasetLabel = context.dataset.label || '';
+                            const value = context.parsed.y;
+                            return `${datasetLabel}: ${value}%`;
+                          }
+                        }
+                      },
                     },
                     scales: {
                       y: {
                         beginAtZero: true,
                         max: 100,
-                        title: {
-                          display: true,
-                          text: 'Score (%)'
+                        title: { display: false },
+                        grid: {
+                          drawBorder: false,
+                          color: 'rgba(200, 200, 200, 0.3)',
                         },
                         ticks: {
-                          padding: 10
+                          padding: 10,
+                          stepSize: 10,
+                          color: '#6b7280',
                         },
-                        grid: {
-                          display: true 
-                        }
                       },
                       x: {
-                        title: {
-                          display: true,
-                          text: 'Quizzes'
-                        },
-                        offset: true,
+                        title: { display: false },
+                        grid: { display: false },
                         ticks: {
-                          padding: 10
-                        },
-                        grid: {
-                          display: false 
-                        }
+                          autoSkip: false,
+                          maxRotation: 0,
+                          minRotation: 0,
+                          color: '#6b7280',
+                          callback: function(value, index, values) {
+                            const label = this.getLabelForValue(value);
+                            return label.length > 18 ? label.slice(0, 15) + '...' : label;
                       }
                     },
-                    plugins: {
-                      legend: {
-                        display: false 
                       },
-                      tooltip: {
-                        enabled: true 
-                      }
-                    }
+                    },
+                    interaction: {
+                      mode: 'index',
+                      intersect: false,
+                      },
                   }}
                 />
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold mb-4">Content Mastery & Progress Analysis</h3>
-              <div className="h-[500px]">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-                  {/* Left side: Content Mastery */}
-                  <div className="space-y-4">
-                    <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="min-h-[400px] lg:min-h-[500px]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 h-full">
+                  {/* Left side: Content Mastery by Topic as horizontal segmented bars with blue gradient */}
+                  <div className="space-y-4 lg:space-y-6">
                       <h4 className="font-medium text-blue-800 mb-2">Content Mastery by Topic</h4>
-                      <div className="space-y-3">
+                    <div className="space-y-3 lg:space-y-4">
                         {Object.entries(analytics?.topicMastery || {})
                           .sort((a, b) => b[1].averagePassRate - a[1].averagePassRate)
-                          .map(([topic, data]) => {
-                            const masteryLevel = data.averagePassRate >= 80 ? 'High' :
-                                               data.averagePassRate >= 60 ? 'Medium' : 'Low';
-                            const needsReteaching = data.averagePassRate < 70;
-                            
+                        .map(([topic, data]) => (
+                          <div key={topic} className="flex items-center gap-2 lg:gap-4">
+                            <span className="w-24 lg:w-32 truncate text-gray-700 text-xs lg:text-sm">{data.quizzes?.[0]?.quizName || topic}</span>
+                            <div className="flex-1 flex items-center">
+                              <div className="w-full h-2 lg:h-3 bg-gray-200 rounded-full overflow-hidden flex">
+                                {Array.from({ length: 20 }).map((_, i) => {
+                                  // Blue gradient: blue-400 to blue-900
+                                  const blueShades = [
+                                    'bg-blue-400', 'bg-blue-400', 'bg-blue-500', 'bg-blue-500',
+                                    'bg-blue-600', 'bg-blue-600', 'bg-blue-700', 'bg-blue-700',
+                                    'bg-blue-800', 'bg-blue-800', 'bg-blue-900', 'bg-blue-900',
+                                    'bg-blue-900', 'bg-blue-800', 'bg-blue-700', 'bg-blue-600',
+                                    'bg-blue-500', 'bg-blue-400', 'bg-blue-400', 'bg-blue-400'
+                                  ];
                             return (
-                              <div key={topic} className={`p-2 rounded ${needsReteaching ? 'bg-red-50' : 'bg-white'}`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="font-medium text-gray-700">{data.quizzes?.[0]?.quizName || topic}</span>
-                                  <div className="flex items-center space-x-2">
-                                    <span className={`text-sm px-2 py-1 rounded-full ${
-                                      masteryLevel === 'High' ? 'bg-green-100 text-green-800' :
-                                      masteryLevel === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                      'bg-red-100 text-red-800'
-                                    }`}>
-                                      {masteryLevel}
-                                    </span>
-                                    <span className="text-sm text-gray-600">
-                                      {data.averagePassRate.toFixed(1)}%
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div 
-                                    className={`h-2 rounded-full ${
-                                      data.averagePassRate >= 80 ? 'bg-green-500' :
-                                      data.averagePassRate >= 60 ? 'bg-yellow-500' :
-                                      'bg-red-500'
-                                    }`}
-                                    style={{ width: `${data.averagePassRate}%` }}
-                                  ></div>
-                                </div>
-                              </div>
+                                    <div
+                                      key={i}
+                                      className={`h-full ${i < Math.round(data.averagePassRate / 5) ? blueShades[i] : 'bg-gray-200'}`}
+                                      style={{ width: '5%' }}
+                                    />
                             );
                           })}
                       </div>
+                              <span className="ml-2 lg:ml-3 text-xs lg:text-sm font-semibold text-gray-800 w-8 lg:w-10 text-right">{Math.round(data.averagePassRate)}%</span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                    {/* Notes/Recommendations for Content Mastery */}
+                    <div className="mt-3 lg:mt-4 p-2 lg:p-3 bg-blue-50 border-l-4 border-blue-400 rounded max-h-32 lg:max-h-44 overflow-y-auto">
+                      <h5 className="font-semibold text-blue-700 mb-1 flex items-center gap-2 text-sm lg:text-base"><span>Notes</span></h5>
+                      <ul className="list-disc list-inside text-xs lg:text-sm text-blue-800 space-y-1">
+                        {Object.entries(analytics?.topicMastery || {})
+                          .filter(([_, data]) => data.averagePassRate < 70)
+                          .map(([topic, data]) => (
+                            <li key={topic}>
+                              Consider re-teaching <span className="font-semibold">{data.quizzes?.[0]?.quizName || topic}</span> (Current mastery: {data.averagePassRate.toFixed(1)}%)
+                            </li>
+                          ))}
+                        {Object.entries(analytics?.topicMastery || {}).filter(([_, data]) => data.averagePassRate < 70).length === 0 && (
+                          <li>All topics have satisfactory mastery rates.</li>
+                        )}
+                      </ul>
                     </div>
                   </div>
 
-                  {/* Right side: Progress Analysis */}
-                  <div className="space-y-4">
-                    <div className="p-4 bg-purple-50 rounded-lg">
+                  {/* Right side: Progress Analysis as horizontal segmented bars with violet gradient */}
+                  <div className="space-y-4 lg:space-y-6">
                       <h4 className="font-medium text-purple-800 mb-2">Progress Analysis</h4>
-                      <div className="space-y-4">
-                        {/* Overall Trend */}
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-gray-700">Overall Trend</span>
-                            {(() => {
-                              const quizzes = analytics?.quizPerformance || [];
-                              const trend = quizzes.map((quiz, index) => {
-                                if (index === 0) return null;
-                                const prevQuiz = quizzes[index - 1];
-                                return quiz.averageScore - prevQuiz.averageScore;
-                              }).filter(Boolean);
-                              
-                              const overallTrend = trend.reduce((sum, t) => sum + t, 0) / trend.length;
-                              
-                              return (
-                                <span className={`font-medium ${
-                                  overallTrend > 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  {overallTrend > 0 ? '↑' : '↓'} {Math.abs(overallTrend).toFixed(1)}%
-                                </span>
-                              );
-                            })()}
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className={`h-2 rounded-full ${
-                                (() => {
-                                  const quizzes = analytics?.quizPerformance || [];
-                                  const trend = quizzes.map((quiz, index) => {
-                                    if (index === 0) return null;
-                                    const prevQuiz = quizzes[index - 1];
-                                    return quiz.averageScore - prevQuiz.averageScore;
-                                  }).filter(Boolean);
-                                  const overallTrend = trend.reduce((sum, t) => sum + t, 0) / trend.length;
-                                  return overallTrend > 0 ? 'bg-green-500' : 'bg-red-500';
-                                })()
-                              }`}
-                              style={{ 
-                                width: `${Math.min(Math.abs(
-                                  (() => {
-                                    const quizzes = analytics?.quizPerformance || [];
-                                    const trend = quizzes.map((quiz, index) => {
-                                      if (index === 0) return null;
-                                      const prevQuiz = quizzes[index - 1];
-                                      return quiz.averageScore - prevQuiz.averageScore;
-                                    }).filter(Boolean);
-                                    return trend.reduce((sum, t) => sum + t, 0) / trend.length;
-                                  })()
-                                ) * 2, 100)}%` 
-                              }}
-                            ></div>
+                      <div className="space-y-3 lg:space-y-4">
+                      {analytics?.quizPerformance?.map((quiz, idx) => (
+                        <div key={quiz.quizId || idx} className="flex items-center gap-2 lg:gap-4">
+                          <span className="w-24 lg:w-32 truncate text-gray-700 text-xs lg:text-sm">{quiz.quizName}</span>
+                          <div className="flex-1 flex items-center">
+                            <div className="w-full h-2 lg:h-3 bg-gray-200 rounded-full overflow-hidden flex">
+                              {Array.from({ length: 20 }).map((_, i) => {
+                                // Violet gradient: violet-400 to violet-900
+                                const violetShades = [
+                                  'bg-violet-400', 'bg-violet-400', 'bg-violet-500', 'bg-violet-500',
+                                  'bg-violet-600', 'bg-violet-600', 'bg-violet-700', 'bg-violet-700',
+                                  'bg-violet-800', 'bg-violet-800', 'bg-violet-900', 'bg-violet-900',
+                                  'bg-violet-900', 'bg-violet-800', 'bg-violet-700', 'bg-violet-600',
+                                  'bg-violet-500', 'bg-violet-400', 'bg-violet-400', 'bg-violet-400'
+                                ];
+                                return (
+                                  <div
+                                    key={i}
+                                    className={`h-full ${i < Math.round(quiz.averageScore / 5) ? violetShades[i] : 'bg-gray-200'}`}
+                                    style={{ width: '5%' }}
+                                  />
+                                );
+                              })}
+                            </div>
+                            <span className="ml-2 lg:ml-3 text-xs lg:text-sm font-semibold text-gray-800 w-8 lg:w-10 text-right">{Math.round(quiz.averageScore)}%</span>
                           </div>
                         </div>
-
-                        {/* Quiz-to-Quiz Progress */}
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Quiz-to-Quiz Progress</h5>
-                          <div className="space-y-2">
+                      ))}
+                    </div>
+                    {/* Notes/Recommendations for Progress Analysis */}
+                    <div className="mt-3 lg:mt-4 p-2 lg:p-3 bg-violet-50 border-l-4 border-violet-400 rounded max-h-32 lg:max-h-44 overflow-y-auto">
+                      <h5 className="font-semibold text-violet-700 mb-1 flex items-center gap-2 text-sm lg:text-base"><span>Notes</span></h5>
+                      <div className="text-xs lg:text-sm text-violet-800">
+                        <div className="mb-1">
+                          <span className="font-semibold">Overall Trend:</span> {(() => {
+                            const quizzes = analytics?.quizPerformance || [];
+                            const trend = quizzes.map((quiz, index) => {
+                              if (index === 0) return null;
+                              const prevQuiz = quizzes[index - 1];
+                              return quiz.averageScore - prevQuiz.averageScore;
+                            }).filter(Boolean);
+                            const overallTrend = trend.length > 0 ? trend.reduce((sum, t) => sum + t, 0) / trend.length : 0;
+                            return (
+                              <span className={overallTrend > 0 ? 'text-green-600' : 'text-red-600'}>
+                                {overallTrend > 0 ? '↑' : '↓'} {Math.abs(overallTrend).toFixed(1)}%
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div className="mb-1">
+                          <span className="font-semibold">Quiz-to-Quiz Progress:</span>
+                          <ul className="list-disc list-inside ml-2 lg:ml-4">
                             {(() => {
                               const quizzes = analytics?.quizPerformance || [];
                               return quizzes.map((quiz, index) => {
                                 if (index === 0) return null;
                                 const prevQuiz = quizzes[index - 1];
                                 const improvement = quiz.averageScore - prevQuiz.averageScore;
-                                
                                 return (
-                                  <div key={quiz.quizId} className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">
-                                      {prevQuiz.quizName} → {quiz.quizName}
-                                    </span>
-                                    <span className={`font-medium ${
-                                      improvement > 0 ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}%
-                                    </span>
-                                  </div>
+                                  <li key={quiz.quizId || index} className={improvement > 0 ? 'text-green-600' : 'text-red-600'}>
+                                    {prevQuiz.quizName} → {quiz.quizName}: {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}%
+                                  </li>
                                 );
                               }).filter(Boolean);
                             })()}
-                          </div>
+                          </ul>
                         </div>
-
-                        {/* Recommendations */}
-                        <div className="mt-4">
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Recommendations</h5>
-                          <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
-                            {Object.entries(analytics?.topicMastery || {})
-                              .filter(([_, data]) => data.averagePassRate < 70)
-                              .map(([topic, data]) => (
-                                <li key={topic}>
-                                  Consider re-teaching {data.quizzes?.[0]?.quizName || topic} (Current mastery: {data.averagePassRate.toFixed(1)}%)
-                                </li>
-                              ))}
+                        <div>
+                          <span className="font-semibold">Recommendations:</span>
+                          <ul className="list-disc list-inside ml-2 lg:ml-4">
+                            {(() => {
+                              const quizzes = analytics?.quizPerformance || [];
+                              const negativeTrends = quizzes.map((quiz, index) => {
+                                if (index === 0) return null;
+                                const prevQuiz = quizzes[index - 1];
+                                const improvement = quiz.averageScore - prevQuiz.averageScore;
+                                if (improvement < 0) {
+                                  return { from: prevQuiz.quizName, to: quiz.quizName };
+                                }
+                                return null;
+                              }).filter(Boolean);
+                              if (negativeTrends.length > 0) {
+                                return negativeTrends.map((trend, idx) => (
+                                  <li key={idx}>
+                                    Encourage students to review <span className="font-semibold">{trend.from}</span> and <span className="font-semibold">{trend.to}</span> as scores declined between these quizzes.
+                                  </li>
+                                ));
+                              } else {
+                                return <li>Class is showing consistent or improving performance. Continue current strategies!</li>;
+                              }
+                            })()}
                           </ul>
                         </div>
                       </div>
@@ -1448,14 +1612,13 @@ const ClassRecordManager = ({ classroomId }) => {
         )}
 
         {/* Individual Quiz Analytics */}
-        {visibleSection.startsWith('quiz-') && analytics?.quizPerformance && (
+        {activeQuizTab !== 'overall' && analytics?.quizPerformance && (
           <div className="space-y-8">
             {(() => {
-              const quizIndex = parseInt(visibleSection.split('-')[1]);
-              const quiz = analytics.quizPerformance[quizIndex];
+              const quiz = analytics.quizPerformance.find(q => q.quizId === activeQuizTab);
               
               if (!quiz) {
-                console.error("[Analytics] No quiz data found for index:", quizIndex);
+       
                 return (
                   <div className="text-center py-8 text-gray-500">
                     No quiz data available.
@@ -1465,74 +1628,164 @@ const ClassRecordManager = ({ classroomId }) => {
 
               // Get the full quiz data from quizData to access overallScore
               const fullQuizData = quizData?.quizzes?.find(q => q.id === quiz.quizId);
-              console.log("[Analytics] Rendering quiz analytics:", { 
-                quizIndex, 
-                quiz,
-                fullQuizData,
-                overallScore: fullQuizData?.overallScore
-              });
-              
+           
               const quizScores = getQuizScores(quiz.quizId);
-              console.log("[Analytics] Quiz scores for rendering:", quizScores);
+        
               
               return (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
                       <h3 className="text-lg font-semibold mb-4">Score Distribution (Bell Curve)</h3>
-                      <div className="h-80">
-                        <Line 
+                      <div className="h-64 sm:h-72 lg:h-80">
+                        <Line
                           data={(() => {
                             // Use the same binning, but format for a Line chart
                             const bellData = generateBellCurveData(quizScores, fullQuizData || quiz);
+                            const baseData = bellData.datasets[0].data;
+                            // 1. Actual: baseData
+                            // 2. Cumulative count
+                            let cumulative = 0;
+                            const cumulativeData = baseData.map(v => (cumulative += v));
                             return {
                               labels: bellData.labels,
                               datasets: [
                                 {
-                                  label: 'Number of Students',
-                                  data: bellData.datasets[0].data,
-                                  borderColor: '#1976D2',
-                                  backgroundColor: 'rgba(33, 150, 243, 0.25)', // more visible blue shade fill
-                                  pointBackgroundColor: '#1976D2',
-                                  pointBorderColor: '#1976D2',
-                                  tension: 0.5, // smooth curve
-                                  fill: true, // fill area under the curve
-                                  borderWidth: 3,
-                                  pointRadius: 4,
+                                  label: 'Actual (# students)',
+                                  data: baseData,
+                                  borderColor: '#60a5fa', // blue-400
+                                  backgroundColor: 'rgba(96,165,250,0.08)',
+                                  tension: 0.5,
+                                  fill: false,
+                                  borderWidth: 4,
+                                  pointRadius: 3,
                                   pointHoverRadius: 6,
+                                  order: 1,
+                                },
+                                {
+                                  label: 'Cumulative (# students ≤ range)',
+                                  data: cumulativeData,
+                                  borderColor: '#2563eb', // blue-600
+                                  backgroundColor: 'rgba(37,99,235,0.08)',
+                                  tension: 0.5,
+                                  fill: false,
+                                  borderWidth: 3,
+                                  pointRadius: 3,
+                                  pointHoverRadius: 6,
+                                  order: 2,
                                 }
                               ]
                             };
                           })()}
                           options={{
                             maintainAspectRatio: false,
+                            interaction: { mode: 'nearest', intersect: false },
                             scales: {
                               y: {
                                 beginAtZero: true,
                                 title: {
                                   display: true,
                                   text: 'Number of Students'
-                                }
+                                },
+                                grid: {
+                                  drawOnChartArea: true,
+                                  color: '#e5e7eb',
+                                },
+                                ticks: {
+                                  color: '#666',
+                                },
                               },
                               x: {
                                 title: {
                                   display: true,
                                   text: 'Score Ranges'
-                                }
+                                },
+                                grid: {
+                                  drawOnChartArea: false,
+                                },
+                                ticks: {
+                                  color: '#666',
+                                },
                               }
                             },
                             plugins: {
                               legend: {
-                                display: false
+                                display: true,
+                                labels: {
+                                  usePointStyle: true,
+                                  boxWidth: 18,
+                                  font: { weight: 'bold' },
+                                }
                               },
                               tooltip: {
                                 callbacks: {
                                   label: function(context) {
-                                    return `Students: ${context.raw}`;
+                                    const label = context.dataset.label || '';
+                                    const value = context.raw;
+                                    if (label.startsWith('Actual')) {
+                                      return `${label}: ${value} students in this range`;
+                                    } else if (label.startsWith('Cumulative')) {
+                                      return `${label}: ${value} students scored ≤ this range`;
+                                    }
+                                    return `${label}: ${value}`;
                                   }
                                 }
+                              },
+                              annotation: {},
+                            },
+                            plugins: [
+                              // Custom plugin for horizontal bands, arrows, and labels
+                              {
+                                id: 'bellCurveBands',
+                                afterDraw: (chart) => {
+                                  const { ctx, chartArea, scales } = chart;
+                                  if (!chartArea) return;
+                                  // Draw horizontal bands (20%, 40%, 60%)
+                                  const bandPercents = [0.2, 0.4, 0.6];
+                                  const bandColors = ['#f3f4f6', '#e0e7ef', '#e3fcec'];
+                                  bandPercents.forEach((p, i) => {
+                                    const y = scales.y.getPixelForValue(scales.y.max * (1 - p));
+                                    ctx.save();
+                                    ctx.globalAlpha = 0.18;
+                                    ctx.fillStyle = bandColors[i];
+                                    ctx.fillRect(chartArea.left, y, chartArea.right - chartArea.left, 32);
+                                    ctx.globalAlpha = 1;
+                                    ctx.font = 'bold 16px sans-serif';
+                                    ctx.fillStyle = '#222';
+                                    ctx.textAlign = 'center';
+                                    ctx.fillText(`${p * 100}%`, (chartArea.left + chartArea.right) / 2, y + 24);
+                                    ctx.restore();
+                                  });
+                                  // Draw horizontal arrows and 10% labels below x-axis
+                                  const xTicks = scales.x.getTicks();
+                                  const yBottom = chartArea.bottom + 24;
+                                  ctx.save();
+                                  ctx.strokeStyle = '#bbb';
+                                  ctx.fillStyle = '#222';
+                                  ctx.lineWidth = 2;
+                                  ctx.font = 'bold 14px sans-serif';
+                                  ctx.textAlign = 'center';
+                                  for (let i = 0; i < xTicks.length - 1; i++) {
+                                    const x1 = scales.x.getPixelForTick(i);
+                                    const x2 = scales.x.getPixelForTick(i + 1);
+                                    // Draw arrow
+                                    ctx.beginPath();
+                                    ctx.moveTo(x1, yBottom);
+                                    ctx.lineTo(x2, yBottom);
+                                    ctx.stroke();
+                                    // Draw arrow heads
+                                    ctx.beginPath();
+                                    ctx.moveTo(x2 - 6, yBottom - 4);
+                                    ctx.lineTo(x2, yBottom);
+                                    ctx.lineTo(x2 - 6, yBottom + 4);
+                                    ctx.stroke();
+                                    // Draw label
+                                    ctx.fillText('10%', (x1 + x2) / 2, yBottom + 18);
+                                  }
+                                  ctx.restore();
+                                }
                               }
-                            }
+                            ]
                           }}
                         />
                       </div>
@@ -1541,20 +1794,25 @@ const ClassRecordManager = ({ classroomId }) => {
                         <p>Passing Score: {quiz.passingScore}</p>
                       </div>
                     </div>
-                    <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
                       <h3 className="text-lg font-semibold mb-4">Pass/Fail Distribution</h3>
-                      <div className="h-80">
-                        <Pie 
+                      <div className="h-64 sm:h-72 lg:h-80">
+                        <Pie
                           data={generatePassFailData(quizScores, quiz.passingScore)}
                           options={{
                             maintainAspectRatio: false,
                             plugins: {
                               legend: {
-                                position: 'top'
+                                position: 'top',
+                                display: quizScores && quizScores.length > 0
                               },
                               tooltip: {
+                                enabled: quizScores && quizScores.length > 0,
                                 callbacks: {
                                   label: function(context) {
+                                    if (context.label === 'No Data') {
+                                      return 'No student data available';
+                                    }
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = ((context.raw / total) * 100).toFixed(1);
                                     return `${context.label}: ${context.raw} students (${percentage}%)`;
@@ -1567,18 +1825,18 @@ const ClassRecordManager = ({ classroomId }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-lg shadow">
-                      <h3 className="text-lg font-semibold mb-2">Average Score</h3>
-                      <p className="text-3xl font-bold text-green-600">{quiz.averageScore?.toFixed(2)}%</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                    <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
+                      <h3 className="text-lg font-bold text-primary mb-2">Average Score</h3>
+                      <p className="text-3xl font-bold text-blue-800">{quiz.averageScore?.toFixed(2)}%</p>
                     </div>
-                    <div className="bg-white p-6 rounded-lg shadow">
-                      <h3 className="text-lg font-semibold mb-2">Pass Rate</h3>
-                      <p className="text-3xl font-bold text-blue-600">{quiz.passRate?.toFixed(2)}%</p>
+                    <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
+                      <h3 className="text-lg font-bold text-primary mb-2">Pass Rate</h3>
+                      <p className="text-3xl font-bold text-blue-800">{quiz.passRate?.toFixed(2)}%</p>
                     </div>
-                    <div className="bg-white p-6 rounded-lg shadow">
-                      <h3 className="text-lg font-semibold mb-2">Students Who Took the Quiz</h3>
-                      <p className="text-3xl font-bold text-purple-600">{(() => {
+                    <div className="bg-white  p-4 md:p-6 rounded-lg shadow">
+                      <h3 className="text-lg font-bold text-primary mb-2">Students Who Took the Quiz</h3>
+                      <p className="text-3xl font-bold text-blue-800">{(() => {
                         // Count unique students who took the quiz
                         const uniqueStudents = new Set();
                         if (quizAttempts?.attempts) {
@@ -1601,17 +1859,15 @@ const ClassRecordManager = ({ classroomId }) => {
     );
   };
 
-  
-
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="p-3 md:p-6">
       {/* Section Selector */}
-      <div className="mb-6">
-        <div className="flex space-x-4 border-b border-gray-200">
+      <div className="flex justify-center mb-8">
+        <nav className="flex space-x-4" aria-label="Tabs">
           <button
-            className={`py-2 px-4 ${
+            className={`px-4 py-2 text-sm font-medium rounded-sm ${
               visibleSection === "reports"
-                ? "border-b-2 border-blue-500 text-blue-600"
+                ? "bg-blue-900 text-gray-50"
                 : "text-gray-500 hover:text-gray-700"
             }`}
             onClick={() => setVisibleSection("reports")}
@@ -1619,59 +1875,20 @@ const ClassRecordManager = ({ classroomId }) => {
             Class Records
           </button>
           <button
-            className={`py-2 px-4 ${
+            className={`px-4 py-2 text-sm font-medium rounded-sm ${
               visibleSection === "analytics"
-                ? "border-b-2 border-blue-500 text-blue-600"
+                ? "bg-blue-900 text-gray-50"
                 : "text-gray-500 hover:text-gray-700"
             }`}
             onClick={() => setVisibleSection("analytics")}
           >
             Analytics
           </button>
-        </div>
+        </nav>
       </div>
 
       {visibleSection === "reports" ? (
         <>
-          <div className="mb-6">
-            <div className="flex space-x-4 justify-end">
-              <button
-                onClick={() => handleGenerateReport('EXCEL')}
-                disabled={generatingExcelReport}
-                className={`px-4 py-2 rounded-md text-white ${
-                  generatingExcelReport ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-                } flex items-center justify-center`}
-              >
-                {generatingExcelReport ? (
-                  <>
-                    <FaSpinner className="animate-spin mr-2" /> Generating...
-                  </>
-                ) : (
-                  <>
-                    <FaFileExcel className="mr-2" /> Download Excel
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => handleGenerateReport('CSV')}
-                disabled={generatingCsvReport}
-                className={`px-4 py-2 rounded-md text-white ${
-                  generatingCsvReport ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                } flex items-center justify-center`}
-              >
-                {generatingCsvReport ? (
-                  <>
-                    <FaSpinner className="animate-spin mr-2" /> Generating...
-                  </>
-                ) : (
-                  <>
-                    <FaFileCsv className="mr-2" /> Download CSV
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
           {loading ? (
             <div className="flex justify-center items-center h-32">
               <FaSpinner className="animate-spin text-blue-600 text-2xl" />
@@ -1698,7 +1915,7 @@ const ClassRecordManager = ({ classroomId }) => {
             <div>
               <div className="flex justify-between items-center mb-4">
                 <Header type="h3" fontSize="lg" weight="semibold" className="text-gray-700">
-                  Current Class Record
+                  Class Record
                 </Header>
               </div>
               {renderClassRecord()}

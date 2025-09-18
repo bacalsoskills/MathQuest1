@@ -1,0 +1,144 @@
+# MathQuest Frontend Design System & Coding Standards
+
+## React Components
+
+- Use functional components with hooks
+- Follow React best practices and conventions
+- Use proper prop types and default props
+- Implement proper error boundaries where needed
+- Use React.memo() for performance optimization when necessary
+
+## Code Quality & Debugging
+
+- Remove all console.log statements before production
+- Use proper error handling instead of console.log for debugging
+- Implement proper logging service for production debugging
+- Avoid useEffect infinite loops by:
+  - Using proper dependency arrays
+  - Avoiding object/array dependencies that change on every render
+  - Using useCallback and useMemo for expensive operations
+  - Implementing proper cleanup functions
+
+## Tailwind CSS Design System
+
+### Color Palette
+
+- Primary: `blue-600`, `blue-700`, `blue-800`
+- Secondary: `green-500`, `green-600`, `green-700`
+- Accent: `yellow-400`, `yellow-500`, `orange-500`
+- Neutral: `gray-50`, `gray-100`, `gray-200`, `gray-300`, `gray-400`, `gray-500`, `gray-600`, `gray-700`, `gray-800`, `gray-900`
+- Success: `green-500`, `green-600`
+- Warning: `yellow-500`, `yellow-600`
+- Error: `red-500`, `red-600`
+- Info: `blue-500`, `blue-600`
+
+### Typography
+
+- Headings: `text-2xl`, `text-xl`, `text-lg`, `text-base`, `text-sm`, `text-xs`
+- Font weights: `font-light`, `font-normal`, `font-medium`, `font-semibold`, `font-bold`
+- Line heights: `leading-tight`, `leading-normal`, `leading-relaxed`
+
+### Spacing
+
+- Use Tailwind spacing scale: `p-1` to `p-16`, `m-1` to `m-16`
+- Common spacing: `p-4`, `p-6`, `p-8`, `m-4`, `m-6`, `m-8`
+
+### Layout
+
+- Flexbox: `flex`, `flex-col`, `flex-row`, `items-center`, `justify-center`, `justify-between`
+- Grid: `grid`, `grid-cols-1`, `grid-cols-2`, `grid-cols-3`, `gap-4`, `gap-6`
+- Responsive: `sm:`, `md:`, `lg:`, `xl:` prefixes
+
+### Shadows & Effects
+
+- Shadows: `shadow-sm`, `shadow`, `shadow-md`, `shadow-lg`, `shadow-xl`
+- Border radius: `rounded`, `rounded-lg`, `rounded-xl`, `rounded-2xl`
+- Transitions: `transition-all`, `transition-colors`, `duration-200`, `duration-300`
+
+## React Icons Usage
+
+- Import icons from 'react-icons/fa' (Font Awesome)
+- Common icons to use:
+  - Navigation: `FaHome`, `FaUser`, `FaCog`, `FaSignOutAlt`
+  - Education: `FaGraduationCap`, `FaBook`, `FaChalkboardTeacher`, `FaUserGraduate`
+  - Games: `FaGamepad`, `FaTrophy`, `FaMedal`, `FaStar`
+  - Analytics: `FaChartLine`, `FaChartBar`, `FaChartPie`, `FaAnalytics`
+  - Actions: `FaPlus`, `FaEdit`, `FaTrash`, `FaSave`, `FaTimes`
+  - Status: `FaCheck`, `FaExclamationTriangle`, `FaInfoCircle`, `FaClock`
+  - Social: `FaUsers`, `FaUserFriends`, `FaComments`
+
+## UI Components (from ui/ folder)
+
+- Always use components from the `ui/` folder when available
+- Available components: `Button`, `Input`, `Label`, `Modal`, `Table`, `Tabs`, `Heading`, `Avatar`, `Textarea`
+- Follow the existing component API and styling patterns
+- Extend UI components rather than creating new ones from scratch
+
+## Component Structure Guidelines
+
+```jsx
+// Example component structure
+import React from "react";
+import { FaIconName } from "react-icons/fa";
+import { Button, Heading } from "../ui";
+
+const ComponentName = ({ prop1, prop2, children }) => {
+  return (
+    <div className="p-6 bg-white rounded-lg shadow-md">
+      <Heading level={2} className="text-gray-800 mb-4">
+        Component Title
+      </Heading>
+      <div className="flex items-center gap-4">
+        <FaIconName className="text-blue-600 text-xl" />
+        <Button variant="primary" size="md">
+          Action Button
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default ComponentName;
+```
+
+## Design Principles
+
+- Clean, modern, and educational-focused design
+- Consistent spacing and typography
+- Accessible color contrast ratios
+- Mobile-first responsive design
+- Smooth transitions and hover effects
+- Clear visual hierarchy
+
+## File Organization
+
+- Components in `src/components/`
+- Pages in `src/pages/`
+- UI components in `src/ui/`
+- Services in `src/services/`
+- Context in `src/context/`
+- Utilities in `src/utils/`
+
+## Naming Conventions
+
+- Components: PascalCase (e.g., `GameCard.jsx`)
+- Files: PascalCase for components, camelCase for utilities
+- CSS classes: Use Tailwind utility classes
+- Variables: camelCase
+- Constants: UPPER_SNAKE_CASE
+
+## Performance Guidelines
+
+- Use React.memo() for expensive components
+- Implement proper loading states
+- Optimize images and assets
+- Use lazy loading for routes
+- Minimize bundle size with proper imports
+
+## Accessibility
+
+- Use semantic HTML elements
+- Include proper ARIA labels
+- Ensure keyboard navigation
+- Maintain color contrast ratios
+- Provide alt text for images

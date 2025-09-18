@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
+import { Header } from '../../ui/heading';
+import { Button } from '../../ui/button';
+import { FaChevronLeft } from 'react-icons/fa';
 
 const getRoleLabel = (user) => {
   if (!user) return '';
@@ -74,16 +77,25 @@ const FeedbackTicketPage = () => {
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username;
 
   return (
-    <div className="min-h-screen bg-blue-50 py-10 px-4">
-      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-lg p-8 relative">
-        <div className="flex justify-between mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">FEEDBACK TICKET#: <span className="font-mono">{feedback.ticketNumber}</span></h2>
-          <div className="text-right text-gray-700 text-sm">Date Submitted: {new Date(feedback.dateSubmission).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-4">
+          <Link to="/admin/feedback" className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+            <FaChevronLeft className="mr-1" />
+            <span>Back to Feedback List</span>
+          </Link>
+        </div>
+        <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white"> Feedback Ticket</Header>
+        <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] mb-5 md:mb-8"></div>
+        
+        <div className="flex flex-col md:flex-row justify-start md:justify-between mb-8">
+          <Header type='h1' fontSize='2xl' weight='bold' className="text-2xl font-bold dark:text-gray-300 text-gray-900">FEEDBACK TICKET#: <span className="font-mono text-blue-800 dark:text-blue-300">{feedback.ticketNumber}</span></Header>
+          <div className="text-left md:text-right  mt-3 md:mt-0 text-gray-700 text-sm dark:text-gray-300">Date Submitted: {new Date(feedback.dateSubmission).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           <div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-800">User Information</h3>
-            <div className="text-gray-800 text-sm space-y-1">
+            <Header type='h3' fontSize='lg' weight='semibold' className="text-lg font-semibold mb-2 dark:text-gray-300 text-gray-800">User Information</Header>
+            <div className="text-gray-800 text-sm space-y-1 dark:text-gray-300">
               <div><span className="font-semibold">Name:</span> {fullName}</div>
               <div><span className="font-semibold">Role:</span> {getRoleLabel(user)}</div>
               <div><span className="font-semibold">Email:</span> {user.email}</div>
@@ -91,8 +103,8 @@ const FeedbackTicketPage = () => {
             </div>
           </div>
           <div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-800">Feedback Information</h3>
-            <div className="text-gray-800 text-sm space-y-1">
+            <Header type='h3' fontSize='lg' weight='semibold' className="text-lg font-semibold mb-2 dark:text-gray-300 text-gray-800">Feedback Information</Header>
+            <div className="text-gray-800 text-sm space-y-1 dark:text-gray-300">
               <div><span className="font-semibold">Subject:</span> {feedback.subject}</div>
               <div><span className="font-semibold">Message:</span> <span className="whitespace-pre-line">{feedback.info}</span></div>
             </div>
@@ -101,17 +113,17 @@ const FeedbackTicketPage = () => {
         <form onSubmit={handleSubmit}>
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-800">Status:</span>
+              <span className="font-semibold dark:text-gray-300 text-gray-800">Status:</span>
               <select
-                className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+                className="border border-gray-700 dark:text-gray-800 dark:border-gray-300 rounded px-2 py-1 text-sm bg-white  text-gray-800"
                 value={status}
                 onChange={e => setStatus(e.target.value)}
               >
-                <option value="PENDING">PENDING</option>
-                <option value="IN_PROGRESS">IN PROGRESS</option>
-                <option value="IN_REVIEW">IN REVIEW</option>
-                <option value="COMPLETED">COMPLETED</option>
-                <option value="REJECTED">REJECTED</option>
+                <option value="PENDING" className="bg-gray-300 text-gray-700 hover:text-blue-600">PENDING</option>
+                <option value="IN_PROGRESS" className="bg-gray-300 text-gray-700 hover:text-blue-600">IN PROGRESS</option>
+                <option value="IN_REVIEW" className="bg-gray-300 text-gray-700 hover:text-blue-600">IN REVIEW</option>
+                <option value="COMPLETED" className="bg-gray-300 text-gray-700 hover:text-blue-600">COMPLETED</option>
+                <option value="REJECTED" className="bg-gray-300 text-gray-700 hover:text-blue-600">REJECTED</option>
               </select>
             </div>
           </div>
@@ -121,13 +133,15 @@ const FeedbackTicketPage = () => {
             value={adminResponse}
             onChange={e => setAdminResponse(e.target.value)}
           />
-          <button
+          <Button
             type="submit"
-            className="bg-purple-600 text-white px-6 py-2 rounded shadow hover:bg-purple-700 transition"
+            rounded="full"
+            variant="default"
+            size="sm"
             disabled={submitting}
           >
             {submitting ? 'Submitting...' : 'Submit Response'}
-          </button>
+          </Button>
           {success && <div className="mt-3 text-green-700">Response submitted successfully!</div>}
         </form>
       </div>

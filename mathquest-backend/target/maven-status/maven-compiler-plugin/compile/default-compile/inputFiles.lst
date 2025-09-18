@@ -3,13 +3,13 @@ D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\Les
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\RoleRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\AdminFeedbackController.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\LessonCompletionDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\SystemSettingsService.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\ClassroomController.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Classroom.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Config\DatabaseInitializer.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\UserController.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\JoinClassroomRequest.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ReportRepository.java
+D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\AnnouncementController.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\ClassroomServiceImpl.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ClassroomStudentRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\AuthService.java
@@ -53,7 +53,6 @@ D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\Aut
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Config\WebMvcConfig.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\GameRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\ReportService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\QuizQuestionRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\FeedbackService.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Config\MultipartConfig.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\ERole.java
@@ -68,7 +67,6 @@ D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\Lesson
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Exception\UnauthorizedException.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\LessonCompletion.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\ActivityCompletion.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\SystemSettings.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\CreateUserRequest.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\QuizRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\GameService.java
@@ -97,10 +95,8 @@ D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\ActivityDT
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\User.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ActivityCompletionRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Report.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\SystemSettingsRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ClassroomRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\QuizAttemptService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\QuizQuestionDTO.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Game.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Quiz.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\FeedbackController.java
@@ -121,12 +117,10 @@ D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\Les
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\CreateGameRequest.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\LeaderboardEntry.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Exception\ErrorResponse.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\QuizQuestion.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\GameScoreRepository.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\LessonController.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\Impl\ActivityServiceImpl.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Exception\ResourceNotFoundException.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ContentBlockRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\SystemSettingsController.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Config\RequestLoggingConfig.java
 D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\ForgotPasswordRequest.java

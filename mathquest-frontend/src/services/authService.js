@@ -124,8 +124,6 @@ const AuthService = {
       const response = await api.get("/users/profile");
       const userData = response.data;
 
-      console.log("Refreshed user profile data:", userData);
-
       // Get current user from localStorage to preserve the token
       const currentUser = AuthService.getCurrentUser();
 
@@ -141,11 +139,6 @@ const AuthService = {
           profileImage: userData.profileImage || null,
           profileImageName: userData.profileImageName || null,
         };
-
-        console.log("Updated user object with image:", {
-          ...updatedUser,
-          profileImage: updatedUser.profileImage ? "base64_data_present" : null,
-        });
 
         // Update localStorage
         localStorage.setItem("user", JSON.stringify(updatedUser));

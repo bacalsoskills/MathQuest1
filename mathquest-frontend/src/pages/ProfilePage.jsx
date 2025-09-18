@@ -96,7 +96,7 @@ const ProfilePage = () => {
     
       setProfileImageSrc(imageSrc);
     } else {
-      console.log("No profile image data available");
+  
       setProfileImageSrc('');
     }
     

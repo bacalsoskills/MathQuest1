@@ -15,22 +15,17 @@ const ClassroomGamesTab = ({ classroomId: propClassroomId }) => {
   // Use propClassroomId if available, otherwise use urlClassroomId
   const effectiveClassroomId = propClassroomId || urlClassroomId;
 
-  console.log("Prop Classroom ID:", propClassroomId);
-  console.log("URL Classroom ID:", urlClassroomId);
-  console.log("Effective Classroom ID:", effectiveClassroomId);
+  
 
   useEffect(() => {
     if (!effectiveClassroomId) {
-      console.log("No classroom ID available");
       setLoading(false);
       return;
     }
     
     const fetchGamesAndScores = async () => {
       try {
-        console.log("Fetching games for classroom:", effectiveClassroomId);
         const gamesData = await gameService.getGamesByClassroomId(effectiveClassroomId);
-        console.log("Games fetched:", gamesData);
         setGames(gamesData || []);
 
         // Fetch scores for each game

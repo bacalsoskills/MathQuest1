@@ -3,17 +3,13 @@ import lessonService from "../../services/lessonService";
 import contentBlockService from "../../services/contentBlockService";
 import activityService from "../../services/activityService";
 import quizService from "../../services/quizService";
-import { 
-  Box, 
-  Typography,
-  TextField,
-  Button,
-  Tabs,
-  Tab
-} from "@mui/material";
+import { Button } from "../../ui/button";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import AddQuizModal from './AddQuizModal';
+import Modal from "../../ui/modal";
+import { FaTimes } from "react-icons/fa";
+import { toast } from 'react-hot-toast';
 
 // Quill editor modules and formats
 const quillModules = {
@@ -121,8 +117,8 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
     }
   };
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+  const handleTabChange = (tabIndex) => {
+    setActiveTab(tabIndex);
   };
 
   const handleAddQuestion = () => {
@@ -265,8 +261,7 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
           })))
         };
 
-        console.log('Quiz Type being sent to backend:', quizData.quizType);
-        console.log('Full quiz data being sent:', quizToCreate);
+        
 
         await quizService.createQuiz(activity.id, quizToCreate);
       }
@@ -341,436 +336,468 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
 
   if (!isOpen) return null;
 
-  return (
+  const modalFooter = (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-          <div className="flex justify-between items-center border-b px-6 py-4 flex-shrink-0">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Add New Lesson
-            </h3>
+      <Button
+        variant="cancel"
+        size="sm"
+        rounded="full"
+        onClick={onClose}
+        disabled={isSubmitting}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        variant="default"
+        size="sm"
+        onClick={handleSubmit}
+        rounded="full"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Saving..." : "Create Lesson"}
+      </Button>
+    </>
+  );
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add New Lesson"
+      footer={modalFooter}
+    >
+      <div className="border-b border-gray-300 dark:border-gray-600 flex-shrink-0">
+        <div className="flex justify-center">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 focus:outline-none"
+              onClick={() => handleTabChange(0)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                activeTab === 0
+                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              Lesson Content
+            </button>
+            <button
+              onClick={() => handleTabChange(1)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                activeTab === 1
+                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              Add Quiz
             </button>
           </div>
+        </div>
+      </div>
 
-          <div className="border-b flex-shrink-0">
-            <Tabs value={activeTab} onChange={handleTabChange} centered>
-              <Tab label="Lesson Content" />
-              <Tab label="Add Quiz" />
-            </Tabs>
-          </div>
+      <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden mt-5">
+        <div className="overflow-y-auto flex-grow">
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-md">
+              {error}
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
-            <div className="p-6 overflow-y-auto flex-grow">
-              {error && (
-                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-                  {error}
+          {activeTab === 0 && (
+            <>
+              <div className="mb-4">
+                <h6 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Lesson Details
+                </h6>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Lesson Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={lessonData.title}
+                    onChange={handleLessonChange}
+                    required
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
+                    placeholder="Enter lesson title"
+                  />
                 </div>
-              )}
+              </div>
+              
+              <div className="mb-4">
+                <h6 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Lesson Content
+                </h6>
+                
+                <div className="mb-4">
+                  <div className="border border-gray-300 dark:border-gray-600 rounded-md">
+                    <ReactQuill 
+                      theme="snow"
+                      value={contentBlock.structuredContent} 
+                      onChange={handleStructuredContentChange}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      style={{ height: '250px', marginBottom: '40px' }}
+                      className="dark:!text-gray-300"
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
-              {activeTab === 0 && (
-                <>
-                  <div className="mb-4">
-                    <Typography variant="h6" gutterBottom>
-                      Lesson Details
-                    </Typography>
-                    
-                    <div className="mb-4">
-                      <TextField
-                        fullWidth
-                        required
-                        label="Lesson Title"
-                        name="title"
-                        value={lessonData.title}
-                        onChange={handleLessonChange}
-                        margin="normal"
+          {activeTab === 1 && (
+            <div className="space-y-4">
+              <div className="flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  id="has-quiz"
+                  checked={hasQuiz}
+                  onChange={(e) => setHasQuiz(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-2"
+                />
+                <label htmlFor="has-quiz" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Add Quiz to this Lesson
+                </label>
+              </div>
+
+              {hasQuiz && (
+                <div className="space-y-6 mt-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Quiz Title *
+                      </label>
+                      <input
+                        type="text"
+                        value={quizData.title}
+                        onChange={(e) => setQuizData(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        required={true}
+                        placeholder="Enter quiz title"
                       />
                     </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <Typography variant="h6" gutterBottom>
-                      Lesson Content
-                    </Typography>
-                    
-                    <div className="mb-4">
-                      <div className="border border-gray-300 rounded">
-                        <ReactQuill 
-                          theme="snow"
-                          value={contentBlock.structuredContent} 
-                          onChange={handleStructuredContentChange}
-                          modules={quillModules}
-                          formats={quillFormats}
-                          style={{ height: '250px', marginBottom: '40px' }}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Quiz Type
+                      </label>
+                      <select
+                        value={quizData.quizType}
+                        onChange={(e) => setQuizData(prev => ({ ...prev, quizType: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm"
+                        required={true}
+                      >
+                        <option value="PRACTICE_QUIZ">Practice Quiz</option>
+                        <option value="MAJOR_EXAMS">Major Exams</option>
+                        <option value="POP_QUIZ">Pop Quiz</option>
+                        <option value="DIAGNOSTIC_QUIZ">Diagnostic Quiz</option>
+                        <option value="ACTIVITY">Activity</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Overall Score
+                      </label>
+                      <input
+                        type="number"
+                        value={quizData.overallScore}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        readOnly
+                        disabled
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Passing Score
+                      </label>
+                      <input
+                        type="number"
+                        value={quizData.passingScore}
+                        onChange={(e) => setQuizData(prev => ({ ...prev, passingScore: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        required
+                        min="0"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Time Limit (minutes)
+                      </label>
+                      <input
+                        type="number"
+                        value={quizData.timeLimitMinutes}
+                        onChange={(e) => setQuizData(prev => ({ ...prev, timeLimitMinutes: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        required
+                        min="1"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Available From
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={quizData.availableFrom.slice(0, 16)}
+                        onChange={(e) => setQuizData(prev => ({ 
+                          ...prev, 
+                          availableFrom: e.target.value + ':00'
+                        }))}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Available To
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={quizData.availableTo.slice(0, 16)}
+                        onChange={(e) => setQuizData(prev => ({ 
+                          ...prev, 
+                          availableTo: e.target.value + ':00'
+                        }))}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          checked={quizData.repeatable}
+                          onChange={(e) => setQuizData(prev => ({
+                            ...prev,
+                            repeatable: e.target.checked,
+                            maxAttempts: e.target.checked ? 2 : 1
+                          }))}
+                          className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-2"
+                          id="allow-multiple-attempts"
                         />
+                        <label htmlFor="allow-multiple-attempts" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Allow Multiple Attempts
+                        </label>
                       </div>
+                      {quizData.repeatable && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Max Attempts (per student)
+                          </label>
+                          <input
+                            type="number"
+                            value={quizData.maxAttempts}
+                            min="2"
+                            max="5"
+                            onChange={(e) => setQuizData(prev => ({ ...prev, maxAttempts: e.target.value }))}
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            required={quizData.repeatable}
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must be between 2 and 5 attempts</p>
+                        </div>
+                      )}
+                      {!quizData.repeatable && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Single attempt only</p>
+                      )}
                     </div>
                   </div>
-                </>
-              )}
 
-              {activeTab === 1 && (
-                <div className="space-y-4">
-                  <div className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      id="has-quiz"
-                      checked={hasQuiz}
-                      onChange={(e) => setHasQuiz(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-2"
-                    />
-                    <label htmlFor="has-quiz" className="text-sm font-medium text-gray-700">
-                      Add Quiz to this Lesson
-                    </label>
-                  </div>
-
-                  {hasQuiz && (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Quiz Title
+                  {/* Questions Section */}
+                  <div className="space-y-6">
+                    {quizData.questions.map((question, qIndex) => (
+                      <div key={qIndex} className="p-4 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-800">
+                        <div className="flex justify-between items-center mb-3">
+                          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-300">
+                            Question {qIndex + 1}
                           </label>
-                          <input
-                            type="text"
-                            value={quizData.title}
-                            onChange={(e) => setQuizData(prev => ({ ...prev, title: e.target.value }))}
-                            className="w-full p-2 border rounded"
-                            // required={hasQuiz}
-                            required={true}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Quiz Type
-                          </label>
-                          <select
-                            value={quizData.quizType}
-                            onChange={(e) => setQuizData(prev => ({ ...prev, quizType: e.target.value }))}
-                            className="w-full p-2 border rounded bg-white text-sm"
-                            required={true}
-                          >
-                            <option value="PRACTICE_QUIZ">Practice Quiz</option>
-                            <option value="MAJOR_EXAMS">Major Exams</option>
-                            <option value="POP_QUIZ">Pop Quiz</option>
-                            <option value="DIAGNOSTIC_QUIZ">Diagnostic Quiz</option>
-                            <option value="ACTIVITY">Activity</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Overall Score
-                          </label>
-                          <input
-                            type="number"
-                            value={quizData.overallScore}
-                            className="w-full p-2 border rounded bg-gray-100"
-                            readOnly
-                            disabled
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Passing Score
-                          </label>
-                          <input
-                            type="number"
-                            value={quizData.passingScore}
-                            onChange={(e) => setQuizData(prev => ({ ...prev, passingScore: e.target.value }))}
-                            className="w-full p-2 border rounded"
-                            required
-                            min="0"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Time Limit (minutes)
-                          </label>
-                          <input
-                            type="number"
-                            value={quizData.timeLimitMinutes}
-                            onChange={(e) => setQuizData(prev => ({ ...prev, timeLimitMinutes: e.target.value }))}
-                            className="w-full p-2 border rounded"
-                            required
-                            min="1"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Available From
-                          </label>
-                          <input
-                            type="datetime-local"
-                            value={quizData.availableFrom.slice(0, 16)}
-                            onChange={(e) => setQuizData(prev => ({ 
-                              ...prev, 
-                              availableFrom: e.target.value + ':00'
-                            }))}
-                            className="w-full p-2 border rounded"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Available To
-                          </label>
-                          <input
-                            type="datetime-local"
-                            value={quizData.availableTo.slice(0, 16)}
-                            onChange={(e) => setQuizData(prev => ({ 
-                              ...prev, 
-                              availableTo: e.target.value + ':00'
-                            }))}
-                            className="w-full p-2 border rounded"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <div className="flex items-center mb-2">
-                            <input
-                              type="checkbox"
-                              checked={quizData.repeatable}
-                              onChange={(e) => setQuizData(prev => ({
-                                ...prev,
-                                repeatable: e.target.checked,
-                                maxAttempts: e.target.checked ? 2 : 1
-                              }))}
-                              className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-2"
-                              id="allow-multiple-attempts"
-                            />
-                            <label htmlFor="allow-multiple-attempts" className="text-sm font-medium text-gray-700">
-                              Allow Multiple Attempts
-                            </label>
-                          </div>
-                          {quizData.repeatable && (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Max Attempts (per student)
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center">
+                              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mr-2">
+                                Points:
                               </label>
                               <input
-                                type="number"
-                                value={quizData.maxAttempts}
-                                min="2"
-                                max="5"
-                                onChange={(e) => setQuizData(prev => ({ ...prev, maxAttempts: e.target.value }))}
-                                className="w-full p-2 border rounded"
-                                required={quizData.repeatable}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={question.points || 10}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (/^\d*$/.test(value)) {
+                                    const numValue = value === '' ? 1 : parseInt(value);
+                                    handleQuestionChange(qIndex, 'points', numValue);
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const value = parseInt(e.target.value) || 1;
+                                  handleQuestionChange(qIndex, 'points', value);
+                                }}
+                                className="w-16 p-1 border border-gray-300 dark:border-gray-600 rounded text-center text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                required
                               />
-                              <p className="text-xs text-gray-500 mt-1">Must be between 2 and 5 attempts</p>
                             </div>
+                            {quizData.questions.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedQuestions = quizData.questions.filter((_, i) => i !== qIndex);
+                                  setQuizData(prev => ({ ...prev, questions: updatedQuestions }));
+                                }}
+                                className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                                title="Remove question"
+                              >
+                                <FaTimes size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                              Question Type
+                            </label>
+                            <select
+                              value={question.questionType}
+                              onChange={(e) => handleQuestionChange(qIndex, 'questionType', e.target.value)}
+                              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm"
+                            >
+                              {questionTypes.map((type) => (
+                                <option key={type.value} value={type.value}>
+                                  {type.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                              Question Text
+                            </label>
+                            <input
+                              type="text"
+                              value={question.question}
+                              onChange={(e) => handleQuestionChange(qIndex, 'question', e.target.value)}
+                              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                              required
+                              placeholder="Enter the question"
+                            />
+                          </div>
+
+                          {question.questionType === 'MULTIPLE_CHOICE' && (
+                            <>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                Options (select correct answer)
+                              </label>
+                              {question.options.map((option, oIndex) => (
+                                <div key={oIndex} className="flex items-center space-x-2">
+                                  <input
+                                    type="radio"
+                                    name={`correct-${qIndex}`}
+                                    checked={question.correctAnswers.includes(oIndex)}
+                                    onChange={() => handleQuestionChange(qIndex, 'correctAnswers', oIndex)}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600"
+                                    required={question.correctAnswers.length === 0}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={option}
+                                    onChange={(e) => {
+                                      const newOptions = [...question.options];
+                                      newOptions[oIndex] = e.target.value;
+                                      handleQuestionChange(qIndex, 'options', newOptions);
+                                    }}
+                                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                    placeholder={`Option ${oIndex + 1}`}
+                                    required
+                                  />
+                                </div>
+                              ))}
+                              {question.correctAnswers.length === 0 && (
+                                <p className="text-xs text-red-500 dark:text-red-400 mt-1">Please select a correct answer</p>
+                              )}
+                            </>
                           )}
-                          {!quizData.repeatable && (
-                            <p className="text-xs text-gray-500 mt-1">Single attempt only</p>
+
+                          {question.questionType === 'CHECKBOX' && (
+                            <>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                Options (select all correct answers)
+                              </label>
+                              {question.options.map((option, oIndex) => (
+                                <div key={oIndex} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={question.correctAnswers.includes(oIndex)}
+                                    onChange={() => handleQuestionChange(qIndex, 'correctAnswers', oIndex)}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
+                                    required={question.correctAnswers.length === 0}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={option}
+                                    onChange={(e) => {
+                                      const newOptions = [...question.options];
+                                      newOptions[oIndex] = e.target.value;
+                                      handleQuestionChange(qIndex, 'options', newOptions);
+                                    }}
+                                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                    placeholder={`Option ${oIndex + 1}`}
+                                    required
+                                  />
+                                </div>
+                              ))}
+                              {question.correctAnswers.length === 0 && (
+                                <p className="text-xs text-red-500 dark:text-red-400 mt-1">Please select at least one correct answer</p>
+                              )}
+                            </>
+                          )}
+                          
+                          {question.questionType === 'IDENTIFICATION' && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                Correct Answer
+                              </label>
+                              <input
+                                type="text"
+                                value={Array.isArray(question.correctAnswers) ? (question.correctAnswers[0] || '') : ''}
+                                onChange={(e) => handleQuestionChange(qIndex, 'correctAnswers', e.target.value)}
+                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                placeholder="Enter the exact correct answer"
+                                required
+                              />
+                              {(!question.correctAnswers[0] || question.correctAnswers[0].trim() === '') && (
+                                <p className="text-xs text-red-500 dark:text-red-400 mt-1">Please provide a correct answer</p>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
+                    ))}
+                  </div>
 
-                      {/* Questions Section */}
-                      <div className="space-y-6">
-                        {quizData.questions.map((question, qIndex) => (
-                          <div key={qIndex} className="p-4 border rounded bg-gray-50">
-                            <div className="flex justify-between items-center mb-3">
-                              <label className="block text-sm font-semibold text-gray-800">
-                                Question {qIndex + 1}
-                              </label>
-                              <div className="flex items-center">
-                                <label className="text-xs font-medium text-gray-600 mr-2">
-                                  Points:
-                                </label>
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  pattern="[0-9]*"
-                                  value={question.points || 10}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    if (/^\d*$/.test(value)) {
-                                      const numValue = value === '' ? 1 : parseInt(value);
-                                      handleQuestionChange(qIndex, 'points', numValue);
-                                    }
-                                  }}
-                                  onBlur={(e) => {
-                                    const value = parseInt(e.target.value) || 1;
-                                    handleQuestionChange(qIndex, 'points', value);
-                                  }}
-                                  className="w-16 p-1 border rounded text-center text-sm"
-                                  required
-                                />
-                              </div>
-                            </div>
-
-                            <div className="space-y-4">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">
-                                  Question Type
-                                </label>
-                                <select
-                                  value={question.questionType}
-                                  onChange={(e) => handleQuestionChange(qIndex, 'questionType', e.target.value)}
-                                  className="w-full p-2 border rounded bg-white text-sm"
-                                >
-                                  {questionTypes.map((type) => (
-                                    <option key={type.value} value={type.value}>
-                                      {type.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">
-                                  Question Text
-                                </label>
-                                <input
-                                  type="text"
-                                  value={question.question}
-                                  onChange={(e) => handleQuestionChange(qIndex, 'question', e.target.value)}
-                                  className="w-full p-2 border rounded text-sm"
-                                  required
-                                  placeholder="Enter the question"
-                                />
-                              </div>
-
-                              {question.questionType === 'MULTIPLE_CHOICE' && (
-                                <>
-                                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                                    Options (select correct answer)
-                                  </label>
-                                  {question.options.map((option, oIndex) => (
-                                    <div key={oIndex} className="flex items-center space-x-2">
-                                      <input
-                                        type="radio"
-                                        name={`correct-${qIndex}`}
-                                        checked={question.correctAnswers.includes(oIndex)}
-                                        onChange={() => handleQuestionChange(qIndex, 'correctAnswers', oIndex)}
-                                        className="h-4 w-4 text-blue-600 border-gray-300"
-                                        required={question.correctAnswers.length === 0}
-                                      />
-                                      <input
-                                        type="text"
-                                        value={option}
-                                        onChange={(e) => {
-                                          const newOptions = [...question.options];
-                                          newOptions[oIndex] = e.target.value;
-                                          handleQuestionChange(qIndex, 'options', newOptions);
-                                        }}
-                                        className="flex-1 p-2 border rounded text-sm"
-                                        placeholder={`Option ${oIndex + 1}`}
-                                        required
-                                      />
-                                    </div>
-                                  ))}
-                                  {question.correctAnswers.length === 0 && (
-                                    <p className="text-xs text-red-500 mt-1">Please select a correct answer</p>
-                                  )}
-                                </>
-                              )}
-
-                              {question.questionType === 'CHECKBOX' && (
-                                <>
-                                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                                    Options (select all correct answers)
-                                  </label>
-                                  {question.options.map((option, oIndex) => (
-                                    <div key={oIndex} className="flex items-center space-x-2">
-                                      <input
-                                        type="checkbox"
-                                        checked={question.correctAnswers.includes(oIndex)}
-                                        onChange={() => handleQuestionChange(qIndex, 'correctAnswers', oIndex)}
-                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                        required={question.correctAnswers.length === 0}
-                                      />
-                                      <input
-                                        type="text"
-                                        value={option}
-                                        onChange={(e) => {
-                                          const newOptions = [...question.options];
-                                          newOptions[oIndex] = e.target.value;
-                                          handleQuestionChange(qIndex, 'options', newOptions);
-                                        }}
-                                        className="flex-1 p-2 border rounded text-sm"
-                                        placeholder={`Option ${oIndex + 1}`}
-                                        required
-                                      />
-                                    </div>
-                                  ))}
-                                  {question.correctAnswers.length === 0 && (
-                                    <p className="text-xs text-red-500 mt-1">Please select at least one correct answer</p>
-                                  )}
-                                </>
-                              )}
-                              
-                              {question.questionType === 'IDENTIFICATION' && (
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                                    Correct Answer
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={Array.isArray(question.correctAnswers) ? (question.correctAnswers[0] || '') : ''}
-                                    onChange={(e) => handleQuestionChange(qIndex, 'correctAnswers', e.target.value)}
-                                    className="w-full p-2 border rounded text-sm"
-                                    placeholder="Enter the exact correct answer"
-                                    required
-                                  />
-                                  {(!question.correctAnswers[0] || question.correctAnswers[0].trim() === '') && (
-                                    <p className="text-xs text-red-500 mt-1">Please provide a correct answer</p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleAddQuestion}
-                        className="mt-4 px-4 py-2 text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
-                      >
-                        Add Question
-                      </button>
-                    </div>
-                  )}
+                  <Button
+                    type="button"
+                    onClick={handleAddQuestion}
+                    variant="outlineWhite"
+                    size="sm"
+                  >
+                    Add Question
+                  </Button>
                 </div>
               )}
             </div>
-
-              <div className="border-t px-6 py-4 bg-gray-50 flex-shrink-0">
-                <div className="flex justify-end space-x-3">
-                  <Button
-                    variant="outlined"
-                    onClick={onClose}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Saving..." : "Create Lesson"}
-                  </Button>
-                </div>
-              </div>
-          </form>
+          )}
         </div>
-      </div>
-    </>
+      </form>
+    </Modal>
   );
 };
 

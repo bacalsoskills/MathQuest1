@@ -4,16 +4,11 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
-import GamePage from './pages/GamePage';
-import LearningPage from './pages/LearningPage';
-import PracticePage from './pages/PracticePage';
-import ChallengePage from './pages/ChallengePage';
 import AboutPage from './pages/AboutPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import ReportGenerator from './pages/ReportGenerator';
 import AdministrativeControls from './pages/AdministrativeControls';
 import JoinClassroom from './pages/student/JoinClassroom';
 import CreateClassroom from './pages/teacher/CreateClassroom';
@@ -22,18 +17,13 @@ import StudentClassroomPage from './pages/student/StudentClassroomPage';
 import TeacherClassroom from './pages/teacher/TeacherClassroom';
 import StudentClassroom from './pages/student/StudentClassroom';
 import ProfilePage from './pages/ProfilePage';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ContentProvider } from './context/ContentContext';
-import { UserProgressProvider } from './context/UserProgressContext';
 import { ClassroomProvider } from './context/ClassroomContext';
-import { useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import EmailUpdateVerification from './pages/EmailUpdateVerification';
 import VerificationPage from './pages/VerificationPage';
-import StudentProgressSection from './pages/admin/StudentProgressSection';
 import ClassroomSection from './pages/admin/ClassroomSection';
-import PropertiesSection from './pages/admin/PropertiesSection';
-import PracticeSection from './pages/admin/PracticeSection';
-import ChallengeSection from './pages/admin/ChallengeSection';
 import TeachersSection from './pages/admin/TeachersSection';
 import StudentsSection from './pages/admin/StudentsSection';
 import GameContainer from './components/games/GameContainer';
@@ -41,13 +31,31 @@ import GameAnalytics from './components/teacher/GameAnalytics';
 import QuizPage from './pages/QuizPage';
 import ReportsPage from './pages/ReportsPage';
 import QuizAttemptPage from './pages/student/QuizAttemptPage';
-import SystemSettings from './pages/admin/SystemSettings';
+import SystemAnnoucements from './pages/admin/SystemAnnoucements';
 import UserManagement from './pages/admin/UserManagement';
 import AdminFeedbackPage from './pages/admin/AdminFeedbackPage';
 import FeedbackTicketPage from './pages/admin/FeedbackTicketPage';
 import Dashboard from './pages/Dashboard';
 import ThemeToggleButton from './components/ThemeToggleButton';
 import HelpPage from './pages/HelpPage';
+import LearningMultiplication from './pages/student/LearningMultiplication';
+
+// Auth Route component to prevent logged-in users from accessing auth pages
+const AuthRoute = ({ children }) => {
+  const { currentUser, isAdmin, isTeacher, isStudent } = useAuth();
+
+  // If user is logged in, redirect them to appropriate dashboard
+  if (currentUser) {
+    if (isAdmin()) return <Navigate to="/admin/dashboard" />;
+    if (isTeacher()) return <Navigate to="/teacher/dashboard" />;
+    if (isStudent()) return <Navigate to="/student/dashboard" />;
+    // Fallback to home if role is undefined
+    return <Navigate to="/" />;
+  }
+
+  // If not logged in, show the auth page
+  return children;
+};
 
 // Root redirect component to handle role-based redirection
 const RootRedirect = () => {
@@ -57,9 +65,9 @@ const RootRedirect = () => {
   if (!currentUser) return <HomePage />;
   
   // If logged in, redirect based on role
-  if (isAdmin()) return <Navigate to="/admin/users" />;
-  if (isTeacher()) return <Navigate to="/teacher/classrooms" />;
-  if (isStudent()) return <Navigate to="/student/classrooms" />;
+  if (isAdmin()) return <Navigate to="/admin/dashboard" />;
+  if (isTeacher()) return <Navigate to="/teacher/dashboard" />;
+  if (isStudent()) return <Navigate to="/student/dashboard" />;
   
   // Fallback to homepage if role is undefined
   return <HomePage />;
@@ -115,31 +123,28 @@ const NavbarLayout = () => (
   </>
 );
 
+// ThemeToggle wrapper that only shows for non-logged in users
+const ConditionalThemeToggle = () => {
+  const { currentUser } = useAuth();
+  
+  if (!currentUser) {
+    return <ThemeToggleButton />;
+  }
+  
+  return null;
+};
+
 function App() {
-  const [darkMode, setDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  });
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [darkMode]);
-
   return (
     <AuthProvider>
       <ContentProvider>
-        <UserProgressProvider>
-          <ClassroomProvider>
+        <ClassroomProvider>
+          <ThemeProvider>
             <Router>
               <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-                {/* Theme Toggle Button */}
-                <ThemeToggleButton darkMode={darkMode} setDarkMode={setDarkMode} />
+                {/* Theme Toggle Button - Only for non-logged in users */}
+                <ConditionalThemeToggle />
+                
                 {/* Toast notifications */}
                 <Toaster
                   position="top-right"
@@ -173,11 +178,30 @@ function App() {
                     {/* Public Routes */}
                     <Route path="/" element={<RootRedirect />} />
                     <Route path="/about" element={<AboutPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    
+                    {/* Auth Routes - Only accessible when not logged in */}
+                    <Route path="/login" element={
+                      <AuthRoute>
+                        <LoginPage />
+                      </AuthRoute>
+                    } />
+                    <Route path="/register" element={
+                      <AuthRoute>
+                        <RegisterPage />
+                      </AuthRoute>
+                    } />
+                    <Route path="/forgot-password" element={
+                      <AuthRoute>
+                        <ForgotPasswordPage />
+                      </AuthRoute>
+                    } />
+                    <Route path="/reset-password" element={
+                      <AuthRoute>
+                        <ResetPasswordPage />
+                      </AuthRoute>
+                    } />
                     <Route path="/users/verify-email" element={<EmailUpdateVerification />} />
+                    
                     {/* Shared Dashboard Route */}
                     <Route path="/dashboard" element={
                       <ProtectedRoute allowedRoles={['admin','teacher','student']}>
@@ -203,14 +227,7 @@ function App() {
                     
                     {/* Student Routes */}
                     <Route path="/student" element={<Navigate to="/student/classrooms" />} />
-                    <Route 
-                      path="/student/game" 
-                      element={
-                        <ProtectedRoute allowedRoles={['student']}>
-                          <GamePage />
-                        </ProtectedRoute>
-                      } 
-                    />
+                    
                     <Route 
                       path="/student/games/:gameId" 
                       element={
@@ -219,30 +236,7 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
-                    <Route 
-                      path="/student/learning" 
-                      element={
-                        <ProtectedRoute allowedRoles={['student']}>
-                          <LearningPage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/student/practice" 
-                      element={
-                        <ProtectedRoute allowedRoles={['student']}>
-                          <PracticePage />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/student/challenge" 
-                      element={
-                        <ProtectedRoute allowedRoles={['student']}>
-                          <ChallengePage />
-                        </ProtectedRoute>
-                      } 
-                    />
+                    
                     <Route 
                       path="/student/profile" 
                       element={
@@ -296,6 +290,14 @@ function App() {
                         <HelpPage />
                       </ProtectedRoute>
                     } />
+                    <Route 
+                      path="/student/learning-multiplication" 
+                      element={
+                        <ProtectedRoute allowedRoles={['student']}>
+                          <LearningMultiplication />
+                        </ProtectedRoute>
+                      } 
+                    />
                     
                     {/* Teacher Routes */}
                     <Route path="/teacher" element={<Navigate to="/teacher/classrooms" />} />
@@ -347,22 +349,8 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
-                    <Route 
-                      path="/teacher/reports" 
-                      element={
-                        <ProtectedRoute allowedRoles={['teacher']}>
-                          <ReportGenerator />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/teacher/student-progress" 
-                      element={
-                        <ProtectedRoute allowedRoles={['teacher']}>
-                          <StudentProgressSection />
-                        </ProtectedRoute>
-                      } 
-                    />
+                
+               
                     <Route path="/teacher/help" element={
                       <ProtectedRoute allowedRoles={['teacher']}>
                         <HelpPage />
@@ -371,9 +359,6 @@ function App() {
                     
                     {/* Redirect old paths to new role-based paths */}
                     <Route path="/game" element={<Navigate to="/student/game" />} />
-                    <Route path="/learning" element={<Navigate to="/student/learning" />} />
-                    <Route path="/practice" element={<Navigate to="/student/practice" />} />
-                    <Route path="/challenge" element={<Navigate to="/student/challenge" />} />
                     <Route path="/profile" element={<Navigate to="/student/profile" />} />
                     <Route path="/classrooms" element={<Navigate to="/teacher/classrooms" />} />
                     <Route path="/join-classroom" element={<Navigate to="/student/join-classroom" />} />
@@ -424,22 +409,9 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
-                    <Route 
-                      path="/admin/reports" 
-                      element={
-                        <ProtectedRoute allowedRoles={['admin']}>
-                          <ReportGenerator />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/students-progress" 
-                      element={
-                        <ProtectedRoute allowedRoles={['admin']}>
-                          <StudentProgressSection />
-                        </ProtectedRoute>
-                      } 
-                    />
+              
+              
+              
                     <Route 
                       path="/admin/controls" 
                       element={
@@ -448,38 +420,16 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
-                         <Route 
-                      path="/admin/settings" 
+                      <Route 
+                      path="/admin/announcements" 
                       element={
                         <ProtectedRoute allowedRoles={['admin']}>
-                          <SystemSettings />
+                          <SystemAnnoucements />
                         </ProtectedRoute>
                       } 
                     />
-                    <Route 
-                      path="/admin/properties" 
-                      element={
-                        <ProtectedRoute allowedRoles={['admin']}>
-                          <PropertiesSection />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/practice" 
-                      element={
-                        <ProtectedRoute allowedRoles={['admin']}>
-                          <PracticeSection />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin/challenge" 
-                      element={
-                        <ProtectedRoute allowedRoles={['admin']}>
-                          <ChallengeSection />
-                        </ProtectedRoute>
-                      } 
-                    />
+                  
+                 
                      <Route path="/admin/feedback" 
                      element={
                       <ProtectedRoute allowedRoles={['admin']}>
@@ -511,8 +461,8 @@ function App() {
                 </Routes>
               </div>
             </Router>
-          </ClassroomProvider>
-        </UserProgressProvider>
+          </ThemeProvider>
+        </ClassroomProvider>
       </ContentProvider>
     </AuthProvider>
   );

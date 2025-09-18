@@ -56,7 +56,7 @@ const AdministrativeControls = () => {
 
   const handleSaveSystemSettings = () => {
     // TODO: Implement API call to save system settings
-    console.log('Saving system settings:', systemSettings);
+
     alert('System settings saved successfully!');
   };
 

@@ -107,7 +107,7 @@ const LeaderboardTable = ({ entries }) => {
             <FaTrophy className="text-white text-sm sm:text-2xl" />
           </div>
           <div className="w-20 h-24 sm:w-48 sm:h-56 bg-white rounded-lg shadow-lg p-2 sm:p-4 flex flex-col items-center justify-center">
-            <h3 className="text-xs sm:text-xl font-bold mb-1 sm:mb-2">{formatStudentName(sortedEntries[0]?.studentName)}</h3>
+            <h3 className="text-xs text-center sm:text-xl font-bold mb-1 sm:mb-2">{formatStudentName(sortedEntries[0]?.studentName)}</h3>
             <p className="text-xs sm:text-sm text-gray-500">#1</p>
           </div>
         </div>
@@ -337,7 +337,7 @@ const PerformanceGraph = ({ quizData }) => {
   // Process quiz data to get average scores and attempt information
   const processedData = quizData.map(quiz => {
     const attempts = quiz.attempts || [];
-    console.log(`[PerformanceGraph] Quiz data structure:`, quiz);
+
     
     // Use quiz.overallScore as the total points
     let totalPoints = quiz.overallScore || 0;

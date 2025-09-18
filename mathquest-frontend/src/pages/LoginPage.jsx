@@ -36,7 +36,7 @@ const LoginPage = () => {
       return;
     }
     try {
-      console.log("Attempting login with:", identifier);
+  
       const result = await login(identifier, password);
       
       if (result.success) {

@@ -43,16 +43,16 @@ const LessonDetailView = ({ lesson, isStudent, onQuizComplete }) => {
     if (isAtBottom && !hasScrolledToBottom) {
       setHasScrolledToBottom(true);
       if (isStudent && !completionStatus?.contentRead) {
-        console.log(`[Lesson ${lesson.id}] Student ${user.id} reached bottom of lesson content`);
+    
         lessonService.markLessonContentAsRead(lesson.id, user.id)
           .then(() => {
-            console.log(`[Lesson ${lesson.id}] Successfully marked content as read for student ${user.id}`);
+            
             setCompletionStatus(prev => ({ ...prev, contentRead: true }));
             setShowQuiz(true);
             
             // Log quiz availability
             const hasQuiz = lesson.activities?.some(activity => activity.type === 'QUIZ');
-            console.log(`[Lesson ${lesson.id}] Quiz ${hasQuiz ? 'is available' : 'not available'} for student ${user.id}`);
+        
           })
           .catch(err => {
             console.error(`[Lesson ${lesson.id}] Error marking content as read for student ${user.id}:`, err);
@@ -63,10 +63,10 @@ const LessonDetailView = ({ lesson, isStudent, onQuizComplete }) => {
 
   const handleQuizComplete = (score) => {
     if (isStudent) {
-      console.log(`[Lesson ${lesson.id}] Student ${user.id} completed quiz with score ${score}`);
+  
       lessonService.markLessonQuizAsCompleted(lesson.id, user.id, score)
         .then(() => {
-          console.log(`[Lesson ${lesson.id}] Successfully marked quiz as completed for student ${user.id} with score ${score}`);
+          
           setCompletionStatus(prev => ({ ...prev, quizCompleted: true, quizScore: score }));
           if (onQuizComplete) {
             onQuizComplete(score);

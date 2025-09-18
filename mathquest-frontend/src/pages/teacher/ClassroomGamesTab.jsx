@@ -19,7 +19,7 @@ const ClassroomGamesTab = ({ classroomId, activityId }) => {
       try {
         const gamesData = await gameService.getGamesByClassroomId(classroomId);
         setGames(gamesData);
-        console.log("Games fetched:", gamesData);
+     
       } catch (error) {
         console.error('Error fetching games:', error);
         toast.error('Failed to load games');
