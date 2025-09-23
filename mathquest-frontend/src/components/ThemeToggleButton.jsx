@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -25,4 +25,4 @@ const ThemeToggleButton = () => {
   );
 };
 
-export default ThemeToggleButton; 
+export default memo(ThemeToggleButton); 

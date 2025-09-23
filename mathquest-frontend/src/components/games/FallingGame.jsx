@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,7 @@ import LevelProgressionModal from "./LevelProgressionModal";
 import Modal from '../../ui/modal';
 import { Button } from '../../ui/button';
 import { Header } from '../../ui/heading';
+import logger from '../../services/logger';
 
 // Groq API configuration with rate limiting
 const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
@@ -26,7 +27,7 @@ const apiState = {
 
 // Constants for game rules
 const MAX_LEVEL = 10;
-const PROBLEMS_PER_LEVEL = 5;
+const PROBLEMS_PER_LEVEL = 10; // 10 problems per level for each multiplication table
 const MAX_LIVES = 5;
 const TOTAL_PROBLEMS = 50;
 
@@ -66,6 +67,11 @@ const FallingGame = ({ game, onGameComplete }) => {
   const [currentSequenceIndex, setCurrentSequenceIndex] = useState(0); // Add sequence tracking
   const [deductedProblems, setDeductedProblems] = useState(new Set()); // Track problems that have caused life deduction
   const [lastDeductionTime, setLastDeductionTime] = useState(0); // Track last deduction time
+  const [showLevelTransition, setShowLevelTransition] = useState(false); // Show level transition animation
+  const [isGeneratingProblems, setIsGeneratingProblems] = useState(false); // Show when generating new problems
+  const [showCongratulationsModal, setShowCongratulationsModal] = useState(false); // Show congratulations modal
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Track current question (0-9)
+  const [questionsAnswered, setQuestionsAnswered] = useState(0); // Track total questions answered in current level
 
   // New states
   const [isPaused, setIsPaused] = useState(false);
@@ -78,8 +84,7 @@ const FallingGame = ({ game, onGameComplete }) => {
   const [selectedTableForProblems, setSelectedTableForProblems] = useState('random');
   const [gameTime, setGameTime] = useState(0);
 
-  // Add new state for tracking problem generation
-  const [isLoadingProblems, setIsLoadingProblems] = useState(false);
+  // Note: Removed isLoadingProblems state as it was blocking the animation loop unnecessarily
   
   // Add new state for countdown
   const [countdown, setCountdown] = useState(null);
@@ -190,7 +195,7 @@ const FallingGame = ({ game, onGameComplete }) => {
    */
   const submitScore = useCallback(async () => {
     if (!currentUser || !game) {
-      console.error("Unable to submit score: User or game data missing");
+      logger.error("Unable to submit score: User or game data missing");
       return;
     }
 
@@ -239,7 +244,7 @@ const FallingGame = ({ game, onGameComplete }) => {
           onGameComplete(parseInt(score));
         }
       } catch (apiError) {
-        console.error("API submission error:", apiError);
+        logger.error("API submission error", { error: apiError.message });
         // Backup: Store in localStorage if API fails
         const existingScores = JSON.parse(localStorage.getItem('gameScores') || '[]');
         
@@ -276,7 +281,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         }
       }
     } catch (error) {
-      console.error("Failed to save score:", error);
+      logger.error("Failed to save score", { error: error.message });
       toast.error("Failed to save your score. Please try again.");
     }
   }, [currentUser, game, score, currentLevel, gameTime, onGameComplete, lsKey]);
@@ -297,7 +302,7 @@ const FallingGame = ({ game, onGameComplete }) => {
   const callGroqApi = useCallback(async (topic, numberOfQuestions) => {
     // Check if API key is available
     if (!GROQ_API_KEY) {
-      console.warn('Groq API key not found. Please set REACT_APP_GROQ_API_KEY environment variable.');
+      logger.warn('Groq API key not found. Please set REACT_APP_GROQ_API_KEY environment variable.');
       return null;
     }
 
@@ -353,7 +358,7 @@ const FallingGame = ({ game, onGameComplete }) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Groq API Error Details:', {
+        logger.error('Groq API Error Details', {
           status: response.status,
           statusText: response.statusText,
           headers: Object.fromEntries(response.headers.entries()),
@@ -368,7 +373,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       const data = await response.json();
       
       if (!data || !data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
-        console.error('Invalid API Response Structure:', data);
+        logger.error('Invalid API Response Structure', { data });
         throw new Error('Invalid API response format');
       }
 
@@ -407,79 +412,94 @@ const FallingGame = ({ game, onGameComplete }) => {
         }
         return filteredProblems;
       } catch (parseError) {
-        console.error('Error parsing Groq API response:', parseError);
-        console.error('Failed content:', data.choices[0].message.content);
+        logger.error('Error parsing Groq API response', { 
+          parseError: parseError.message,
+          content: data.choices[0].message.content 
+        });
         throw new Error('Failed to parse API response');
       }
     } catch (error) {
-      console.error('Groq API error:', error);
+      logger.error('Groq API error', { 
+        error: error.message,
+        status: error.response?.status 
+      });
       if (error.message.includes('401')) {
-        console.error('Invalid Groq API key. Please check your REACT_APP_GROQ_API_KEY environment variable.');
+        logger.error('Invalid Groq API key. Please check your REACT_APP_GROQ_API_KEY environment variable.');
       }
       throw error;
     }
   }, []);
 
+  // Generate multiplication table problems for specific level
+  const generateMultiplicationTableProblems = useCallback((level) => {
+    const problems = [];
+    const tableNumber = level; // Level 1 = Table of 1, Level 2 = Table of 2, etc.
+    
+    // Generate problems from tableNumber × 1 to tableNumber × 10
+    for (let i = 1; i <= 10; i++) {
+      const question = `${tableNumber} × ${i}`;
+      const answer = (tableNumber * i).toString();
+      
+      problems.push({
+        id: `table-${level}-${i}-${Date.now()}`,
+        question: question,
+        answer: answer,
+        operation: 'multiplication',
+        x: Math.random() * 80 + 10,
+        y: -10 - (Math.random() * 20),
+        speed: 0.3 + (0.1 * level),
+        status: 'normal',
+        level: level,
+        sequenceIndex: i - 1,
+        isSolved: false,
+        isMissed: false
+      });
+    }
+    
+    // Shuffle the problems to randomize order
+    return problems.sort(() => Math.random() - 0.5);
+  }, []);
+
   const generateProblems = useCallback(async () => {
     if (!game?.id || !game?.topic || apiState.isGenerating) {
-      console.warn('Game, game ID, or topic not available yet');
+      logger.warn('Game, game ID, or topic not available yet');
       return;
     }
+    
+    // Set generating state immediately but don't block UI
+    setIsGeneratingProblems(true);
+    apiState.isGenerating = true;
+    
     try {
-      setIsLoadingProblems(true);
-      // Clear active problems during loading to prevent them from falling
-      setActiveProblems([]);
-      apiState.isGenerating = true;
-      const topicLower = game.topic.toLowerCase();
-      const problemCount = TOTAL_PROBLEMS;
-      const cacheKey = `${topicLower}-all`;
-      solvedProblemsRef.current = new Set();
-      usedProblemsRef.current = [];
-      setDeductedProblems(new Set()); // Reset deducted problems
-      setCurrentSequenceIndex(0); // Reset sequence index
+      const cacheKey = `multiplication-table-${currentLevel}`;
       
-      if (isCacheValid(topicLower, 'all')) {
+      // Check cache first (synchronous)
+      if (isCacheValid(`multiplication-table-${currentLevel}`, 'all')) {
         const cached = apiState.problemsCache.get(cacheKey);
         setProblems(cached.problems);
+        setIsGeneratingProblems(false);
+        apiState.isGenerating = false;
         return;
       }
       
-      // Try Groq API
-      const problems = await callGroqApi(game.topic, problemCount);
-      if (Array.isArray(problems) && problems.length > 0) {
-        // Sort problems by difficulty: easiest first (by sum of abs values in question)
-        const sortedProblems = problems
-          .filter(p => p.question && p.answer && p.operation)
-          .sort((a, b) => {
-            // Heuristic: sum of absolute numbers in question
-            const sumAbs = q => (q.match(/-?\d+/g) || []).reduce((acc, n) => acc + Math.abs(Number(n)), 0);
-            return sumAbs(a.question) - sumAbs(b.question);
-          });
-        const formattedProblems = sortedProblems.map((p, idx) => ({
-          id: `${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 9)}`,
-          question: p.question,
-          answer: p.answer,
-          operation: p.operation,
-          x: Math.random() * 80 + 10,
-          y: -10 - (Math.random() * 20),
-          speed: 0.3 + (0.1 * currentLevel),
-          status: 'normal',
-          level: Math.floor(idx / PROBLEMS_PER_LEVEL) + 1,
-          sequenceIndex: idx // Add sequence index
-        }));
-        apiState.problemsCache.set(cacheKey, {
-          problems: formattedProblems,
-          timestamp: Date.now()
-        });
-        setProblems(formattedProblems);
-        initialProblemGenerationDone.current = true;
-        return;
-      }
-      throw new Error('Invalid API response format');
+      // Generate multiplication table problems for current level (synchronous)
+      logger.info(`Generating multiplication table problems for Level ${currentLevel} (Table of ${currentLevel})`);
+      const multiplicationProblems = generateMultiplicationTableProblems(currentLevel);
+      
+      // Cache the problems
+      apiState.problemsCache.set(cacheKey, {
+        problems: multiplicationProblems,
+        timestamp: Date.now()
+      });
+      
+      // Set problems immediately
+      setProblems(multiplicationProblems);
+      logger.info(`Generated ${multiplicationProblems.length} problems for Table of ${currentLevel}`);
+      
     } catch (error) {
-      console.error('Error generating problems:', error);
+      logger.error('Error generating problems', { error: error.message });
       
-      // Fall back to basic generation
+      // Fall back to basic generation (synchronous)
       const diffRange = getDifficultyRanges(currentLevel, game.topic);
       const fallbackProblemCount = TOTAL_PROBLEMS;
       const newProblems = [];
@@ -493,22 +513,22 @@ const FallingGame = ({ game, onGameComplete }) => {
           if (num2 === 0) num2 = 1;
           if (num1 === 0) num1 = num2 * (Math.floor(Math.random() * diffRange.max) + 1);
           const product = num1 * num2;
-          problem = { id: problemId, question: `${product} ÷ ${num2}`, answer: num1.toString(), operation: 'division_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / PROBLEMS_PER_LEVEL) + 1 };
+          problem = { id: problemId, question: `${product} ÷ ${num2}`, answer: num1.toString(), operation: 'division_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / 5) + 1 };
         } else if (topicLower.includes('negative') && topicLower.includes('add')) {
           const sign1 = Math.random() > 0.5 ? -1 : 1;
           const sign2 = Math.random() > 0.5 ? -1 : 1;
           const signedNum1 = num1 * sign1;
           const signedNum2 = num2 * sign2;
-          problem = { id: problemId, question: `${signedNum1} + ${signedNum2}`, answer: (signedNum1 + signedNum2).toString(), operation: 'negative_addition', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / PROBLEMS_PER_LEVEL) + 1 };
+          problem = { id: problemId, question: `${signedNum1} + ${signedNum2}`, answer: (signedNum1 + signedNum2).toString(), operation: 'negative_addition', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / 5) + 1 };
         } else if (topicLower.includes('add') || topicLower.includes('addition')) {
-          problem = { id: problemId, question: `${num1} + ${num2}`, answer: (num1 + num2).toString(), operation: 'addition_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / PROBLEMS_PER_LEVEL) + 1 };
+          problem = { id: problemId, question: `${num1} + ${num2}`, answer: (num1 + num2).toString(), operation: 'addition_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / 5) + 1 };
         } else if (topicLower.includes('subtract') || topicLower.includes('subtraction')) {
           const [larger, smaller] = num1 >= num2 ? [num1, num2] : [num2, num1];
-          problem = { id: problemId, question: `${larger} - ${smaller}`, answer: (larger - smaller).toString(), operation: 'subtraction_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / PROBLEMS_PER_LEVEL) + 1 };
+          problem = { id: problemId, question: `${larger} - ${smaller}`, answer: (larger - smaller).toString(), operation: 'subtraction_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / 5) + 1 };
         } else if (topicLower.includes('multiply') || topicLower.includes('multiplication')) {
-          problem = { id: problemId, question: `${num1} × ${num2}`, answer: (num1 * num2).toString(), operation: 'multiplication_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / PROBLEMS_PER_LEVEL) + 1 };
+          problem = { id: problemId, question: `${num1} × ${num2}`, answer: (num1 * num2).toString(), operation: 'multiplication_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / 5) + 1 };
         } else { 
-          problem = { id: problemId, question: `${num1} + ${num2}`, answer: (num1 + num2).toString(), operation: 'addition_default_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / PROBLEMS_PER_LEVEL) + 1 };
+          problem = { id: problemId, question: `${num1} + ${num2}`, answer: (num1 + num2).toString(), operation: 'addition_default_fallback', x: Math.random() * 80 + 10, y: -10 - (Math.random() * 20), speed: 0.3 + (0.1 * currentLevel), status: 'normal', level: Math.floor(i / 5) + 1 };
         }
         newProblems.push(problem);
       }
@@ -519,10 +539,11 @@ const FallingGame = ({ game, onGameComplete }) => {
       });
       setProblems(newProblems);
     } finally {
-      setIsLoadingProblems(false);
+      // Clear generating state
+      setIsGeneratingProblems(false);
       apiState.isGenerating = false;
     }
-  }, [game, currentLevel, isCacheValid, callGroqApi, getDifficultyRanges]);
+  }, [game, currentLevel, isCacheValid, generateMultiplicationTableProblems]);
 
   // Improved function to get non-overlapping positions for a batch
   function getNonOverlappingPositions(count, minXGap, minYGap) {
@@ -615,96 +636,55 @@ const FallingGame = ({ game, onGameComplete }) => {
     return { fallTime, activeProblems, speed };
   }, []);
 
+  // Create refs for values that change frequently to prevent useEffect loops
+  const currentLevelRef = useRef(currentLevel);
+  const problemsRef = useRef(problems);
+  const deductedProblemsRef = useRef(deductedProblems);
+  const submitScoreRef = useRef(submitScore);
+  const lastProblemSpawnTimeRef = useRef(Date.now());
+  const stuckGameTimeoutRef = useRef(null);
+  
+  // Update refs when values change
   useEffect(() => {
-    if (!gameStarted || gameOver || isPaused) {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      return;
-    }
-    
-    const { fallTime, activeProblems: maxActiveProblems, speed } = calculateLevelTiming(currentLevel);
-    
-    // Animation loop
-    const gameLoop = (timestamp) => {
-      if (isPaused || gameOver || !gameStarted || isLoadingProblems) return;
-      
-      setActiveProblems(prevActive => {
-        const updated = prevActive.map(p => {
-          const newY = p.y + speed;
-          let status = p.status;
-          if (newY >= 80 && status === 'normal') status = 'warning';
-          return { ...p, y: newY, status };
-        }).filter(p => {
-          if (p.y >= 100) {
-            if (!processedItemsRef.current.has(p.id) && !deductedProblems.has(p.id)) {
-              processedItemsRef.current.add(p.id);
-              setDeductedProblems(prev => {
-                const newSet = new Set(prev);
-                newSet.add(p.id);
-                return newSet;
-              });
-              
-              setLives(l => {
-                const newLives = l - 1;
-                if (newLives <= 0) {
-                  setGameOver(true);
-                  submitScore();
-                  return 0;
-                }
-                return newLives;
-              });
-              
-              setLastDeductionTime(Date.now());
-            }
-            return false;
-          }
-          return true;
-        });
-        return updated;
-      });
-      
-      // Check if we need to spawn new problems
-      if (activeProblems.length < maxActiveProblems) {
-        const currentTime = performance.now();
-        const timeSinceLastSpawn = currentTime - lastSpawnTimeRef.current;
-        
-        if (timeSinceLastSpawn >= SPAWN_DELAY) {
-          const currentLevelProblems = problems.filter(p => 
-            p.level === currentLevel && 
-            !solvedProblemsRef.current.has(p.id) && 
-            !usedProblemsRef.current.includes(p.id)
-          );
-          
-          if (currentLevelProblems.length > 0) {
-            const needed = maxActiveProblems - activeProblems.length;
-            // Use improved non-overlapping batch placement
-            const positions = getNonOverlappingPositions(needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
-            const toAdd = currentLevelProblems.slice(0, needed).map((p, idx) => {
-              return {
-                ...p,
-                y: positions[idx].y,
-                status: 'normal',
-                x: positions[idx].x,
-                speed: speed
-              };
-            });
-            setActiveProblems(prev => [...prev, ...toAdd]);
-            usedProblemsRef.current.push(...toAdd.map(p => p.id));
-            lastSpawnTimeRef.current = currentTime;
-          }
-        }
-      }
-      
-      animationFrameRef.current = requestAnimationFrame(gameLoop);
-    };
-    
-    animationFrameRef.current = requestAnimationFrame(gameLoop);
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
-  }, [gameStarted, gameOver, problems, currentLevel, activeProblems.length, isPaused, submitScore, calculateLevelTiming, isLoadingProblems]);
+    currentLevelRef.current = currentLevel;
+  }, [currentLevel]);
+  
+  useEffect(() => {
+    problemsRef.current = problems;
+  }, [problems]);
+  
+  useEffect(() => {
+    deductedProblemsRef.current = deductedProblems;
+  }, [deductedProblems]);
+  
+  useEffect(() => {
+    submitScoreRef.current = submitScore;
+  }, [submitScore]);
 
   const levelUp = useCallback(() => {
+    logger.info('Level up function called', { currentLevel, maxLevel: MAX_LEVEL });
     if (currentLevel >= MAX_LEVEL) {
+      logger.info('Game completed - max level reached');
+      
+      // Show final "Good Job!" announcement for completing the entire game
+      toast.success(`🏆 AMAZING! You completed all ${MAX_LEVEL} levels! 🏆`, { 
+        duration: 5000,
+        style: {
+          background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+          color: '#000000',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          padding: '20px 30px',
+          borderRadius: '15px',
+          boxShadow: '0 6px 20px rgba(255, 215, 0, 0.4)',
+          border: '3px solid #FFD700'
+        },
+        iconTheme: {
+          primary: '#000000',
+          secondary: '#FFD700',
+        }
+      });
+      
       setGameOver(true);
       submitScore();
       return;
@@ -735,8 +715,14 @@ const FallingGame = ({ game, onGameComplete }) => {
           score: parseInt(result.score || score),
           levelAchieved: parseInt(result.levelAchieved || currentLevel)
         });
-        toast.success(`Level ${currentLevel} complete! Starting level ${currentLevel + 1}...`, { duration: 2000 });
-        setCurrentLevel(currentLevel + 1);
+        const newLevel = currentLevel + 1;
+        logger.info('Level completed, showing congratulations modal', { completedLevel: currentLevel, nextLevel: newLevel });
+        
+        // Show congratulations modal instead of immediately advancing
+        setShowCongratulationsModal(true);
+        
+        // Clear all active problems
+        setActiveProblems([]);
         setSpeedMultiplier(prev => prev + 0.2);
         setProblemsSolvedThisLevel(0);
         setTargetProblemsPerLevel(PROBLEMS_PER_LEVEL);
@@ -744,10 +730,220 @@ const FallingGame = ({ game, onGameComplete }) => {
         usedProblemsRef.current = usedProblemsRef.current.filter(id => !solvedIds.includes(id));
       })
       .catch(error => {
-        console.error('Error submitting level completion:', error);
+        logger.error('Error submitting level completion', { error: error.message });
         toast.error('Failed to save level progress');
       });
   }, [currentUser, game, currentLevel, score, gameTime, submitScore]);
+
+  // Add timeout mechanism to prevent game from getting stuck
+  useEffect(() => {
+    if (gameStarted && !gameOver && !isPaused) {
+      // Clear existing timeout
+      if (stuckGameTimeoutRef.current) {
+        clearTimeout(stuckGameTimeoutRef.current);
+      }
+      
+      // Set timeout to check if game is stuck (no problems spawning for 30 seconds)
+      stuckGameTimeoutRef.current = setTimeout(() => {
+        logger.warn('Game appears to be stuck - no problems spawning', {
+          currentLevel,
+          problemsSolved: problemsSolvedThisLevel,
+          activeProblems: activeProblems.length,
+          totalProblems: problems.length
+        });
+        
+        // Force level up if we've solved at least 1 problem
+        if (problemsSolvedThisLevel >= 1) {
+          logger.info('Forcing level up due to stuck game');
+          
+          // Show "Good Job!" announcement for auto-level up
+          toast.success(`🎉 Good Job! Level ${currentLevel} Complete! (Auto-advance) 🎉`, { 
+            duration: 3000,
+            style: {
+              background: '#F59E0B',
+              color: '#FFFFFF',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              padding: '16px 24px',
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
+            },
+            iconTheme: {
+              primary: '#FFFFFF',
+              secondary: '#F59E0B',
+            }
+          });
+          
+          levelUp();
+        } else {
+          // If no problems solved, try to regenerate problems
+          logger.info('Regenerating problems due to stuck game');
+          generateProblems();
+        }
+      }, 30000); // 30 seconds timeout
+    }
+    
+    return () => {
+      if (stuckGameTimeoutRef.current) {
+        clearTimeout(stuckGameTimeoutRef.current);
+      }
+    };
+  }, [gameStarted, gameOver, isPaused, currentLevel, problemsSolvedThisLevel, activeProblems.length, problems.length, levelUp, generateProblems]);
+
+  useEffect(() => {
+    if (!gameStarted || gameOver || isPaused) {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      return;
+    }
+    
+    const { fallTime, activeProblems: maxActiveProblems, speed } = calculateLevelTiming(currentLevelRef.current);
+    
+    // Animation loop
+    const gameLoop = (timestamp) => {
+      if (isPaused || gameOver || !gameStarted) return;
+      
+      setActiveProblems(prevActive => {
+        const updated = prevActive.map(p => {
+          const newY = p.y + speed;
+          let status = p.status;
+          if (newY >= 80 && status === 'normal') status = 'warning';
+          return { ...p, y: newY, status };
+        });
+        
+        // Separate the filtering and state updates to avoid multiple re-renders
+        const itemsToRemove = [];
+        const itemsToDeduct = [];
+        
+        const filtered = updated.filter(p => {
+          if (p.y >= 100) {
+            if (!processedItemsRef.current.has(p.id) && !deductedProblemsRef.current.has(p.id)) {
+              itemsToRemove.push(p.id);
+              itemsToDeduct.push(p.id);
+            }
+            return false;
+          }
+          return true;
+        });
+        
+        // Handle missed questions
+        if (itemsToDeduct.length > 0) {
+          itemsToDeduct.forEach(id => {
+            if (!processedItemsRef.current.has(id)) {
+              processedItemsRef.current.add(id);
+              handleMissedQuestion(id);
+            }
+          });
+        }
+        
+        return filtered;
+      });
+      
+      // Check if we need to spawn new problems
+      setActiveProblems(prevActive => {
+        if (prevActive.length < maxActiveProblems) {
+        const currentTime = performance.now();
+        const timeSinceLastSpawn = currentTime - lastSpawnTimeRef.current;
+        
+        if (timeSinceLastSpawn >= SPAWN_DELAY) {
+            // Check if problems are available for current level
+            const currentLevelProblems = problemsRef.current.filter(p => 
+              p.level === currentLevelRef.current && 
+            !solvedProblemsRef.current.has(p.id) && 
+            !usedProblemsRef.current.includes(p.id)
+          );
+            
+            logger.debug('Problem spawning check', {
+              currentLevel: currentLevelRef.current,
+              availableProblems: currentLevelProblems.length,
+              totalProblems: problemsRef.current.length,
+              solvedProblems: solvedProblemsRef.current.size,
+              usedProblems: usedProblemsRef.current.length,
+              activeProblems: prevActive.length,
+              maxActiveProblems,
+              isGenerating: apiState.isGenerating
+            });
+          
+          // If problems are available, spawn them
+          if (currentLevelProblems.length > 0) {
+              const needed = maxActiveProblems - prevActive.length;
+            // Use improved non-overlapping batch placement
+            const positions = getNonOverlappingPositions(needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
+            const toAdd = currentLevelProblems.slice(0, needed).map((p, idx) => {
+              return {
+                ...p,
+                y: positions[idx].y,
+                status: 'normal',
+                x: positions[idx].x,
+                speed: speed
+              };
+            });
+            usedProblemsRef.current.push(...toAdd.map(p => p.id));
+            lastSpawnTimeRef.current = currentTime;
+              return [...prevActive, ...toAdd];
+            } else {
+              // No more problems available for current level
+              logger.warn('No more problems available for current level', {
+                currentLevel: currentLevelRef.current,
+                solvedCount: solvedProblemsRef.current.size,
+                totalProblems: problemsRef.current.length,
+                isGenerating: apiState.isGenerating
+              });
+              
+              // If problems are still being generated, wait a bit longer
+              if (apiState.isGenerating) {
+                logger.debug('Problems still being generated, waiting...');
+                return prevActive;
+              }
+              
+              // Clear used problems to allow reuse
+              usedProblemsRef.current = [];
+              
+              // Get all problems for current level (including solved ones)
+              const allLevelProblems = problemsRef.current.filter(p => p.level === currentLevelRef.current);
+              
+              if (allLevelProblems.length > 0) {
+                const needed = maxActiveProblems - prevActive.length;
+                const positions = getNonOverlappingPositions(needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
+                const toAdd = allLevelProblems.slice(0, needed).map((p, idx) => {
+                  return {
+                    ...p,
+                    y: positions[idx].y,
+                    status: 'normal',
+                    x: positions[idx].x,
+                    speed: speed,
+                    id: `${p.id}-reused-${Date.now()}` // New ID to avoid conflicts
+                  };
+                });
+                usedProblemsRef.current.push(...toAdd.map(p => p.id));
+                lastSpawnTimeRef.current = currentTime;
+                return [...prevActive, ...toAdd];
+              } else {
+                // No problems available at all - force level up
+                logger.warn('No problems available at all, forcing level up', {
+                  currentLevel: currentLevelRef.current,
+                  problemsSolved: problemsSolvedThisLevel
+                });
+                
+                // Force level up if we've solved at least 1 problem
+                if (problemsSolvedThisLevel >= 1) {
+                  levelUp();
+                }
+              }
+            }
+          }
+        }
+        return prevActive;
+      });
+      
+      animationFrameRef.current = requestAnimationFrame(gameLoop);
+    };
+    
+    animationFrameRef.current = requestAnimationFrame(gameLoop);
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [gameStarted, gameOver, isPaused, calculateLevelTiming]);
+
 
   const handleStayOnPage = () => {
 
@@ -830,7 +1026,7 @@ const FallingGame = ({ game, onGameComplete }) => {
   // Check if this is a page refresh on component mount
   useEffect(() => {
     const handleBeforeUnload = () => {
-      console.log('[FallingGame] beforeunload detected - marking as page refresh');
+      logger.debug('[FallingGame] beforeunload detected - marking as page refresh');
       isPageRefreshRef.current = true;
     };
     
@@ -843,12 +1039,12 @@ const FallingGame = ({ game, onGameComplete }) => {
         const parsed = JSON.parse(savedState);
         // If the saved state shows game over or we've left the game, this is not a refresh
         if (parsed.gameOver || parsed.hasLeftGame) {
-          console.log('[FallingGame] Detected game over or left game state - not a refresh');
+          logger.debug('[FallingGame] Detected game over or left game state - not a refresh');
           isPageRefreshRef.current = false;
           hasLeftGameRef.current = true;
         }
       } catch (error) {
-        console.error('Error parsing saved state:', error);
+        logger.error('Error parsing saved state:', error);
       }
     }
     
@@ -872,7 +1068,7 @@ const FallingGame = ({ game, onGameComplete }) => {
     if (savedState && isPageRefreshRef.current && !hasLeftGameRef.current) {
       try {
         const parsed = JSON.parse(savedState);
-        console.log('[FallingGame] Checking saved state:', {
+        logger.debug('[FallingGame] Checking saved state:', {
           isPageRefresh: isPageRefreshRef.current,
           hasLeftGame: hasLeftGameRef.current,
           savedState: parsed
@@ -880,7 +1076,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         
         // Don't restore if the previous game ended
         if (parsed.gameOver) {
-          console.log('[FallingGame] Previous game ended, not restoring state');
+          logger.debug('[FallingGame] Previous game ended, not restoring state');
           shouldRestoreState = false;
           // Clear the saved state since game is over
           localStorage.removeItem(lsKey);
@@ -898,17 +1094,17 @@ const FallingGame = ({ game, onGameComplete }) => {
           
           // Show notification if we restored saved state
           if (hasPreviousProgress) {
-            console.log('[FallingGame] Restoring previous progress from page refresh');
+            logger.debug('[FallingGame] Restoring previous progress from page refresh');
             toast.success('Your previous progress has been restored!');
           }
         }
       } catch (error) {
-        console.error('Error parsing saved state:', error);
+        logger.error('Error parsing saved state:', error);
         localStorage.removeItem(lsKey);
         shouldRestoreState = false;
       }
     } else {
-      console.log('[FallingGame] Not restoring progress:', {
+      logger.debug('[FallingGame] Not restoring progress:', {
         hasSavedState: !!savedState,
         isPageRefresh: isPageRefreshRef.current,
         hasLeftGame: hasLeftGameRef.current
@@ -984,107 +1180,157 @@ const FallingGame = ({ game, onGameComplete }) => {
     setTimeout(() => { submitted = false; }, 500);
     if (!userAnswer.trim() || isPaused || gameOver) return;
     
-    const normalizedAnswer = userAnswer.trim().replace(/\s+/g, '');
+    // Find the current problem to answer
+    const currentProblem = activeProblems.find(p => !p.isSolved && !p.isMissed);
     
-    const matchIndex = activeProblems.findIndex(problem => {
-      const problemAnswer = problem.answer.replace(/\s+/g, '');
-      const normalizeNumber = (str) => {
-        str = str.replace(/\s+/g, '');
-        const mixedMatch = str.match(/^-?(\d+)\s*(\d+)\/(\d+)$/);
-        if (mixedMatch) {
-          const [_, whole, num, den] = mixedMatch;
-          const sign = str.startsWith('-') ? -1 : 1;
-          const improperNum = Math.abs(whole) * parseInt(den) + parseInt(num);
-          return `${sign * improperNum}/${den}`;
-        }
-        if (str.includes('.')) return parseFloat(str).toString();
-        return str;
-      };
-
-      const normalizedUserAnswer = normalizeNumber(normalizedAnswer);
-      const normalizedProblemAnswer = normalizeNumber(problemAnswer);
-      
-      return normalizedUserAnswer === normalizedProblemAnswer;
-    });
-
-    if (matchIndex !== -1) {
-      const solvedProblem = activeProblems[matchIndex];
-
-      // Accept any correct answer
-      solvedProblemsRef.current.add(solvedProblem.id);
+    if (!currentProblem) {
+      setUserAnswer('');
+      return;
+    }
+    
+    const normalizedAnswer = userAnswer.trim().replace(/\s+/g, '');
+    const isCorrect = normalizedAnswer === currentProblem.answer;
+    
+    if (isCorrect) {
+      // Correct answer
       setScore(prev => prev + (10 * currentLevel));
-      setActiveProblems(prev => prev.map((p, idx) => idx === matchIndex ? { ...p, status: 'correct' } : p));
+      setActiveProblems(prev => prev.map(p => 
+        p.id === currentProblem.id ? { ...p, status: 'correct', isSolved: true } : p
+      ));
+      
+      // Show "Good Job!" announcement
+      toast.success(`✅ Good Job! +${10 * currentLevel} points!`, { 
+        duration: 1500,
+        style: {
+          background: '#10B981',
+          color: '#FFFFFF',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+        }
+      });
+      
+      // Remove the solved problem after animation
       setTimeout(() => {
-        setActiveProblems(prev => prev.filter((_, idx) => idx !== matchIndex));
+        setActiveProblems(prev => prev.filter(p => p.id !== currentProblem.id));
       }, 300);
-      setProblemsSolvedThisLevel(prev => {
-        const newSolvedCount = prev + 1;
-        if (newSolvedCount >= PROBLEMS_PER_LEVEL) {
-          levelUp();
+      
+    } else {
+      // Wrong answer - deduct life
+      setLives(prev => {
+        const newLives = prev - 1;
+        if (newLives <= 0) {
+          setGameOver(true);
+          submitScore();
           return 0;
         }
-        return newSolvedCount;
+        return newLives;
       });
-      setCurrentSequenceIndex(prev => prev + 1); // Still increment sequence index for tracking
-    } else {
-      // Wrong answer - deduct life only if not already deducted
-      const wrongProblem = activeProblems.find(p => !deductedProblems.has(p.id));
       
-      if (wrongProblem) {
-        // Add to deducted problems immediately
-        setDeductedProblems(prev => {
-          const newSet = new Set(prev);
-          newSet.add(wrongProblem.id);
-          return newSet;
-        });
-        
-        setLives(l => {
-          const newLives = l - 1;
-          if (newLives <= 0) {
-            setGameOver(true);
-            submitScore();
-            return 0;
-          }
-          return newLives;
-        });
-        
-        setLastDeductionTime(Date.now());
-      }
+      setActiveProblems(prev => prev.map(p => 
+        p.id === currentProblem.id ? { ...p, status: 'incorrect', isMissed: true } : p
+      ));
       
-      setActiveProblems(prev => prev.map(p => ({ ...p, status: 'incorrect' })));
+      // Show wrong answer feedback
+      toast.error(`❌ Wrong! The answer is ${currentProblem.answer}`, { 
+        duration: 2000,
+        style: {
+          background: '#EF4444',
+          color: '#FFFFFF',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
+        }
+      });
+      
+      // Remove the wrong problem after animation
       setTimeout(() => {
-        setActiveProblems(prev => prev.map(p => ({ ...p, status: p.status === 'incorrect' ? 'normal' : p.status })));
+        setActiveProblems(prev => prev.filter(p => p.id !== currentProblem.id));
       }, 300);
     }
+    
+    // Always increment questions answered
+    setQuestionsAnswered(prev => {
+      const newCount = prev + 1;
+      
+      // Check if level is complete (10 questions answered)
+      if (newCount >= 10) {
+        logger.info('Level completed - 10 questions answered', { 
+          currentLevel, 
+          questionsAnswered: newCount 
+        });
+        
+        // Show congratulations modal
+        setShowCongratulationsModal(true);
+        setActiveProblems([]); // Clear all active problems
+        
+        return 0; // Reset for next level
+      }
+      
+      return newCount;
+    });
+    
     setUserAnswer('');
-
-    setTimeout(() => {
-      setActiveProblems(prev => {
-        if (prev.length < calculateLevelTiming(currentLevel).activeProblems) {
-          // Try to spawn more if available
-          const currentLevelProblems = problems.filter(p => 
-            p.level === currentLevel && 
-            !solvedProblemsRef.current.has(p.id) && 
-            !usedProblemsRef.current.includes(p.id)
-          );
-          const needed = calculateLevelTiming(currentLevel).activeProblems - prev.length;
-          if (currentLevelProblems.length > 0 && needed > 0) {
-            const positions = getNonOverlappingPositions(needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
-            const toAdd = currentLevelProblems.slice(0, needed).map((p, idx) => ({
-              ...p,
-              y: positions[idx].y,
-              status: 'normal',
-              x: positions[idx].x,
-              speed: calculateLevelTiming(currentLevel).speed
-            }));
-            usedProblemsRef.current.push(...toAdd.map(p => p.id));
-            return [...prev, ...toAdd];
-          }
-        }
-        return prev;
-      });
-    }, 350);
   };
+
+  // Handle missed questions (when problems fall off screen)
+  const handleMissedQuestion = useCallback((problemId) => {
+    logger.debug('Question missed', { problemId, currentLevel });
+    
+    // Deduct life for missed question
+    setLives(prev => {
+      const newLives = prev - 1;
+      if (newLives <= 0) {
+        setGameOver(true);
+        submitScore();
+        return 0;
+      }
+      return newLives;
+    });
+    
+    // Mark as missed and remove from active problems
+    setActiveProblems(prev => prev.filter(p => p.id !== problemId));
+    
+    // Always increment questions answered (even if missed)
+    setQuestionsAnswered(prev => {
+      const newCount = prev + 1;
+      
+      // Check if level is complete (10 questions answered)
+      if (newCount >= 10) {
+        logger.info('Level completed - 10 questions answered (including missed)', { 
+          currentLevel, 
+          questionsAnswered: newCount 
+        });
+        
+        // Show congratulations modal
+        setShowCongratulationsModal(true);
+        setActiveProblems([]); // Clear all active problems
+        
+        return 0; // Reset for next level
+      }
+      
+      return newCount;
+    });
+    
+    // Show missed question feedback
+    toast(`⏰ Question missed! -1 life`, { 
+      duration: 2000,
+      style: {
+        background: '#F59E0B',
+        color: '#FFFFFF',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        padding: '12px 20px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+      },
+      icon: '⚠️'
+    });
+  }, [currentLevel, submitScore]);
   
   const togglePause = () => {
     if (gameOver || !gameStarted) return;
@@ -1132,23 +1378,32 @@ const FallingGame = ({ game, onGameComplete }) => {
     // Close the level selector modal
     setShowLevelSelector(false);
     
+    // Reset all game state immediately
     setCurrentLevel(selectedLevel);
     setProblemsSolvedThisLevel(0);
     setActiveProblems([]);
+    setScore(0);
+    setLives(MAX_LIVES);
+    setSpeedMultiplier(1);
+    setUserAnswer('');
+    setGameTime(0);
+    setIsPaused(false);
+    setGameOver(false);
+    setQuestionsAnswered(0);
+    setCurrentQuestionIndex(0);
+    
+    // Reset refs immediately
     processedItemsRef.current = new Set();
     setDeductedProblems(new Set());
+    solvedProblemsRef.current = new Set();
+    usedProblemsRef.current = [];
     lastSpawnTimeRef.current = performance.now();
     
-    generateProblems().then(() => {
-      setGameStarted(true);
-      setGameOver(false);
-      setScore(0);
-      setLives(MAX_LIVES);
-      setSpeedMultiplier(1);
-      setUserAnswer('');
-      setGameTime(0);
-      setIsPaused(false);
-    });
+    // Start game immediately and generate problems in background
+    setGameStarted(true);
+    
+    // Generate problems asynchronously without blocking
+    generateProblems();
   };
 
   const handleExitGame = () => {
@@ -1157,9 +1412,18 @@ const FallingGame = ({ game, onGameComplete }) => {
     setGameStarted(false);
   };
 
-  // Save state to localStorage whenever it changes
+  // Save state to localStorage whenever it changes (debounced)
+  const saveTimeoutRef = useRef(null);
+  
   useEffect(() => {
     if (gameStarted && !showProgressModal) {
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      // Debounce the save operation to avoid excessive localStorage writes
+      saveTimeoutRef.current = setTimeout(() => {
       const stateToSave = {
         savedScore: score,
         savedLevel: currentLevel,
@@ -1171,9 +1435,22 @@ const FallingGame = ({ game, onGameComplete }) => {
         hasLeftGame: hasLeftGameRef.current, // Track if user has left the game
         lastSaved: new Date().toISOString()
       };
+        
+        try {
       localStorage.setItem(lsKey, JSON.stringify(stateToSave));
       setHasUnsavedChanges(false);
+        } catch (error) {
+          logger.error('Failed to save game state to localStorage', { error: error.message });
+        }
+      }, 500); // 500ms debounce
     }
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [score, currentLevel, lives, problemsSolvedThisLevel, gameTime, userAnswer, lsKey, gameStarted, showProgressModal, gameOver]);
 
   // Track unsaved changes
@@ -1187,39 +1464,39 @@ const FallingGame = ({ game, onGameComplete }) => {
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (gameStarted && !gameOver) {
-        console.log('[FallingGame] beforeunload event triggered - game is active, showing confirmation');
+        logger.debug('[FallingGame] beforeunload event triggered - game is active, showing confirmation');
         e.preventDefault();
         e.returnValue = '';
         return '';
       }
-      console.log('[FallingGame] beforeunload event triggered - game not active, allowing navigation');
+      logger.debug('[FallingGame] beforeunload event triggered - game not active, allowing navigation');
     };
 
     const handlePopState = (e) => {
       if (gameStarted && !gameOver) {
-        console.log('[FallingGame] popstate event triggered - game is active, preventing navigation');
+        logger.debug('[FallingGame] popstate event triggered - game is active, preventing navigation');
         e.preventDefault();
         setNextLocation(window.location.href);
         setShowExitConfirmModal(true);
         window.history.pushState(null, '', window.location.href);
       } else {
-        console.log('[FallingGame] popstate event triggered - game not active, allowing navigation');
+        logger.debug('[FallingGame] popstate event triggered - game not active, allowing navigation');
       }
     };
 
     if (gameStarted && !gameOver) {
-      console.log('[FallingGame] Adding navigation protection - game is active');
+      logger.debug('[FallingGame] Adding navigation protection - game is active');
       window.addEventListener('beforeunload', handleBeforeUnload);
       window.addEventListener('popstate', handlePopState);
       window.history.pushState(null, '', window.location.href);
     } else {
-      console.log('[FallingGame] Removing navigation protection - game not active');
+      logger.debug('[FallingGame] Removing navigation protection - game not active');
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
     }
 
     return () => {
-      console.log('[FallingGame] Cleanup: removing navigation event listeners');
+      logger.debug('[FallingGame] Cleanup: removing navigation event listeners');
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
     };
@@ -1229,7 +1506,7 @@ const FallingGame = ({ game, onGameComplete }) => {
   useEffect(() => {
     const handleNavigationAttempt = (e) => {
       if (gameStarted && !gameOver) {
-        console.log('[FallingGame] Navigation attempt detected:', {
+        logger.debug('[FallingGame] Navigation attempt detected:', {
           target: e.target,
           href: e.target.href,
           tagName: e.target.tagName,
@@ -1240,12 +1517,12 @@ const FallingGame = ({ game, onGameComplete }) => {
         setNextLocation(e.target.href || e.target.getAttribute('href'));
         setShowExitConfirmModal(true);
       } else {
-        console.log('[FallingGame] Navigation attempt detected - game not active, allowing navigation');
+        logger.debug('[FallingGame] Navigation attempt detected - game not active, allowing navigation');
       }
     };
 
     if (gameStarted && !gameOver) {
-      console.log('[FallingGame] Adding navigation attempt listeners - game is active');
+      logger.debug('[FallingGame] Adding navigation attempt listeners - game is active');
       // Listen for clicks on navigation elements
       const handleClick = (e) => {
         // Check for various navigation elements
@@ -1261,7 +1538,7 @@ const FallingGame = ({ game, onGameComplete }) => {
                                      target.className.includes('sidebar-link');
           
           if (isNavigationElement && isExternalLink) {
-            console.log('[FallingGame] Navigation element clicked:', {
+            logger.debug('[FallingGame] Navigation element clicked:', {
               element: target,
               href: href,
               tagName: target.tagName,
@@ -1275,18 +1552,18 @@ const FallingGame = ({ game, onGameComplete }) => {
       document.addEventListener('click', handleClick, true);
       
       return () => {
-        console.log('[FallingGame] Cleanup: removing navigation attempt listeners');
+        logger.debug('[FallingGame] Cleanup: removing navigation attempt listeners');
         document.removeEventListener('click', handleClick, true);
       };
     }
 
     return () => {
-      console.log('[FallingGame] Cleanup: removing navigation attempt listeners');
+      logger.debug('[FallingGame] Cleanup: removing navigation attempt listeners');
     };
   }, [gameStarted, gameOver]);
 
   const handleLeavePage = () => {
-    console.log('[FallingGame] Leave Page confirmed - navigating to:', nextLocation);
+    logger.debug('[FallingGame] Leave Page confirmed - navigating to:', nextLocation);
     if (nextLocation) {
       window.location.href = nextLocation;
     }
@@ -1302,7 +1579,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         // Hide navbar and sidebar in fullscreen
         document.body.classList.add('fullscreen-mode');
       }).catch(err => {
-        console.error('Error attempting to enable fullscreen:', err);
+        logger.error('Error attempting to enable fullscreen:', err);
       });
     } else {
       document.exitFullscreen().then(() => {
@@ -1310,7 +1587,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         // Show navbar and sidebar when exiting fullscreen
         document.body.classList.remove('fullscreen-mode');
       }).catch(err => {
-        console.error('Error attempting to exit fullscreen:', err);
+        logger.error('Error attempting to exit fullscreen:', err);
       });
     }
   };
@@ -1352,7 +1629,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       
       setUnlockedLevels(Math.min(unlockedLevel, MAX_LEVEL));
     } catch (error) {
-      console.error('Error fetching unlocked levels:', error);
+      logger.error('Error fetching unlocked levels:', error);
       setUnlockedLevels(1);
     } finally {
       setLoadingUnlockedLevels(false);
@@ -1365,14 +1642,57 @@ const FallingGame = ({ game, onGameComplete }) => {
     fetchUnlockedLevels();
   };
 
+  // Handle congratulations modal - continue to next level
+  const handleContinueToNextLevel = () => {
+    setShowCongratulationsModal(false);
+    const newLevel = currentLevel + 1;
+    
+    // Reset counters for new level immediately
+    setQuestionsAnswered(0);
+    setCurrentQuestionIndex(0);
+    setProblemsSolvedThisLevel(0);
+    setActiveProblems([]);
+    
+    // Reset refs immediately
+    processedItemsRef.current = new Set();
+    setDeductedProblems(new Set());
+    solvedProblemsRef.current = new Set();
+    usedProblemsRef.current = [];
+    lastSpawnTimeRef.current = performance.now();
+    
+    // Set new level immediately
+    setCurrentLevel(newLevel);
+    
+    // Show brief level transition animation (reduced from 2s to 1s)
+    setShowLevelTransition(true);
+    
+    // Hide transition after shorter animation
+    setTimeout(() => {
+      setShowLevelTransition(false);
+    }, 1000);
+    
+    toast.success(`Starting Table of ${newLevel}...`, { duration: 1500 });
+    
+    // Generate problems immediately without waiting
+    generateProblems();
+  };
+
+  // Handle congratulations modal - exit game
+  const handleExitAfterLevel = () => {
+    setShowCongratulationsModal(false);
+    if (onGameComplete) {
+      onGameComplete(score);
+    }
+  };
+
   // Main UI
   if (!game) {
     return <div className="text-center p-8 text-xl">Loading game data...</div>;
   }
 
   return (
-    <div className="px-4 sm:px-6  game-container">
-      <div className="mx-auto">
+    <div className="px-2 sm:px-4 md:px-6 game-container max-w-7xl mx-auto">
+      <div className="w-full">
       <audio ref={audioRef} src="/game-bg-music.mp3" loop autoPlay style={{ display: 'none' }} />
       
       {/* Progress Modal - render at top level */}
@@ -1449,6 +1769,70 @@ const FallingGame = ({ game, onGameComplete }) => {
           </div>
         )}
         
+        {showLevelTransition && (
+          <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center z-50 p-4">
+            <div className="text-center animate-bounce w-full max-w-md sm:max-w-lg">
+              <div className="text-4xl sm:text-6xl md:text-8xl mb-4 sm:mb-6">🎉</div>
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-3 sm:mb-4">Level Up!</h2>
+              <div className="text-xl sm:text-2xl md:text-4xl font-bold text-yellow-300 mb-2">
+                Table of {currentLevel} → Table of {currentLevel + 1}
+              </div>
+              <div className="text-base sm:text-lg md:text-2xl text-white opacity-90 mb-4">
+                Get ready for new challenges!
+              </div>
+              
+              {/* Total Progress in Level Transition - Responsive */}
+              <div className="inline-flex flex-col sm:flex-row items-center bg-white bg-opacity-20 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg w-full sm:w-auto">
+                <div className="flex items-center mb-2 sm:mb-0">
+                  <span className="text-lg sm:text-xl md:text-2xl font-bold mr-2 sm:mr-3">🏆</span>
+                  <span className="text-sm sm:text-base md:text-xl font-bold">Total Progress: {currentLevel + 1}/{MAX_LEVEL} Levels</span>
+                </div>
+                <div className="w-16 sm:w-20 md:w-24 bg-white bg-opacity-20 rounded-full h-2 sm:h-3 sm:ml-4">
+                  <div 
+                    className="bg-yellow-300 h-2 sm:h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${((currentLevel + 1) / MAX_LEVEL) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Congratulations Modal */}
+        {showCongratulationsModal && (
+          <div className="fixed inset-0 bg-gradient-to-br from-green-600 via-blue-600 to-purple-600 flex items-center justify-center z-50 p-4">
+            <div className="text-center animate-bounce w-full max-w-md sm:max-w-lg bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
+              <div className="text-4xl sm:text-6xl mb-4">🎉</div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+                Congratulations!
+              </h2>
+              <div className="text-lg sm:text-xl font-bold text-blue-600 mb-2">
+                You completed Table of {currentLevel}!
+              </div>
+              <div className="text-sm sm:text-base text-gray-600 mb-6">
+                You solved all 10 problems correctly! 🏆
+              </div>
+              
+              <div className="space-y-3 sm:space-y-4">
+                <button
+                  onClick={handleContinueToNextLevel}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg text-base sm:text-lg font-bold hover:from-green-600 hover:to-blue-600 transition-all duration-300 flex items-center justify-center"
+                >
+                  <span className="mr-2">➡️</span>
+                  Continue to Table of {currentLevel + 1}
+                </button>
+                <button
+                  onClick={handleExitAfterLevel}
+                  className="w-full px-6 py-3 bg-gray-500 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-gray-600 transition-colors flex items-center justify-center"
+                >
+                  <span className="mr-2">🏠</span>
+                  Exit Game
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {isRestoringGame && (
           <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
             <div className="text-center">
@@ -1460,12 +1844,53 @@ const FallingGame = ({ game, onGameComplete }) => {
         )}
         
         {gameStarted && !gameOver && !isPaused && (
-          <div className="flex flex-col lg:flex-row w-full gap-6">
-            {/* Game Area - Full width on small screens, 3/4 on large screens */}
-            <div className="w-full lg:w-3/4">
+          <div className="flex flex-col xl:flex-row w-full gap-4 lg:gap-6">
+            {/* Game Area - Full width on small/medium screens, 3/4 on large screens */}
+            <div className="w-full xl:w-3/4">
+              {/* Level Indicator - Responsive */}
+              <div className="mb-3 sm:mb-4 text-center px-2">
+                <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg w-full sm:w-auto">
+                  <div className="flex items-center mb-1 sm:mb-0">
+                    <span className="text-lg sm:text-2xl font-bold mr-2">🎯</span>
+                    <span className="text-lg sm:text-xl font-bold">Table of {currentLevel}</span>
+                  </div>
+                  <span className="text-xs sm:text-sm bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full sm:ml-4">
+                    {questionsAnswered}/10 Questions Answered
+                  </span>
+                </div>
+                
+                {/* Total Progress Indicator - Responsive */}
+                <div className="mt-2">
+                  <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-green-500 to-teal-500 text-white px-3 sm:px-4 py-2 rounded-full shadow-lg w-full sm:w-auto">
+                    <div className="flex items-center mb-1 sm:mb-0">
+                      <span className="text-sm sm:text-lg font-bold mr-2">🏆</span>
+                      <span className="text-xs sm:text-sm font-bold">Total Progress: {currentLevel}/{MAX_LEVEL} Levels</span>
+                    </div>
+                    <div className="w-16 sm:w-20 bg-white bg-opacity-20 rounded-full h-2 sm:ml-3">
+                      <div 
+                        className="bg-white h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${(currentLevel / MAX_LEVEL) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Problem Generation Indicator - Responsive */}
+              {isGeneratingProblems && (
+                <div className="mb-3 sm:mb-4 text-center px-2">
+                  <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-green-500 to-blue-500 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg animate-pulse w-full sm:w-auto">
+                    <div className="flex items-center mb-1 sm:mb-0">
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-t-2 border-b-2 border-white mr-2 sm:mr-3"></div>
+                      <span className="text-sm sm:text-lg font-bold">Generating New Problems for Level {currentLevel}...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div
                 ref={gameAreaRef}
-                className="relative w-full h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)] bg-gray-50 shadow-lg rounded-lg mb-4 overflow-hidden"
+                className="relative w-full h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] md:h-[calc(100vh-280px)] lg:h-[calc(100vh-260px)] bg-gray-50 shadow-lg rounded-lg mb-4 overflow-hidden"
               >
                 {activeProblems.map(problem => {
                   let bgColor = "from-pink-500 to-purple-600";
@@ -1490,37 +1915,37 @@ const FallingGame = ({ game, onGameComplete }) => {
                   return (
                     <div
                       key={problem.id}
-                      className={`absolute px-3 py-2 sm:px-4 sm:py-3 bg-gradient-to-br ${bgColor} text-white rounded-lg shadow-lg border-2 ${borderColor} transform transition-transform duration-100 hover:scale-110`}
+                      className={`absolute px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-3 bg-gradient-to-br ${bgColor} text-white rounded-lg shadow-lg border-2 ${borderColor} transform transition-transform duration-100 hover:scale-110`}
                       style={{
                         left: `${problem.x}%`,
                         top: `${problem.y}%`,
                         transform: 'translate(-50%, -50%)',
-                        fontSize: problem.question.length > 10 ? '1rem' : '1.25rem',
+                        fontSize: problem.question.length > 10 ? '0.75rem' : '0.875rem',
                         fontWeight: 'bold',
-                        minWidth: '80px',
+                        minWidth: '60px',
                         textAlign: 'center',
                         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
                       }}
                     >
-                      <span className="font-bold">{problem.question}</span>
+                      <span className="font-bold text-xs sm:text-sm md:text-base">{problem.question}</span>
                     </div>
                   );
                 })}
               </div>
               
-              <form onSubmit={handleSubmit} className="flex items-center w-full  mt-auto mb-4">
+              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center w-full mt-auto mb-4 px-2 sm:px-0 gap-2 sm:gap-0">
                 <input
                   type="text"
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
-                  className="flex-1 px-4 py-3 bg-white text-gray-900 border-2 border-blue-400 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-500 text-lg"
+                  className="flex-1 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 bg-white text-gray-900 border-2 border-blue-400 rounded-md sm:rounded-l-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-500 text-sm sm:text-lg"
                   placeholder={getPlaceholderText()}
                   autoFocus
                   disabled={isPaused || gameOver}
                 />
                 <button
                   type="submit"
-                  className="px-6 py-3 h-14 text-white bg-gradient-to-b from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] hover:opacity-70 dark:text-white dark:bg-gradient-to-b dark:from-[#18C8FF] dark:via-[#4B8CFF] dark:to-[#6D6DFF] dark:hover:opacity-70 rounded-r-md"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 h-10 sm:h-14 text-white bg-gradient-to-b from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] hover:opacity-70 dark:text-white dark:bg-gradient-to-b dark:from-[#18C8FF] dark:via-[#4B8CFF] dark:to-[#6D6DFF] dark:hover:opacity-70 rounded-md sm:rounded-l-none sm:rounded-r-md text-sm sm:text-base font-medium"
                   disabled={isPaused || gameOver || !userAnswer.trim()}
                 >
                   Submit
@@ -1528,39 +1953,42 @@ const FallingGame = ({ game, onGameComplete }) => {
               </form>
             </div>
 
-            {/* Game Controls - Full width on small screens, 1/4 on large screens */}
-            <div className="w-full lg:w-1/4">
-              <div className="bg-gray-50 rounded-lg p-4 shadow-lg h-fit">
-                <Header type="h3" variant="default" fontSize="2xl" className="mb-6 text-primary text-center">Game Controls</Header>
+            {/* Game Controls - Responsive */}
+            <div className="w-full xl:w-1/4">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 shadow-lg h-fit">
+                <Header type="h3" variant="default" fontSize="xl" className="mb-4 sm:mb-6 text-primary text-center">Game Controls</Header>
                 
+                {/* Stats Grid - Responsive */}
+                <div className="grid grid-cols-3 xl:grid-cols-1 gap-2 sm:gap-4 mb-4">
                 {/* Level Info */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                  <div className="p-2 sm:p-3 bg-gray-200 rounded-lg">
                   <div className="text-center">
-                    <div className="text-sm text-gray-800">Current Level</div>
-                    <div className="text-2xl font-bold text-yellow-500">{currentLevel}</div>
+                      <div className="text-xs sm:text-sm text-gray-800">Level</div>
+                      <div className="text-lg sm:text-2xl font-bold text-yellow-500">{currentLevel}</div>
                   </div>
                 </div>
 
                 {/* Score */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                  <div className="p-2 sm:p-3 bg-gray-200 rounded-lg">
                   <div className="text-center">
-                    <div className="text-sm text-gray-800 flex items-center justify-center">
-                      <FaStar className="mr-1 text-yellow-500" /> Score
+                      <div className="text-xs sm:text-sm text-gray-800 flex items-center justify-center">
+                        <FaStar className="mr-1 text-yellow-500 text-xs sm:text-sm" /> Score
                     </div>
-                    <div className="text-2xl font-bold text-yellow-500">{score}</div>
+                      <div className="text-lg sm:text-2xl font-bold text-yellow-500">{score}</div>
                   </div>
                 </div>
 
                 {/* Lives */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                  <div className="p-2 sm:p-3 bg-gray-200 rounded-lg">
                   <div className="text-center">
-                    <div className="text-sm text-gray-800">Lives</div>
-                    <div className="text-2xl text-red-500">{'❤️'.repeat(lives) || '💔'}</div>
+                      <div className="text-xs sm:text-sm text-gray-800">Lives</div>
+                      <div className="text-lg sm:text-2xl text-red-500">{'❤️'.repeat(lives) || '💔'}</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Progress */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                {/* Progress - Hidden on mobile, shown on larger screens */}
+                <div className="hidden xl:block mb-4 p-3 bg-gray-200 rounded-lg">
                   <div className="text-center">
                     <div className="text-sm text-gray-800 mb-2">Progress</div>
                     <div className="w-full h-3 bg-gray-600 rounded-full overflow-hidden border border-gray-500">
@@ -1573,32 +2001,66 @@ const FallingGame = ({ game, onGameComplete }) => {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="space-y-2">
+                {/* Action Buttons - Responsive Grid */}
+                <div className="grid grid-cols-2 xl:grid-cols-1 gap-2 xl:space-y-2 xl:space-y-0">
                   <button
                     onClick={handleShowLevelSelector}
-                    className="w-full px-3 py-2 bg-blue-400 text-white rounded hover:bg-blue-600 text-sm font-medium"
+                    className="w-full px-2 sm:px-3 py-2 bg-blue-400 text-white rounded hover:bg-blue-600 text-xs sm:text-sm font-medium"
                   >
-                    Change Level
+                    <span className="hidden sm:inline">Change Level</span>
+                    <span className="sm:hidden">Level</span>
                   </button>
                   <button 
                     onClick={toggleSettingsModal} 
-                    className="w-full px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium flex items-center justify-center"
+                    className="w-full px-2 sm:px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs sm:text-sm font-medium flex items-center justify-center"
                   >
-                    <FaCog className="mr-2" size={14} /> Settings
+                    <FaCog className="mr-1 sm:mr-2" size={12} />
+                    <span className="hidden sm:inline">Settings</span>
                   </button>
                   <button 
                     onClick={togglePause} 
-                    className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium flex items-center justify-center"
+                    className="w-full px-2 sm:px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs sm:text-sm font-medium flex items-center justify-center"
                   >
-                    {isPaused ? <><FaPlay className="mr-2" size={14}/> Resume</> : <><FaPause className="mr-2" size={14}/> Pause</>}
+                    {isPaused ? <><FaPlay className="mr-1 sm:mr-2" size={12}/> <span className="hidden sm:inline">Resume</span><span className="sm:hidden">Play</span></> : <><FaPause className="mr-1 sm:mr-2" size={12}/> <span className="hidden sm:inline">Pause</span><span className="sm:hidden">Stop</span></>}
                   </button>
                   <button
                     onClick={toggleFullscreen}
-                    className="w-full px-3 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 text-sm font-medium flex items-center justify-center"
+                    className="w-full px-2 sm:px-3 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 text-xs sm:text-sm font-medium flex items-center justify-center"
                   >
-                    <BsFullscreen className="mr-2" size={14} />
-                    {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                    <BsFullscreen className="mr-1 sm:mr-2" size={12} />
+                    <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+                    <span className="sm:hidden">Full</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      logger.info('Manual level skip triggered by user');
+                      
+                      // Show "Good Job!" announcement for manual skip
+                      toast.success(`🎉 Good Job! Level ${currentLevel} Complete! (Manual Skip) 🎉`, { 
+                        duration: 3000,
+                        style: {
+                          background: '#8B5CF6',
+                          color: '#FFFFFF',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          padding: '16px 24px',
+                          borderRadius: '12px',
+                          boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                        },
+                        iconTheme: {
+                          primary: '#FFFFFF',
+                          secondary: '#8B5CF6',
+                        }
+                      });
+                      
+                      levelUp();
+                    }}
+                    className="w-full px-2 sm:px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-xs sm:text-sm font-medium flex items-center justify-center col-span-2 xl:col-span-1"
+                    title="Skip to next level (emergency use)"
+                  >
+                    <FaRedo className="mr-1 sm:mr-2" size={12} />
+                    <span className="hidden sm:inline">Skip Level</span>
+                    <span className="sm:hidden">Skip</span>
                   </button>
                 </div>
               </div>
@@ -1639,34 +2101,61 @@ const FallingGame = ({ game, onGameComplete }) => {
         )}
 
         {isPaused && gameStarted && !gameOver && (
-          <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-30">
-            <div className="bg-gray-50 p-8 w-64 md:w-80 rounded-lg shadow-xl text-center">
-              <Header type="h2" variant="default" fontSize="2xl" className="mb-8  text-primary text-center">Game Paused</Header>
-              <div className="space-y-4">
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-30 p-4">
+            <div className="bg-gray-50 p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg rounded-lg shadow-xl text-center">
+              <Header type="h2" variant="default" fontSize="xl" className="mb-3 sm:mb-4 text-primary text-center">Game Paused</Header>
+              
+              {/* Level Indicator in Pause Screen - Responsive */}
+              <div className="mb-4 sm:mb-6 space-y-2">
+                <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-full shadow-lg w-full sm:w-auto">
+                  <div className="flex items-center mb-1 sm:mb-0">
+                    <span className="text-base sm:text-lg font-bold mr-2">🎯</span>
+                    <span className="text-base sm:text-lg font-bold">Table of {currentLevel}</span>
+                  </div>
+                  <span className="text-xs sm:text-sm bg-white bg-opacity-20 px-2 py-1 rounded-full sm:ml-3">
+                    {questionsAnswered}/10
+                  </span>
+                </div>
+                
+                {/* Total Progress in Pause Screen - Responsive */}
+                <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-green-500 to-teal-500 text-white px-2 sm:px-3 py-1 rounded-full shadow-lg w-full sm:w-auto">
+                  <div className="flex items-center mb-1 sm:mb-0">
+                    <span className="text-xs sm:text-sm font-bold mr-2">🏆</span>
+                    <span className="text-xs font-bold">Total: {currentLevel}/{MAX_LEVEL}</span>
+                  </div>
+                  <div className="w-10 sm:w-12 bg-white bg-opacity-20 rounded-full h-1 sm:ml-2">
+                    <div 
+                      className="bg-white h-1 rounded-full transition-all duration-500"
+                      style={{ width: `${(currentLevel / MAX_LEVEL) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3 sm:space-y-4">
                  <button
                   onClick={togglePause}
-                  className="w-full px-6 py-3 bg-blue-400 text-white rounded-lg text-lg font-bold hover:bg-blue-500 transition-colors flex items-center justify-center"
+                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-blue-400 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-blue-500 transition-colors flex items-center justify-center"
                 >
-                  <FaPlay className="mr-2"/> Resume
+                  <FaPlay className="mr-2 text-sm sm:text-base"/> Resume
                 </button>
                 <button
                   onClick={toggleSettingsModal}
-                  className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg text-lg font-bold hover:bg-blue-600 transition-colors flex items-center justify-center"
+                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-blue-600 transition-colors flex items-center justify-center"
                 >
-                  <FaCog className="mr-2"/> Settings
+                  <FaCog className="mr-2 text-sm sm:text-base"/> Settings
                 </button>
                 <button
                   onClick={() => setShowRestartConfirmModal(true)}
-                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg text-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center"
+                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center"
                 >
-                  <FaRedo className="mr-2"/> Restart
+                  <FaRedo className="mr-2 text-sm sm:text-base"/> Restart
                 </button>
                 <button
                   onClick={() => {
-                    console.log('[FallingGame] Exit Game button clicked - showing confirmation modal');
+                    logger.debug('[FallingGame] Exit Game button clicked - showing confirmation modal');
                     setShowExitConfirmModal(true);
                   }}
-                  className="w-full px-6 py-3 bg-red-500 text-white rounded-lg text-lg font-bold hover:bg-red-600 transition-colors flex items-center justify-center"
+                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-red-500 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-red-600 transition-colors flex items-center justify-center"
                   data-testid="exit-button"
                 >
                   Exit Game
@@ -1741,14 +2230,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         )}
 
 
-        {isLoadingProblems && countdown === null && (
-          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-         
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              
-           
-          </div>
-        )}
+        {/* Removed loading screen that was blocking the UI unnecessarily */}
 
         {showLevelSelector && (
           <Modal
@@ -1825,4 +2307,4 @@ const FallingGame = ({ game, onGameComplete }) => {
   );
 };
 
-export default FallingGame; 
+export default memo(FallingGame); 

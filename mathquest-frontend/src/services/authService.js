@@ -1,4 +1,5 @@
 import api from "./api";
+import logger from "./logger";
 
 const AuthService = {
   login: async (usernameOrEmail, password) => {
@@ -146,7 +147,7 @@ const AuthService = {
       }
       return userData;
     } catch (error) {
-      console.error("Failed to refresh user:", error);
+      logger.error("Failed to refresh user", { error: error.message });
       // Return current user as fallback
       return AuthService.getCurrentUser();
     }

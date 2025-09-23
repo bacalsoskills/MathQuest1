@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Header } from "../ui/heading"
+import { Header } from "../ui/heading";
+import api from '../services/api';
+import logger from '../services/logger';
+import toast from 'react-hot-toast';
 
 const AdministrativeControls = () => {
   const navigate = useNavigate();
@@ -54,10 +57,17 @@ const AdministrativeControls = () => {
     }));
   };
 
-  const handleSaveSystemSettings = () => {
-    // TODO: Implement API call to save system settings
-
-    alert('System settings saved successfully!');
+  const handleSaveSystemSettings = async () => {
+    try {
+      // Implement API call to save system settings
+      const response = await api.post('/admin/system-settings', systemSettings);
+      if (response.status === 200) {
+        toast.success('System settings saved successfully!');
+      }
+    } catch (error) {
+      toast.error('Failed to save system settings. Please try again.');
+      logger.error('Failed to save system settings', { error: error.message });
+    }
   };
 
   const handleAddRole = () => {

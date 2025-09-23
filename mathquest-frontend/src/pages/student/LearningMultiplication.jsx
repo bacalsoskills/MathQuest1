@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaLock, FaCheckCircle, FaMedal, FaMap, FaCompass, FaShip, FaMountain, FaWater, FaGem } from "react-icons/fa";
-import { Button } from "../../ui/button";
-import { Header } from "../../ui/heading";
+import { Button } from "../../ui";
+import { Header } from "../../ui";
+import { useAuth } from "../../context/AuthContext";
+import { debugAuth } from "../../utils/debugAuth";
 
 const properties = [
   {
@@ -213,7 +215,7 @@ const properties = [
       { 
         type: "challenge", 
         content: "Word problem: If you have 5 bags with 3 apples each, or 3 bags with 5 apples each, which gives you more apples?",
-        answer: "same",
+        answer: "15",
         explanation: "5×3=15 and 3×5=15 - they're equal!"
       }
     ],
@@ -400,7 +402,18 @@ const LearningMultiplication = () => {
   const [quizFeedback, setQuizFeedback] = useState("");
   const [mapSize, setMapSize] = useState({ width: 1000, height: 400 });
   const [showHint, setShowHint] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [backendAvailable, setBackendAvailable] = useState(true);
   const mapRef = React.useRef(null);
+  const {
+    currentUser,
+    multiplicationProgress,
+    loadMultiplicationProgress,
+    saveMultiplicationProgress,
+    completeMultiplicationProperty,
+    saveMultiplicationQuizAttempt,
+  } = useAuth();
 
   React.useEffect(() => {
     if (mapRef.current) {
@@ -411,16 +424,146 @@ const LearningMultiplication = () => {
     }
   }, []);
 
-  const handleComplete = (idx) => {
-    const updated = [...completed];
-    updated[idx] = true;
-    setCompleted(updated);
-    if (idx + 1 < 5) setActive(idx + 1);
-    setModalOpen(false);
-    setStepIdx(0);
-    setQuizInput("");
-    setQuizFeedback("");
-    setShowHint(false);
+  // Load progress from backend on component mount
+  useEffect(() => {
+    const loadProgress = async () => {
+      if (!currentUser) return;
+      
+      // Debug authentication
+      console.log('Current user:', currentUser);
+      console.log('Token exists:', !!localStorage.getItem('token'));
+      
+      try {
+        setLoading(true);
+        const progress = await loadMultiplicationProgress();
+        
+        console.log('Loaded progress from backend:', progress);
+        
+        if (progress) {
+          // Normalize backend representation (indices) to UI representation (booleans)
+          const total = 5; // number of properties
+          let completedBooleans = Array(total).fill(false);
+
+          if (progress.completedProperties) {
+            let raw = progress.completedProperties;
+            try {
+              if (typeof raw === 'string') raw = JSON.parse(raw);
+            } catch (e) {
+              console.error('Error parsing completedProperties:', e);
+            }
+
+            if (Array.isArray(raw)) {
+              // If array of numbers (indices), mark booleans true at those indices
+              if (raw.every((v) => typeof v === 'number')) {
+                raw.forEach((idx) => {
+                  if (idx >= 0 && idx < total) completedBooleans[idx] = true;
+                });
+              }
+              // If array of booleans, take as-is (pad/trim to total)
+              else if (raw.every((v) => typeof v === 'boolean')) {
+                completedBooleans = raw.slice(0, total);
+                while (completedBooleans.length < total) completedBooleans.push(false);
+              }
+            }
+          }
+
+          const activePropertyIndex =
+            typeof progress.activePropertyIndex === 'number' ? progress.activePropertyIndex : 0;
+
+          setCompleted(completedBooleans);
+          setActive(activePropertyIndex);
+        }
+      } catch (error) {
+        console.error('Error loading progress:', error);
+        // If backend fails, continue with default state and mark backend as unavailable
+        setBackendAvailable(false);
+        setCompleted([false, false, false, false, false]);
+        setActive(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProgress();
+  }, [currentUser]);
+
+  // Make debug functions available globally
+  React.useEffect(() => {
+    window.debugAuth = debugAuth;
+    console.log('Auth debug function available as window.debugAuth()');
+  }, []);
+
+  // Save progress to backend whenever it changes
+  useEffect(() => {
+    const saveProgress = async () => {
+      if (!currentUser || loading || !backendAvailable) return;
+      
+      try {
+        setSaving(true);
+        // Convert UI booleans -> backend expected indices array
+        const completedIndices = completed
+          .map((isDone, idx) => (isDone ? idx : null))
+          .filter((v) => v !== null);
+
+        const progressData = {
+          completedProperties: completedIndices,
+          activePropertyIndex: active,
+          totalPropertiesCompleted: completedIndices.length
+        };
+        
+        console.log('Saving progress to backend:', progressData);
+        const result = await saveMultiplicationProgress(progressData);
+        console.log('Progress saved successfully:', result);
+      } catch (error) {
+        console.error('Error saving progress:', error);
+        setBackendAvailable(false);
+        // Don't throw error, just log it so the app continues to work
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    // Debounce the save operation
+    const timeoutId = setTimeout(saveProgress, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [completed, active, currentUser, loading, backendAvailable]);
+
+  const handleComplete = async (idx) => {
+    try {
+      setSaving(true);
+      
+      // Update local state first
+      const updated = [...completed];
+      updated[idx] = true;
+      setCompleted(updated);
+      
+      if (idx + 1 < 5) setActive(idx + 1);
+      
+      // Save to backend if available
+      if (backendAvailable) {
+        const propertyData = {
+          propertyName: properties[idx].title,
+          badgeName: properties[idx].badge,
+          totalSteps: properties[idx].steps.length,
+          completionTimeSeconds: 0 // You can track this if needed
+        };
+        
+        console.log('Completing property:', idx, propertyData);
+        const result = await completeMultiplicationProperty(idx, propertyData);
+        console.log('Property completed successfully:', result);
+      }
+      
+      setModalOpen(false);
+      setStepIdx(0);
+      setQuizInput("");
+      setQuizFeedback("");
+      setShowHint(false);
+    } catch (error) {
+      console.error('Error completing property:', error);
+      // Don't revert local state changes, just log the error
+    } finally {
+      setSaving(false);
+    }
   };
 
   const openModal = (idx) => {
@@ -433,7 +576,7 @@ const LearningMultiplication = () => {
     setShowHint(false);
   };
 
-  const handleQuizSubmit = (e) => {
+  const handleQuizSubmit = async (e) => {
     e.preventDefault();
     
     // Safety checks
@@ -453,22 +596,83 @@ const LearningMultiplication = () => {
                 currentStep.answer.replace(/\s+/g, "").toLowerCase();
     }
     
+    // Save quiz attempt to backend if available
+    if (backendAvailable) {
+      try {
+        const quizData = {
+          question: currentStep.type === "quiz" ? currentStep.content.question : currentStep.content,
+          userAnswer: quizInput.trim(),
+          correctAnswer: currentStep.type === "quiz" ? currentStep.content.answer : currentStep.answer,
+          isCorrect: correct,
+          stepType: currentStep.type,
+          stepTitle: currentStep.title
+        };
+        
+        console.log('Saving quiz attempt:', selectedIdx, stepIdx, quizData);
+        const result = await saveMultiplicationQuizAttempt(selectedIdx, stepIdx, quizData);
+        console.log('Quiz attempt saved successfully:', result);
+      } catch (error) {
+        console.error('Error saving quiz attempt:', error);
+        setBackendAvailable(false);
+        // Don't prevent the quiz from continuing, just log the error
+      }
+    }
+    
     if (correct) {
       setQuizFeedback("Correct! 🎉");
       setTimeout(() => {
         setQuizFeedback("");
-        setStepIdx(stepIdx + 1);
         setQuizInput("");
+        
+        // Check if this is the last step of the current property
+        if (stepIdx === properties[selectedIdx].steps.length - 1) {
+          // Automatically complete the property and move to next
+          handleComplete(selectedIdx);
+        } else {
+          // Move to next step
+          setStepIdx(stepIdx + 1);
+        }
       }, 1500);
     } else {
       setQuizFeedback("Try again!");
     }
   };
 
+  if (loading) {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+              <p className="text-gray-600 text-lg">Loading your progress...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
       <div className="max-w-6xl mx-auto">
-        <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white">Learning Multiplication: Treasure Hunt</Header>
+        <div className="flex items-center justify-between mb-6">
+          <Header type="h1" fontSize="5xl" weight="bold" className="text-primary dark:text-white">Learning Multiplication: Treasure Hunt</Header>
+          <div className="flex items-center gap-4">
+            {!backendAvailable && (
+              <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
+                <span>⚠️</span>
+                <span>Offline Mode</span>
+              </div>
+            )}
+            {saving && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600"></div>
+                <span>Saving progress...</span>
+              </div>
+            )}
+          </div>
+        </div>
         
         {/* Progress indicator */}
         <div className="mb-6 bg-white rounded-lg p-4 shadow-md border border-gray-200">
@@ -671,10 +875,15 @@ const LearningMultiplication = () => {
                     </Button>
                   )}
                   
-                  {/* Complete & Claim Badge only after last step */}
-                  {stepIdx === (properties[selectedIdx]?.steps?.length || 0) - 1 && selectedIdx < 5 && !completed[selectedIdx] && selectedIdx === active && (
+                  {/* Auto-complete button for last step if it's not a quiz/challenge */}
+                  {properties[selectedIdx].steps[stepIdx] && 
+                   properties[selectedIdx].steps[stepIdx].type !== "quiz" && 
+                   properties[selectedIdx].steps[stepIdx].type !== "challenge" && 
+                   stepIdx === properties[selectedIdx].steps.length - 1 && 
+                   !completed[selectedIdx] && 
+                   selectedIdx === active && (
                     <Button size="sm" variant="primary" onClick={() => handleComplete(selectedIdx)}>
-                      Complete & Claim Badge
+                      Complete Lesson
                     </Button>
                   )}
                 </div>

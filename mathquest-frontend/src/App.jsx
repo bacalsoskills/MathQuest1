@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import MainLayout from './layouts/MainLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import LoginPage from './pages/LoginPage';
@@ -136,11 +137,12 @@ const ConditionalThemeToggle = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <ContentProvider>
-        <ClassroomProvider>
-          <ThemeProvider>
-            <Router>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ContentProvider>
+          <ClassroomProvider>
+            <ThemeProvider>
+              <Router>
               <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
                 {/* Theme Toggle Button - Only for non-logged in users */}
                 <ConditionalThemeToggle />
@@ -460,11 +462,12 @@ function App() {
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </div>
-            </Router>
-          </ThemeProvider>
-        </ClassroomProvider>
-      </ContentProvider>
-    </AuthProvider>
+              </Router>
+            </ThemeProvider>
+          </ClassroomProvider>
+        </ContentProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

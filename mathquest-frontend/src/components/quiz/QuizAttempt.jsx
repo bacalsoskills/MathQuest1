@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import quizService from '../../services/quizService';
 import { useAuth } from '../../context/AuthContext';
-import { FaArrowLeft, FaArrowRight, FaVolumeUp, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaVolumeUp, FaVolumeMute, FaTimes } from 'react-icons/fa';
 
 // Placeholder for actual UI components, will be built out
 const MultipleChoiceQuestion = ({ question, onAnswer, selectedAnswer }) => {
@@ -328,7 +328,7 @@ const QuizAttemptPage = () => {
         </h1>
         <div className="flex items-center space-x-4">
           <button onClick={() => setIsMuted(!isMuted)} className="text-white hover:text-blue-100">
-            <FaVolumeUp size={24} /> {/* TODO: Add mute icon toggle */}
+            {isMuted ? <FaVolumeMute size={24} /> : <FaVolumeUp size={24} />}
           </button>
           <button onClick={handleExitQuiz} className="text-white hover:text-red-300">
             <FaTimes size={24} />
@@ -626,7 +626,7 @@ const QuizAttemptPage = () => {
 //         </h1>
 //         <div className="flex items-center space-x-4">
 //           <button onClick={() => setIsMuted(!isMuted)} className="text-white hover:text-blue-100">
-//             <FaVolumeUp size={24} /> {/* TODO: Add mute icon toggle */}
+//             {isMuted ? <FaVolumeMute size={24} /> : <FaVolumeUp size={24} />}
 //           </button>
 //           <button onClick={handleExitQuiz} className="text-white hover:text-red-300">
 //             <FaTimes size={24} />

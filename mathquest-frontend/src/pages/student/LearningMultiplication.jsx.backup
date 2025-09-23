@@ -1,0 +1,2204 @@
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { FaCheckCircle, FaMedal, FaMap, FaCompass, FaShip, FaMountain, FaWater, FaGem, FaTrophy, FaArrowLeft, FaArrowRight, FaBook, FaTimes, FaStar, FaChartLine, FaQuestionCircle, FaClock, FaLock } from "react-icons/fa";
+import { Button } from "../../ui/button";
+import { Header } from "../../ui/heading";
+import ProgressService from "../../services/progressService";
+import AuthService from "../../services/authService";
+import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+
+// Property data structure
+const properties = [
+  {
+    key: "zero",
+    title: "Zero Property House",
+    description: "Welcome to the Zero Property House! Here you'll learn the mysterious power of zero.",
+    storyIntro: "Welcome, young mathematician! You've arrived at the Zero Property House, where the mysterious Zero Property awaits. Legend says that anything that touches zero becomes zero itself!",
+    badge: "Zero Hero!",
+    unlocked: true,
+    image: "/images/game-images/house.png",
+    style: "left-[10%] top-[50%]",
+    icon: FaShip,
+    lessons: [
+      { 
+        id: 1, 
+        title: "Introduction to Zero Property", 
+        content: "Lesson 1: Understanding what happens when we multiply by zero",
+        examples: [
+          "5 × 0 = 0",
+          "12 × 0 = 0", 
+          "100 × 0 = 0",
+          "0 × 7 = 0",
+          "0 × 0 = 0"
+        ]
+      },
+      { 
+        id: 2, 
+        title: "Zero Property Basics", 
+        content: "Lesson 2: The rule that any number × 0 = 0",
+        examples: [
+          "3 × 0 = 0",
+          "25 × 0 = 0",
+          "0 × 9 = 0", 
+          "50 × 0 = 0",
+          "0 × 15 = 0"
+        ]
+      },
+      { 
+        id: 3, 
+        title: "Visual Examples", 
+        content: "Lesson 3: Seeing zero property with objects and groups",
+        examples: [
+          "4 groups of 0 apples = 0 apples",
+          "0 groups of 6 cars = 0 cars",
+          "8 boxes with 0 items = 0 items",
+          "0 shelves with 10 books = 0 books", 
+          "5 bags with 0 coins = 0 coins"
+        ]
+      },
+      { 
+        id: 4, 
+        title: "Real World Applications", 
+        content: "Lesson 4: How zero property works in daily life",
+        examples: [
+          "If you have 0 dollars and buy 5 items, you spend $0",
+          "If you have 3 empty baskets, you have 0 items total",
+          "If you have 0 friends and give each 2 gifts, you give 0 gifts",
+          "If you have 7 empty containers, you have 0 contents",
+          "If you have 0 time and work 4 hours, you work 0 hours"
+        ]
+      },
+      { 
+        id: 5, 
+        title: "Mathematical Notation", 
+        content: "Lesson 5: Writing zero property in mathematical form",
+        examples: [
+          "a × 0 = 0 (where a = 5)",
+          "0 × b = 0 (where b = 12)",
+          "n × 0 = 0 (where n = any number)",
+          "0 × m = 0 (where m = any number)",
+          "x × 0 = 0 (where x = any number)"
+        ]
+      },
+      { 
+        id: 6, 
+        title: "Practice Problems", 
+        content: "Lesson 6: Working through zero property examples",
+        examples: [
+          "What is 6 × 0? Answer: 0",
+          "What is 0 × 18? Answer: 0", 
+          "What is 45 × 0? Answer: 0",
+          "What is 0 × 33? Answer: 0",
+          "What is 99 × 0? Answer: 0"
+        ]
+      },
+      { 
+        id: 7, 
+        title: "Common Mistakes", 
+        content: "Lesson 7: Avoiding errors with zero property",
+        examples: [
+          "❌ 5 × 0 = 5 (Wrong!) ✅ 5 × 0 = 0",
+          "❌ 0 × 8 = 8 (Wrong!) ✅ 0 × 8 = 0",
+          "❌ 12 × 0 = 12 (Wrong!) ✅ 12 × 0 = 0", 
+          "❌ 0 × 20 = 20 (Wrong!) ✅ 0 × 20 = 0",
+          "❌ 7 × 0 = 7 (Wrong!) ✅ 7 × 0 = 0"
+        ]
+      },
+      { 
+        id: 8, 
+        title: "Advanced Concepts", 
+        content: "Lesson 8: Zero property with larger numbers",
+        examples: [
+          "1,000 × 0 = 0",
+          "0 × 2,500 = 0",
+          "10,000 × 0 = 0",
+          "0 × 50,000 = 0", 
+          "1,000,000 × 0 = 0"
+        ]
+      },
+      { 
+        id: 9, 
+        title: "Word Problems", 
+        content: "Lesson 9: Solving real-world zero property problems",
+        examples: [
+          "Sarah has 6 empty boxes. How many items does she have? Answer: 0",
+          "Tom has 0 dollars and wants to buy 4 toys. How much will he spend? Answer: $0",
+          "Lisa has 8 empty bags. How many apples are in the bags? Answer: 0",
+          "Mike has 0 friends and gives each 3 gifts. How many gifts does he give? Answer: 0",
+          "Anna has 5 empty containers. How many cookies are in them? Answer: 0"
+        ]
+      },
+      { 
+        id: 10, 
+        title: "Review and Mastery", 
+        content: "Lesson 10: Comprehensive review of zero property",
+        examples: [
+          "Any number × 0 = 0",
+          "0 × any number = 0", 
+          "Zero is the 'annihilator' in multiplication",
+          "This property works with all numbers (positive, negative, decimals)",
+          "Zero property helps solve complex equations"
+        ]
+      }
+    ],
+    quiz: [
+      { id: 1, question: "What is 5 × 0?", options: ["0", "5", "50", "1"], correct: 0 },
+      { id: 2, question: "What is 12 × 0?", options: ["0", "12", "120", "1"], correct: 0 },
+      { id: 3, question: "What is 0 × 7?", options: ["0", "7", "70", "1"], correct: 0 },
+      { id: 4, question: "What is 100 × 0?", options: ["0", "100", "1000", "1"], correct: 0 },
+      { id: 5, question: "What is 0 × 0?", options: ["0", "1", "2", "10"], correct: 0 },
+      { id: 6, question: "What is 25 × 0?", options: ["0", "25", "250", "1"], correct: 0 },
+      { id: 7, question: "What is 0 × 15?", options: ["0", "15", "150", "1"], correct: 0 },
+      { id: 8, question: "What is 8 × 0?", options: ["0", "8", "80", "1"], correct: 0 },
+      { id: 9, question: "What is 0 × 9?", options: ["0", "9", "90", "1"], correct: 0 },
+      { id: 10, question: "What is 50 × 0?", options: ["0", "50", "500", "1"], correct: 0 }
+    ]
+  },
+  {
+    key: "identity",
+    title: "Identity River",
+    description: "Cross the Identity River where numbers stay true to themselves.",
+    storyIntro: "You've reached the mighty Identity River! Here, numbers have a special power - they stay exactly who they are when multiplied by one.",
+    badge: "Identity Ace!",
+    unlocked: false,
+    image: "/images/game-images/river.png",
+    style: "left-[30%] top-[70%]",
+    icon: FaWater,
+    lessons: [
+      { 
+        id: 1, 
+        title: "Introduction to Identity Property", 
+        content: "Lesson 1: Understanding what happens when we multiply by one",
+        examples: [
+          "5 × 1 = 5",
+          "12 × 1 = 12", 
+          "100 × 1 = 100",
+          "1 × 7 = 7",
+          "1 × 1 = 1"
+        ]
+      },
+      { 
+        id: 2, 
+        title: "Identity Property Basics", 
+        content: "Lesson 2: The rule that any number × 1 = that number",
+        examples: [
+          "3 × 1 = 3",
+          "25 × 1 = 25",
+          "1 × 9 = 9", 
+          "50 × 1 = 50",
+          "1 × 15 = 15"
+        ]
+      },
+      { 
+        id: 3, 
+        title: "Visual Examples", 
+        content: "Lesson 3: Seeing identity property with objects and groups",
+        examples: [
+          "1 group of 4 apples = 4 apples",
+          "6 groups of 1 car = 6 cars",
+          "1 box with 8 items = 8 items",
+          "10 shelves with 1 book = 10 books", 
+          "1 bag with 5 coins = 5 coins"
+        ]
+      },
+      { 
+        id: 4, 
+        title: "Real World Applications", 
+        content: "Lesson 4: How identity property works in daily life",
+        examples: [
+          "If you have 1 dollar and buy 1 item, you spend $1",
+          "If you have 3 baskets with 1 apple each, you have 3 apples",
+          "If you have 1 friend and give them 2 gifts, you give 2 gifts",
+          "If you have 7 containers with 1 cookie each, you have 7 cookies",
+          "If you have 1 hour and work 1 hour, you work 1 hour"
+        ]
+      },
+      { 
+        id: 5, 
+        title: "Mathematical Notation", 
+        content: "Lesson 5: Writing identity property in mathematical form",
+        examples: [
+          "a × 1 = a (where a = 5)",
+          "1 × b = b (where b = 12)",
+          "n × 1 = n (where n = any number)",
+          "1 × m = m (where m = any number)",
+          "x × 1 = x (where x = any number)"
+        ]
+      },
+      { 
+        id: 6, 
+        title: "Practice Problems", 
+        content: "Lesson 6: Working through identity property examples",
+        examples: [
+          "What is 6 × 1? Answer: 6",
+          "What is 1 × 18? Answer: 18", 
+          "What is 45 × 1? Answer: 45",
+          "What is 1 × 33? Answer: 33",
+          "What is 99 × 1? Answer: 99"
+        ]
+      },
+      { 
+        id: 7, 
+        title: "Common Mistakes", 
+        content: "Lesson 7: Avoiding errors with identity property",
+        examples: [
+          "❌ 5 × 1 = 0 (Wrong!) ✅ 5 × 1 = 5",
+          "❌ 1 × 8 = 0 (Wrong!) ✅ 1 × 8 = 8",
+          "❌ 12 × 1 = 0 (Wrong!) ✅ 12 × 1 = 12", 
+          "❌ 1 × 20 = 0 (Wrong!) ✅ 1 × 20 = 20",
+          "❌ 7 × 1 = 0 (Wrong!) ✅ 7 × 1 = 7"
+        ]
+      },
+      { 
+        id: 8, 
+        title: "Advanced Concepts", 
+        content: "Lesson 8: Identity property with larger numbers",
+        examples: [
+          "1,000 × 1 = 1,000",
+          "1 × 2,500 = 2,500",
+          "10,000 × 1 = 10,000",
+          "1 × 50,000 = 50,000", 
+          "1,000,000 × 1 = 1,000,000"
+        ]
+      },
+      { 
+        id: 9, 
+        title: "Word Problems", 
+        content: "Lesson 9: Solving real-world identity property problems",
+        examples: [
+          "Sarah has 6 boxes with 1 toy each. How many toys does she have? Answer: 6",
+          "Tom has 1 dollar and buys 1 candy. How much does he spend? Answer: $1",
+          "Lisa has 8 bags with 1 apple each. How many apples does she have? Answer: 8",
+          "Mike has 1 friend and gives them 3 gifts. How many gifts does he give? Answer: 3",
+          "Anna has 5 containers with 1 cookie each. How many cookies does she have? Answer: 5"
+        ]
+      },
+      { 
+        id: 10, 
+        title: "Review and Mastery", 
+        content: "Lesson 10: Comprehensive review of identity property",
+        examples: [
+          "Any number × 1 = that same number",
+          "1 × any number = that same number", 
+          "One is the 'identity element' in multiplication",
+          "This property works with all numbers (positive, negative, decimals)",
+          "Identity property helps maintain number values in equations"
+        ]
+      }
+    ],
+    quiz: [
+      { id: 1, question: "What is 5 × 1?", options: ["5", "0", "50", "1"], correct: 0 },
+      { id: 2, question: "What is 12 × 1?", options: ["12", "0", "120", "1"], correct: 0 },
+      { id: 3, question: "What is 1 × 7?", options: ["7", "0", "70", "1"], correct: 0 },
+      { id: 4, question: "What is 100 × 1?", options: ["100", "0", "1000", "1"], correct: 0 },
+      { id: 5, question: "What is 1 × 1?", options: ["1", "0", "2", "10"], correct: 0 },
+      { id: 6, question: "What is 25 × 1?", options: ["25", "0", "250", "1"], correct: 0 },
+      { id: 7, question: "What is 1 × 15?", options: ["15", "0", "150", "1"], correct: 0 },
+      { id: 8, question: "What is 8 × 1?", options: ["8", "0", "80", "1"], correct: 0 },
+      { id: 9, question: "What is 1 × 9?", options: ["9", "0", "90", "1"], correct: 0 },
+      { id: 10, question: "What is 50 × 1?", options: ["50", "0", "500", "1"], correct: 0 }
+    ]
+  },
+  {
+    key: "commutative",
+    title: "Commutative Mountains",
+    description: "Climb the Commutative Mountains where order doesn't matter!",
+    storyIntro: "Welcome to the Commutative Mountains! Here, you'll learn that the order of numbers doesn't matter in multiplication - you can swap them around and get the same result!",
+    badge: "Commutative Champ!",
+    unlocked: false,
+    image: "/images/game-images/mountains.png",
+    style: "left-[45%] top-[25%]",
+    icon: FaMountain,
+    lessons: [
+      { 
+        id: 1, 
+        title: "Introduction to Commutative Property", 
+        content: "Lesson 1: Understanding that order doesn't matter in multiplication",
+        examples: [
+          "3 × 4 = 12 and 4 × 3 = 12",
+          "2 × 5 = 10 and 5 × 2 = 10", 
+          "6 × 2 = 12 and 2 × 6 = 12",
+          "7 × 3 = 21 and 3 × 7 = 21",
+          "8 × 1 = 8 and 1 × 8 = 8"
+        ]
+      },
+      { 
+        id: 2, 
+        title: "Commutative Property Basics", 
+        content: "Lesson 2: The rule that a × b = b × a",
+        examples: [
+          "4 × 6 = 24 and 6 × 4 = 24",
+          "9 × 2 = 18 and 2 × 9 = 18",
+          "5 × 5 = 25 and 5 × 5 = 25", 
+          "3 × 7 = 21 and 7 × 3 = 21",
+          "6 × 4 = 24 and 4 × 6 = 24"
+        ]
+      },
+      { 
+        id: 3, 
+        title: "Visual Examples", 
+        content: "Lesson 3: Seeing commutative property with arrays and groups",
+        examples: [
+          "3 rows of 4 objects = 4 rows of 3 objects (both = 12)",
+          "2 rows of 5 objects = 5 rows of 2 objects (both = 10)",
+          "6 rows of 2 objects = 2 rows of 6 objects (both = 12)",
+          "7 rows of 3 objects = 3 rows of 7 objects (both = 21)",
+          "8 rows of 1 object = 1 row of 8 objects (both = 8)"
+        ]
+      },
+      { 
+        id: 4, 
+        title: "Real World Applications", 
+        content: "Lesson 4: How commutative property works in daily life",
+        examples: [
+          "3 boxes with 4 toys each = 4 boxes with 3 toys each (both = 12 toys)",
+          "2 shelves with 5 books each = 5 shelves with 2 books each (both = 10 books)",
+          "6 bags with 2 apples each = 2 bags with 6 apples each (both = 12 apples)",
+          "7 tables with 3 chairs each = 3 tables with 7 chairs each (both = 21 chairs)",
+          "8 rows with 1 student each = 1 row with 8 students (both = 8 students)"
+        ]
+      },
+      { 
+        id: 5, 
+        title: "Mathematical Notation", 
+        content: "Lesson 5: Writing commutative property in mathematical form",
+        examples: [
+          "a × b = b × a (where a = 3, b = 4)",
+          "x × y = y × x (where x = 2, y = 5)",
+          "m × n = n × m (where m = 6, n = 2)",
+          "p × q = q × p (where p = 7, q = 3)",
+          "r × s = s × r (where r = 8, s = 1)"
+        ]
+      },
+      { 
+        id: 6, 
+        title: "Practice Problems", 
+        content: "Lesson 6: Working through commutative property examples",
+        examples: [
+          "What is 4 × 6? What is 6 × 4? Answer: Both = 24",
+          "What is 9 × 2? What is 2 × 9? Answer: Both = 18", 
+          "What is 5 × 5? What is 5 × 5? Answer: Both = 25",
+          "What is 3 × 7? What is 7 × 3? Answer: Both = 21",
+          "What is 6 × 4? What is 4 × 6? Answer: Both = 24"
+        ]
+      },
+      { 
+        id: 7, 
+        title: "Common Mistakes", 
+        content: "Lesson 7: Avoiding errors with commutative property",
+        examples: [
+          "❌ 3 × 4 ≠ 4 × 3 (Wrong!) ✅ 3 × 4 = 4 × 3 = 12",
+          "❌ 2 × 5 ≠ 5 × 2 (Wrong!) ✅ 2 × 5 = 5 × 2 = 10",
+          "❌ 6 × 2 ≠ 2 × 6 (Wrong!) ✅ 6 × 2 = 2 × 6 = 12", 
+          "❌ 7 × 3 ≠ 3 × 7 (Wrong!) ✅ 7 × 3 = 3 × 7 = 21",
+          "❌ 8 × 1 ≠ 1 × 8 (Wrong!) ✅ 8 × 1 = 1 × 8 = 8"
+        ]
+      },
+      { 
+        id: 8, 
+        title: "Advanced Concepts", 
+        content: "Lesson 8: Commutative property with larger numbers",
+        examples: [
+          "12 × 15 = 180 and 15 × 12 = 180",
+          "25 × 8 = 200 and 8 × 25 = 200",
+          "30 × 6 = 180 and 6 × 30 = 180",
+          "40 × 5 = 200 and 5 × 40 = 200", 
+          "50 × 4 = 200 and 4 × 50 = 200"
+        ]
+      },
+      { 
+        id: 9, 
+        title: "Word Problems", 
+        content: "Lesson 9: Solving real-world commutative property problems",
+        examples: [
+          "Sarah has 3 boxes with 4 toys each. Tom has 4 boxes with 3 toys each. Who has more toys? Answer: Both have 12 toys",
+          "Lisa has 2 shelves with 5 books each. Mike has 5 shelves with 2 books each. Who has more books? Answer: Both have 10 books",
+          "Anna has 6 bags with 2 apples each. John has 2 bags with 6 apples each. Who has more apples? Answer: Both have 12 apples",
+          "Emma has 7 tables with 3 chairs each. David has 3 tables with 7 chairs each. Who has more chairs? Answer: Both have 21 chairs",
+          "Kate has 8 rows with 1 student each. Sam has 1 row with 8 students. Who has more students? Answer: Both have 8 students"
+        ]
+      },
+      { 
+        id: 10, 
+        title: "Review and Mastery", 
+        content: "Lesson 10: Comprehensive review of commutative property",
+        examples: [
+          "Order doesn't matter: a × b = b × a",
+          "This property works with all numbers", 
+          "Commutative means 'to change or exchange'",
+          "This property makes mental math easier",
+          "Commutative property helps rearrange problems for easier solving"
+        ]
+      }
+    ],
+    quiz: [
+      { id: 1, question: "What is 3 × 4? What is 4 × 3?", options: ["12, 12", "7, 7", "1, 1", "0, 0"], correct: 0 },
+      { id: 2, question: "What is 2 × 5? What is 5 × 2?", options: ["10, 10", "7, 7", "3, 3", "0, 0"], correct: 0 },
+      { id: 3, question: "What is 6 × 2? What is 2 × 6?", options: ["12, 12", "8, 8", "4, 4", "0, 0"], correct: 0 },
+      { id: 4, question: "What is 7 × 3? What is 3 × 7?", options: ["21, 21", "10, 10", "4, 4", "0, 0"], correct: 0 },
+      { id: 5, question: "What is 8 × 1? What is 1 × 8?", options: ["8, 8", "9, 9", "7, 7", "0, 0"], correct: 0 },
+      { id: 6, question: "What is 4 × 6? What is 6 × 4?", options: ["24, 24", "10, 10", "2, 2", "0, 0"], correct: 0 },
+      { id: 7, question: "What is 9 × 2? What is 2 × 9?", options: ["18, 18", "11, 11", "7, 7", "0, 0"], correct: 0 },
+      { id: 8, question: "What is 5 × 5? What is 5 × 5?", options: ["25, 25", "10, 10", "0, 0", "1, 1"], correct: 0 },
+      { id: 9, question: "What is 3 × 7? What is 7 × 3?", options: ["21, 21", "10, 10", "4, 4", "0, 0"], correct: 0 },
+      { id: 10, question: "What is 6 × 4? What is 4 × 6?", options: ["24, 24", "10, 10", "2, 2", "0, 0"], correct: 0 }
+    ]
+  },
+  {
+    key: "associative",
+    title: "Associative Underwater Cave",
+    description: "Dive into the Associative Cave where grouping doesn't matter!",
+    storyIntro: "You've discovered the mysterious Associative Underwater Cave! Here, you'll learn that how you group numbers doesn't affect the final result.",
+    badge: "Associative Adventurer!",
+    unlocked: false,
+    image: "/images/game-images/underwater.png",
+    style: "left-[60%] top-[55%]",
+    icon: FaWater,
+    lessons: [
+      { 
+        id: 1, 
+        title: "Introduction to Associative Property", 
+        content: "Lesson 1: Understanding that grouping doesn't matter in multiplication",
+        examples: [
+          "(2 × 3) × 4 = 6 × 4 = 24 and 2 × (3 × 4) = 2 × 12 = 24",
+          "(1 × 2) × 3 = 2 × 3 = 6 and 1 × (2 × 3) = 1 × 6 = 6", 
+          "(3 × 2) × 4 = 6 × 4 = 24 and 3 × (2 × 4) = 3 × 8 = 24",
+          "(5 × 1) × 2 = 5 × 2 = 10 and 5 × (1 × 2) = 5 × 2 = 10",
+          "(2 × 4) × 3 = 8 × 3 = 24 and 2 × (4 × 3) = 2 × 12 = 24"
+        ]
+      },
+      { 
+        id: 2, 
+        title: "Associative Property Basics", 
+        content: "Lesson 2: The rule that (a × b) × c = a × (b × c)",
+        examples: [
+          "(1 × 5) × 2 = 5 × 2 = 10 and 1 × (5 × 2) = 1 × 10 = 10",
+          "(3 × 1) × 4 = 3 × 4 = 12 and 3 × (1 × 4) = 3 × 4 = 12",
+          "(2 × 2) × 3 = 4 × 3 = 12 and 2 × (2 × 3) = 2 × 6 = 12", 
+          "(4 × 1) × 2 = 4 × 2 = 8 and 4 × (1 × 2) = 4 × 2 = 8",
+          "(1 × 3) × 4 = 3 × 4 = 12 and 1 × (3 × 4) = 1 × 12 = 12"
+        ]
+      },
+      { 
+        id: 3, 
+        title: "Visual Examples", 
+        content: "Lesson 3: Seeing associative property with grouping",
+        examples: [
+          "Group (2×3) first, then ×4: (●●●) × 4 = 24 dots",
+          "Group (3×4) first, then ×2: 2 × (●●●●) = 24 dots",
+          "Group (1×2) first, then ×3: (●●) × 3 = 6 dots", 
+          "Group (2×3) first, then ×1: (●●●) × 1 = 6 dots",
+          "Group (3×1) first, then ×4: (●) × 4 = 12 dots"
+        ]
+      },
+      { 
+        id: 4, 
+        title: "Real World Applications", 
+        content: "Lesson 4: How associative property works in daily life",
+        examples: [
+          "2 boxes with 3 toys each, then 4 sets: (2×3)×4 = 24 toys",
+          "2 boxes with 3 toys each, then 4 sets: 2×(3×4) = 24 toys",
+          "1 shelf with 2 books each, then 3 shelves: (1×2)×3 = 6 books",
+          "1 shelf with 2 books each, then 3 shelves: 1×(2×3) = 6 books",
+          "3 bags with 1 apple each, then 4 groups: (3×1)×4 = 12 apples"
+        ]
+      },
+      { 
+        id: 5, 
+        title: "Mathematical Notation", 
+        content: "Lesson 5: Writing associative property in mathematical form",
+        examples: [
+          "(a × b) × c = a × (b × c) (where a=2, b=3, c=4)",
+          "(x × y) × z = x × (y × z) (where x=1, y=2, z=3)",
+          "(m × n) × p = m × (n × p) (where m=3, n=2, p=4)",
+          "(r × s) × t = r × (s × t) (where r=5, s=1, t=2)",
+          "(u × v) × w = u × (v × w) (where u=2, v=4, w=3)"
+        ]
+      },
+      { 
+        id: 6, 
+        title: "Practice Problems", 
+        content: "Lesson 6: Working through associative property examples",
+        examples: [
+          "What is (1×5)×2? What is 1×(5×2)? Answer: Both = 10",
+          "What is (3×1)×4? What is 3×(1×4)? Answer: Both = 12", 
+          "What is (2×2)×3? What is 2×(2×3)? Answer: Both = 12",
+          "What is (4×1)×2? What is 4×(1×2)? Answer: Both = 8",
+          "What is (1×3)×4? What is 1×(3×4)? Answer: Both = 12"
+        ]
+      },
+      { 
+        id: 7, 
+        title: "Common Mistakes", 
+        content: "Lesson 7: Avoiding errors with associative property",
+        examples: [
+          "❌ (2×3)×4 ≠ 2×(3×4) (Wrong!) ✅ (2×3)×4 = 2×(3×4) = 24",
+          "❌ (1×2)×3 ≠ 1×(2×3) (Wrong!) ✅ (1×2)×3 = 1×(2×3) = 6",
+          "❌ (3×2)×4 ≠ 3×(2×4) (Wrong!) ✅ (3×2)×4 = 3×(2×4) = 24", 
+          "❌ (5×1)×2 ≠ 5×(1×2) (Wrong!) ✅ (5×1)×2 = 5×(1×2) = 10",
+          "❌ (2×4)×3 ≠ 2×(4×3) (Wrong!) ✅ (2×4)×3 = 2×(4×3) = 24"
+        ]
+      },
+      { 
+        id: 8, 
+        title: "Advanced Concepts", 
+        content: "Lesson 8: Associative property with larger numbers",
+        examples: [
+          "(5 × 2) × 3 = 10 × 3 = 30 and 5 × (2 × 3) = 5 × 6 = 30",
+          "(4 × 3) × 2 = 12 × 2 = 24 and 4 × (3 × 2) = 4 × 6 = 24",
+          "(6 × 2) × 2 = 12 × 2 = 24 and 6 × (2 × 2) = 6 × 4 = 24",
+          "(3 × 4) × 2 = 12 × 2 = 24 and 3 × (4 × 2) = 3 × 8 = 24", 
+          "(2 × 5) × 3 = 10 × 3 = 30 and 2 × (5 × 3) = 2 × 15 = 30"
+        ]
+      },
+      { 
+        id: 9, 
+        title: "Word Problems", 
+        content: "Lesson 9: Solving real-world associative property problems",
+        examples: [
+          "Sarah has 2 boxes with 3 toys each, and 4 such sets. How many toys? Answer: (2×3)×4 = 2×(3×4) = 24",
+          "Tom has 1 shelf with 2 books each, and 3 such shelves. How many books? Answer: (1×2)×3 = 1×(2×3) = 6",
+          "Lisa has 3 bags with 1 apple each, and 4 such groups. How many apples? Answer: (3×1)×4 = 3×(1×4) = 12",
+          "Mike has 5 containers with 1 cookie each, and 2 such sets. How many cookies? Answer: (5×1)×2 = 5×(1×2) = 10",
+          "Anna has 2 rows with 4 students each, and 3 such groups. How many students? Answer: (2×4)×3 = 2×(4×3) = 24"
+        ]
+      },
+      { 
+        id: 10, 
+        title: "Review and Mastery", 
+        content: "Lesson 10: Comprehensive review of associative property",
+        examples: [
+          "Grouping doesn't matter: (a × b) × c = a × (b × c)",
+          "This property works with all numbers", 
+          "Associative means 'to group together'",
+          "This property makes mental math easier",
+          "Associative property helps choose easier groupings for calculation"
+        ]
+      }
+    ],
+    quiz: [
+      { id: 1, question: "What is (2 × 3) × 4? What is 2 × (3 × 4)?", options: ["24, 24", "9, 9", "14, 14", "0, 0"], correct: 0 },
+      { id: 2, question: "What is (1 × 2) × 3? What is 1 × (2 × 3)?", options: ["6, 6", "5, 5", "1, 1", "0, 0"], correct: 0 },
+      { id: 3, question: "What is (3 × 2) × 4? What is 3 × (2 × 4)?", options: ["24, 24", "9, 9", "14, 14", "0, 0"], correct: 0 },
+      { id: 4, question: "What is (5 × 1) × 2? What is 5 × (1 × 2)?", options: ["10, 10", "8, 8", "6, 6", "0, 0"], correct: 0 },
+      { id: 5, question: "What is (2 × 4) × 3? What is 2 × (4 × 3)?", options: ["24, 24", "9, 9", "14, 14", "0, 0"], correct: 0 },
+      { id: 6, question: "What is (1 × 5) × 2? What is 1 × (5 × 2)?", options: ["10, 10", "8, 8", "6, 6", "0, 0"], correct: 0 },
+      { id: 7, question: "What is (3 × 1) × 4? What is 3 × (1 × 4)?", options: ["12, 12", "8, 8", "6, 6", "0, 0"], correct: 0 },
+      { id: 8, question: "What is (2 × 2) × 3? What is 2 × (2 × 3)?", options: ["12, 12", "7, 7", "4, 4", "0, 0"], correct: 0 },
+      { id: 9, question: "What is (4 × 1) × 2? What is 4 × (1 × 2)?", options: ["8, 8", "7, 7", "5, 5", "0, 0"], correct: 0 },
+      { id: 10, question: "What is (1 × 3) × 4? What is 1 × (3 × 4)?", options: ["12, 12", "8, 8", "6, 6", "0, 0"], correct: 0 }
+    ]
+  },
+  {
+    key: "distributive",
+    title: "Distributive Treasure Cave",
+    description: "Explore the Distributive Treasure Cave where multiplication spreads out!",
+    storyIntro: "You've reached the legendary Distributive Treasure Cave! Here, you'll learn how multiplication can be distributed over addition - a powerful tool for breaking down complex problems!",
+    badge: "Distributive Master!",
+    unlocked: false,
+    image: "/images/game-images/treasure.png",
+    style: "left-[80%] top-[20%]",
+    icon: FaGem,
+    lessons: [
+      { 
+        id: 1, 
+        title: "Introduction to Distributive Property", 
+        content: "Lesson 1: Understanding how multiplication distributes over addition",
+        examples: [
+          "2 × (3 + 4) = 2 × 7 = 14 and (2 × 3) + (2 × 4) = 6 + 8 = 14",
+          "3 × (2 + 5) = 3 × 7 = 21 and (3 × 2) + (3 × 5) = 6 + 15 = 21",
+          "4 × (1 + 6) = 4 × 7 = 28 and (4 × 1) + (4 × 6) = 4 + 24 = 28",
+          "5 × (2 + 3) = 5 × 5 = 25 and (5 × 2) + (5 × 3) = 10 + 15 = 25",
+          "3 × (4 + 2) = 3 × 6 = 18 and (3 × 4) + (3 × 2) = 12 + 6 = 18"
+        ]
+      },
+      { 
+        id: 2, 
+        title: "Distributive Property Basics", 
+        content: "Lesson 2: The rule that a × (b + c) = (a × b) + (a × c)",
+        examples: [
+          "2 × (1 + 3) = 2 × 4 = 8 and (2 × 1) + (2 × 3) = 2 + 6 = 8",
+          "3 × (2 + 1) = 3 × 3 = 9 and (3 × 2) + (3 × 1) = 6 + 3 = 9",
+          "4 × (1 + 2) = 4 × 3 = 12 and (4 × 1) + (4 × 2) = 4 + 8 = 12", 
+          "5 × (1 + 1) = 5 × 2 = 10 and (5 × 1) + (5 × 1) = 5 + 5 = 10",
+          "2 × (2 + 2) = 2 × 4 = 8 and (2 × 2) + (2 × 2) = 4 + 4 = 8"
+        ]
+      },
+      { 
+        id: 3, 
+        title: "Visual Examples", 
+        content: "Lesson 3: Seeing distributive property with arrays and groups",
+        examples: [
+          "2 groups of (3+4): 2×(●●●+●●●●) = 2×7 = 14",
+          "3 groups of (2+5): 3×(●●+●●●●●) = 3×7 = 21",
+          "4 groups of (1+6): 4×(●+●●●●●●) = 4×7 = 28", 
+          "5 groups of (2+3): 5×(●●+●●●) = 5×5 = 25",
+          "3 groups of (4+2): 3×(●●●●+●●) = 3×6 = 18"
+        ]
+      },
+      { 
+        id: 4, 
+        title: "Real World Applications", 
+        content: "Lesson 4: How distributive property works in daily life",
+        examples: [
+          "2 boxes with (3 apples + 4 oranges) = 2×7 = 14 fruits",
+          "3 shelves with (2 books + 5 magazines) = 3×7 = 21 items",
+          "4 bags with (1 toy + 6 candies) = 4×7 = 28 items",
+          "5 containers with (2 cookies + 3 crackers) = 5×5 = 25 snacks",
+          "3 baskets with (4 red + 2 blue balls) = 3×6 = 18 balls"
+        ]
+      },
+      { 
+        id: 5, 
+        title: "Mathematical Notation", 
+        content: "Lesson 5: Writing distributive property in mathematical form",
+        examples: [
+          "a × (b + c) = (a × b) + (a × c) (where a=2, b=3, c=4)",
+          "x × (y + z) = (x × y) + (x × z) (where x=3, y=2, z=5)",
+          "m × (n + p) = (m × n) + (m × p) (where m=4, n=1, p=6)",
+          "r × (s + t) = (r × s) + (r × t) (where r=5, s=2, t=3)",
+          "u × (v + w) = (u × v) + (u × w) (where u=3, v=4, w=2)"
+        ]
+      },
+      { 
+        id: 6, 
+        title: "Practice Problems", 
+        content: "Lesson 6: Working through distributive property examples",
+        examples: [
+          "What is 2×(1+3)? What is (2×1)+(2×3)? Answer: Both = 8",
+          "What is 3×(2+1)? What is (3×2)+(3×1)? Answer: Both = 9", 
+          "What is 4×(1+2)? What is (4×1)+(4×2)? Answer: Both = 12",
+          "What is 5×(1+1)? What is (5×1)+(5×1)? Answer: Both = 10",
+          "What is 2×(2+2)? What is (2×2)+(2×2)? Answer: Both = 8"
+        ]
+      },
+      { 
+        id: 7, 
+        title: "Common Mistakes", 
+        content: "Lesson 7: Avoiding errors with distributive property",
+        examples: [
+          "❌ 2×(3+4) = 2×3+4 = 10 (Wrong!) ✅ 2×(3+4) = (2×3)+(2×4) = 14",
+          "❌ 3×(2+5) = 3×2+5 = 11 (Wrong!) ✅ 3×(2+5) = (3×2)+(3×5) = 21",
+          "❌ 4×(1+6) = 4×1+6 = 10 (Wrong!) ✅ 4×(1+6) = (4×1)+(4×6) = 28", 
+          "❌ 5×(2+3) = 5×2+3 = 13 (Wrong!) ✅ 5×(2+3) = (5×2)+(5×3) = 25",
+          "❌ 3×(4+2) = 3×4+2 = 14 (Wrong!) ✅ 3×(4+2) = (3×4)+(3×2) = 18"
+        ]
+      },
+      { 
+        id: 8, 
+        title: "Advanced Concepts", 
+        content: "Lesson 8: Distributive property with larger numbers",
+        examples: [
+          "6 × (3 + 4) = 6 × 7 = 42 and (6 × 3) + (6 × 4) = 18 + 24 = 42",
+          "7 × (2 + 5) = 7 × 7 = 49 and (7 × 2) + (7 × 5) = 14 + 35 = 49",
+          "8 × (1 + 6) = 8 × 7 = 56 and (8 × 1) + (8 × 6) = 8 + 48 = 56",
+          "9 × (2 + 3) = 9 × 5 = 45 and (9 × 2) + (9 × 3) = 18 + 27 = 45", 
+          "10 × (4 + 2) = 10 × 6 = 60 and (10 × 4) + (10 × 2) = 40 + 20 = 60"
+        ]
+      },
+      { 
+        id: 9, 
+        title: "Word Problems", 
+        content: "Lesson 9: Solving real-world distributive property problems",
+        examples: [
+          "Sarah has 2 boxes with 3 apples and 4 oranges each. How many fruits? Answer: 2×(3+4) = (2×3)+(2×4) = 14",
+          "Tom has 3 shelves with 2 books and 5 magazines each. How many items? Answer: 3×(2+5) = (3×2)+(3×5) = 21",
+          "Lisa has 4 bags with 1 toy and 6 candies each. How many items? Answer: 4×(1+6) = (4×1)+(4×6) = 28",
+          "Mike has 5 containers with 2 cookies and 3 crackers each. How many snacks? Answer: 5×(2+3) = (5×2)+(5×3) = 25",
+          "Anna has 3 baskets with 4 red and 2 blue balls each. How many balls? Answer: 3×(4+2) = (3×4)+(3×2) = 18"
+        ]
+      },
+      { 
+        id: 10, 
+        title: "Review and Mastery", 
+        content: "Lesson 10: Comprehensive review of distributive property",
+        examples: [
+          "Multiplication distributes over addition: a × (b + c) = (a × b) + (a × c)",
+          "This property works with all numbers", 
+          "Distributive means 'to spread out or share'",
+          "This property makes complex calculations easier",
+          "Distributive property is essential for algebra and advanced math"
+        ]
+      }
+    ],
+    quiz: [
+      { id: 1, question: "What is 2 × (3 + 4)?", options: ["14", "9", "24", "0"], correct: 0 },
+      { id: 2, question: "What is (2 × 3) + (2 × 4)?", options: ["14", "9", "24", "0"], correct: 0 },
+      { id: 3, question: "What is 3 × (2 + 5)?", options: ["21", "10", "30", "0"], correct: 0 },
+      { id: 4, question: "What is (3 × 2) + (3 × 5)?", options: ["21", "10", "30", "0"], correct: 0 },
+      { id: 5, question: "What is 4 × (1 + 6)?", options: ["28", "11", "24", "0"], correct: 0 },
+      { id: 6, question: "What is (4 × 1) + (4 × 6)?", options: ["28", "11", "24", "0"], correct: 0 },
+      { id: 7, question: "What is 5 × (2 + 3)?", options: ["25", "10", "30", "0"], correct: 0 },
+      { id: 8, question: "What is (5 × 2) + (5 × 3)?", options: ["25", "10", "30", "0"], correct: 0 },
+      { id: 9, question: "What is 3 × (4 + 2)?", options: ["18", "9", "24", "0"], correct: 0 },
+      { id: 10, question: "What is (3 × 4) + (3 × 2)?", options: ["18", "9", "24", "0"], correct: 0 }
+    ]
+  }
+];
+
+// Confetti Component
+const Confetti = () => {
+  const [confettiPieces, setConfettiPieces] = useState([]);
+
+  useEffect(() => {
+    // Generate confetti pieces
+    const pieces = [];
+    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+    
+    for (let i = 0; i < 150; i++) {
+      pieces.push({
+        id: i,
+        x: Math.random() * 100,
+        y: -10,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        size: Math.random() * 10 + 5,
+        speed: Math.random() * 3 + 2,
+        rotationSpeed: Math.random() * 10 - 5,
+        delay: Math.random() * 2
+      });
+    }
+    
+    setConfettiPieces(pieces);
+    
+    // Clean up after animation
+    const timer = setTimeout(() => {
+      setConfettiPieces([]);
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {confettiPieces.map((piece) => (
+        <div
+          key={piece.id}
+          className="absolute animate-bounce"
+          style={{
+            left: `${piece.x}%`,
+            top: `${piece.y}%`,
+            width: `${piece.size}px`,
+            height: `${piece.size}px`,
+            backgroundColor: piece.color,
+            borderRadius: '50%',
+            animationDelay: `${piece.delay}s`,
+            animationDuration: '3s',
+            transform: `rotate(${piece.rotation}deg)`,
+            boxShadow: '0 0 6px rgba(0,0,0,0.3)'
+          }}
+        />
+      ))}
+      
+      {/* Additional celebration elements */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="text-6xl animate-pulse">🎉</div>
+      </div>
+      
+      {/* Sparkle effects */}
+      {[...Array(20)].map((_, i) => (
+        <div
+          key={`sparkle-${i}`}
+          className="absolute animate-ping"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 2}s`,
+            animationDuration: '1s'
+          }}
+        >
+          ✨
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ProgressTracker Component
+const ProgressTracker = ({ completedProperties, totalProperties }) => {
+  const completionPercentage = Math.round((completedProperties.length / totalProperties) * 100);
+  
+  const getProgressColor = (percentage) => {
+    if (percentage >= 100) return "from-green-500 to-green-600";
+    if (percentage >= 80) return "from-blue-500 to-blue-600";
+    if (percentage >= 60) return "from-yellow-500 to-yellow-600";
+    if (percentage >= 40) return "from-orange-500 to-orange-600";
+    return "from-red-500 to-red-600";
+  };
+
+  const getProgressMessage = (percentage) => {
+    if (percentage >= 100) return "🏆 Master of Multiplication Properties!";
+    if (percentage >= 80) return "🌟 Almost there! You're doing amazing!";
+    if (percentage >= 60) return "📚 Great progress! Keep up the good work!";
+    if (percentage >= 40) return "💪 You're making good progress!";
+    if (percentage >= 20) return "🚀 You're getting started!";
+    return "🎯 Ready to begin your multiplication adventure?";
+  };
+
+  const getNextMilestone = (completed) => {
+    const milestones = [
+      { count: 1, message: "Complete your first property!" },
+      { count: 2, message: "Halfway to the mountains!" },
+      { count: 3, message: "Reach the underwater cave!" },
+      { count: 4, message: "Almost at the treasure!" },
+      { count: 5, message: "Find the legendary treasure!" }
+    ];
+    
+    const nextMilestone = milestones.find(milestone => milestone.count > completed);
+    return nextMilestone || { count: 5, message: "You've completed everything!" };
+  };
+
+  const nextMilestone = getNextMilestone(completedProperties.length);
+
+  return (
+    <div className="w-full">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8 shadow-md border border-blue-200">
+        <div className="flex items-center gap-4 mb-6">
+          <FaChartLine className="text-blue-600 text-3xl" />
+          <h2 className="text-2xl font-bold text-gray-800">Learning Progress</h2>
+        </div>
+        
+        {/* Main Progress Bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">Properties Completed</span>
+            <span className="text-sm font-bold text-gray-800">
+              {completedProperties.length}/{totalProperties}
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+            <div 
+              className={`bg-gradient-to-r ${getProgressColor(completionPercentage)} h-4 rounded-full transition-all duration-1000 ease-out relative overflow-hidden`}
+              style={{ width: `${completionPercentage}%` }}
+            >
+              {/* Animated shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+            </div>
+          </div>
+          <div className="text-center">
+            <span className="text-2xl font-bold text-gray-800">{completionPercentage}%</span>
+          </div>
+        </div>
+
+        {/* Progress Message */}
+        <div className="text-center mb-6">
+          <p className="text-lg font-medium text-gray-700">
+            {getProgressMessage(completionPercentage)}
+          </p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg p-6 text-center shadow-sm hover:shadow-md transition-shadow">
+            <FaBook className="text-blue-500 text-3xl mx-auto mb-3" />
+            <div className="text-3xl font-bold text-gray-800">{completedProperties.length * 10}</div>
+            <div className="text-sm text-gray-600 font-medium">Lessons Completed</div>
+          </div>
+          
+          <div className="bg-white rounded-lg p-6 text-center shadow-sm hover:shadow-md transition-shadow">
+            <FaQuestionCircle className="text-green-500 text-3xl mx-auto mb-3" />
+            <div className="text-3xl font-bold text-gray-800">{completedProperties.length * 10}</div>
+            <div className="text-sm text-gray-600 font-medium">Quiz Questions</div>
+          </div>
+          
+          <div className="bg-white rounded-lg p-6 text-center shadow-sm hover:shadow-md transition-shadow">
+            <FaTrophy className="text-yellow-500 text-3xl mx-auto mb-3" />
+            <div className="text-3xl font-bold text-gray-800">{completedProperties.length}</div>
+            <div className="text-sm text-gray-600 font-medium">Badges Earned</div>
+          </div>
+          
+          <div className="bg-white rounded-lg p-6 text-center shadow-sm hover:shadow-md transition-shadow">
+            <FaClock className="text-purple-500 text-3xl mx-auto mb-3" />
+            <div className="text-3xl font-bold text-gray-800">
+              {Math.max(0, totalProperties - completedProperties.length)}
+            </div>
+            <div className="text-sm text-gray-600 font-medium">Properties Left</div>
+          </div>
+        </div>
+
+        {/* Next Milestone */}
+        {completedProperties.length < totalProperties && (
+          <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500">
+            <h3 className="font-semibold text-gray-800 mb-2">Next Milestone</h3>
+            <p className="text-sm text-gray-600 mb-2">{nextMilestone.message}</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                  style={{ 
+                    width: `${(completedProperties.length / nextMilestone.count) * 100}%` 
+                  }}
+                ></div>
+              </div>
+              <span className="text-xs text-gray-500">
+                {completedProperties.length}/{nextMilestone.count}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Achievement Unlocked */}
+        {completedProperties.length > 0 && (
+          <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="flex items-center gap-2">
+              <span className="text-yellow-600">🎉</span>
+              <span className="text-sm font-medium text-yellow-800">
+                {completedProperties.length === 1 
+                  ? "First Property Unlocked!" 
+                  : `${completedProperties.length} Properties Mastered!`
+                }
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// BadgeSystem Component
+const BadgeSystem = ({ properties, completedProperties }) => {
+  const totalProperties = properties.length;
+  const completedCount = completedProperties.length;
+
+  return (
+    <div className="w-full">
+      <div className="bg-white rounded-lg p-8 shadow-md border border-gray-200">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <FaTrophy className="text-yellow-500 text-3xl" />
+            <h2 className="text-2xl font-bold text-gray-800">Multiplication Properties Badges</h2>
+          </div>
+          <div className="text-lg font-semibold text-gray-600 bg-gray-100 px-4 py-2 rounded-lg">
+            {completedCount}/{totalProperties} Completed
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          {properties.map((prop, idx) => {
+            const isCompleted = completedProperties.includes(idx);
+            const isUnlocked = idx <= completedProperties.length;
+            
+            return (
+              <div 
+                key={prop.key} 
+                className="flex flex-col items-center p-6 rounded-lg transition-all duration-300 hover:shadow-lg bg-gray-50"
+                role="button"
+                tabIndex={0}
+                aria-label={`${prop.badge} - ${isCompleted ? 'Completed' : isUnlocked ? 'Available' : 'Locked'}`}
+              >
+                {/* Badge Icon */}
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-4 transition-all duration-300 ${
+                  isCompleted 
+                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg scale-110' 
+                    : isUnlocked
+                      ? 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-md'
+                      : 'bg-gray-200 border-2 border-gray-300'
+                }`}>
+                  {isCompleted ? (
+                    <FaMedal className="text-white text-4xl" />
+                  ) : isUnlocked ? (
+                    <prop.icon className="text-white text-3xl" />
+                  ) : (
+                    <FaLock className="text-gray-500 text-3xl" />
+                  )}
+                </div>
+                
+                {/* Badge Title */}
+                <h3 className={`text-sm font-bold text-center mb-2 ${
+                  isCompleted ? 'text-yellow-700' : isUnlocked ? 'text-blue-700' : 'text-gray-500'
+                }`}>
+                  {prop.badge}
+                </h3>
+                
+                {/* Property Name */}
+                <p className={`text-xs text-center mb-3 ${
+                  isCompleted ? 'text-green-600' : isUnlocked ? 'text-blue-600' : 'text-gray-400'
+                }`}>
+                  {prop.title}
+                </p>
+                
+                {/* Status */}
+                <div className="flex items-center gap-1">
+                  {isCompleted ? (
+                    <>
+                      <FaStar className="text-yellow-500 text-sm" />
+                      <span className="text-xs font-medium text-green-600">Achieved</span>
+                    </>
+                  ) : isUnlocked ? (
+                    <span className="text-xs font-medium text-blue-600">Available</span>
+                  ) : (
+                    <span className="text-xs font-medium text-gray-400">Locked</span>
+                  )}
+                </div>
+                
+                {/* Progress indicator for current property */}
+                {idx === completedProperties.length && !isCompleted && (
+                  <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full w-0 animate-pulse"></div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Overall Progress */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">Overall Progress</span>
+            <span className="text-sm text-gray-500">
+              {Math.round((completedCount / totalProperties) * 100)}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-yellow-500 h-3 rounded-full transition-all duration-500"
+              style={{ width: `${(completedCount / totalProperties) * 100}%` }}
+            ></div>
+          </div>
+          
+          {/* Achievement message */}
+          {completedCount > 0 && (
+            <div className="mt-3 text-center">
+              <p className="text-sm text-gray-600">
+                {completedCount === totalProperties 
+                  ? "🏆 Congratulations! You've mastered all multiplication properties!"
+                  : `Great progress! You've completed ${completedCount} of ${totalProperties} properties.`
+                }
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Map Component
+const Map = ({ properties, completedProperties, currentProperty, onPropertyClick }) => {
+  const [mapSize, setMapSize] = useState({ width: 1000, height: 400 });
+  const mapRef = useRef(null);
+
+  // Property positions for the treasure map
+  const propertyPositions = [
+    { left: 10, top: 50 },  // Zero Property House
+    { left: 30, top: 70 },  // Identity River
+    { left: 45, top: 25 },  // Commutative Mountains
+    { left: 60, top: 55 },  // Associative Underwater Cave
+    { left: 80, top: 20 },  // Distributive Treasure Cave
+  ];
+
+  // Update map size when component mounts or window resizes
+  useEffect(() => {
+    const updateMapSize = () => {
+      if (mapRef.current) {
+        setMapSize({
+          width: mapRef.current.offsetWidth,
+          height: mapRef.current.offsetHeight,
+        });
+      }
+    };
+
+    updateMapSize();
+    window.addEventListener('resize', updateMapSize);
+    return () => window.removeEventListener('resize', updateMapSize);
+  }, []);
+
+  // Generate SVG path points for connecting properties
+  const getSVGPoints = (positions, width, height) => {
+    return positions
+      .map(pos => `${(pos.left / 100) * width},${(pos.top / 100) * height}`)
+      .join(" ");
+  };
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-center gap-3 mb-6">
+        <FaMap className="text-blue-600 text-2xl" />
+        <h2 className="text-2xl font-bold text-gray-800">Adventure Map</h2>
+        <FaCompass className="text-yellow-600 text-xl" />
+      </div>
+      
+      <div 
+        className="relative w-full h-[50vw] min-h-[400px] max-h-[600px] rounded-2xl overflow-hidden shadow-xl border-4 border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50" 
+        ref={mapRef}
+        role="img"
+        aria-label="Treasure map showing 5 multiplication property locations"
+      >
+        {/* Map background */}
+        <img 
+          src="/images/game-images/map.png" 
+          alt="Treasure Map Background" 
+          className="w-full h-full object-cover"
+        />
+        
+        {/* SVG Dashed Path: connects properties in order */}
+        <svg 
+          className="absolute top-0 left-0 w-full h-full pointer-events-none z-10" 
+          width={mapSize.width} 
+          height={mapSize.height} 
+          style={{overflow: 'visible'}}
+          aria-hidden="true"
+        >
+          <polyline
+            points={getSVGPoints(propertyPositions, mapSize.width, mapSize.height)}
+            fill="none"
+            stroke="#000000"
+            strokeWidth="4"
+            strokeDasharray="10,8"
+            strokeLinecap="round"
+            style={{ filter: 'drop-shadow(0 1px 2px #000000aa)' }}
+          />
+        </svg>
+        
+        {/* Map locations */}
+        {properties.map((prop, idx) => {
+          const isCompleted = completedProperties.includes(idx);
+          const isUnlocked = idx <= currentProperty;
+          const isCurrent = idx === currentProperty;
+          
+          return (
+            <button
+              key={prop.key}
+              className={`absolute ${prop.style} z-20 group focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ${
+                isUnlocked ? 'hover:scale-110' : 'cursor-not-allowed'
+              }`}
+              style={{ 
+                width: '140px', 
+                height: '140px', 
+                transform: 'translate(-50%, -50%)' 
+              }}
+              onClick={() => isUnlocked && onPropertyClick(idx)}
+              disabled={!isUnlocked}
+              aria-label={`${prop.title} - ${isCompleted ? 'Completed' : isCurrent ? 'Current location' : 'Locked'}`}
+              aria-describedby={`property-${idx}-description`}
+            >
+              <div className="relative w-full h-full">
+                <img
+                  src={prop.image}
+                  alt={prop.title}
+                  className={`w-full h-full object-contain drop-shadow-xl transition-all duration-300 ${
+                    !isUnlocked ? 'opacity-40 grayscale' : isCompleted ? 'brightness-110 saturate-150' : 'hover:brightness-110'
+                  }`}
+                />
+                
+                {/* Status overlay */}
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center">
+                  {isCompleted ? (
+                    <FaCheckCircle 
+                      className="text-green-500 text-lg" 
+                      aria-label="Property completed"
+                    />
+                  ) : isCurrent ? (
+                    <span 
+                      className="text-lg font-bold text-blue-700"
+                      aria-label="Current property"
+                    >
+                      ×
+                    </span>
+                  ) : (
+                    <FaLock 
+                      className="text-gray-400 text-lg" 
+                      aria-label="Property locked"
+                    />
+                  )}
+                </div>
+              </div>
+              
+              {/* Property name tooltip */}
+              <div 
+                id={`property-${idx}-description`}
+                className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30 shadow-lg"
+              >
+                {prop.title}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      
+      {/* Map legend */}
+      <div className="mt-6 flex flex-wrap gap-6 justify-center text-sm bg-white p-4 rounded-lg shadow-sm">
+        <div className="flex items-center gap-2">
+          <FaCheckCircle className="text-green-500 text-lg" />
+          <span className="text-gray-700 font-medium">Completed</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-blue-700 font-bold text-lg">×</span>
+          <span className="text-gray-700 font-medium">Current</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <FaLock className="text-gray-400 text-lg" />
+          <span className="text-gray-700 font-medium">Locked</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// LessonViewer Component
+const LessonViewer = ({ property, currentLesson, onLessonComplete, onLessonNavigation, onClose, propertyIndex }) => {
+  const totalLessons = property.lessons.length;
+  const currentLessonData = property.lessons[currentLesson];
+
+  const handleNext = () => {
+    if (currentLesson < totalLessons - 1) {
+      onLessonComplete(propertyIndex, currentLesson);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentLesson > 0) {
+      onLessonNavigation(currentLesson - 1);
+    }
+  };
+
+  const handleComplete = () => {
+    onLessonComplete(propertyIndex, currentLesson);
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lesson-modal-title"
+      aria-describedby="lesson-modal-description"
+    >
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-5xl w-full max-h-[95vh] overflow-y-auto relative border-4 border-blue-300">
+        {/* Close button */}
+        <button 
+          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl z-10 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-full p-1"
+          onClick={onClose}
+          aria-label="Close lesson"
+        >
+          <FaTimes />
+        </button>
+        
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <FaBook className="text-blue-600 text-3xl" />
+            <Header 
+              type="h2" 
+              id="lesson-modal-title"
+              className="text-3xl font-bold text-blue-700"
+            >
+              {property.title}
+            </Header>
+          </div>
+          
+          <p 
+            id="lesson-modal-description"
+            className="text-gray-700 mb-6 text-lg leading-relaxed"
+          >
+            {property.description}
+          </p>
+          
+          {/* Story intro (only show on first lesson) */}
+          {currentLesson === 0 && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-l-4 border-blue-400 shadow-sm">
+              <p className="text-blue-800 italic text-lg leading-relaxed">{property.storyIntro}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Progress indicator */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">
+              Lesson {currentLesson + 1} of {totalLessons}
+            </span>
+            <span className="text-sm text-gray-500">
+              {Math.round(((currentLesson + 1) / totalLessons) * 100)}% Complete
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentLesson + 1) / totalLessons) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Lesson content */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-br from-gray-50 to-white p-8 rounded-lg border-2 border-gray-200 shadow-lg">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold">
+                Lesson {currentLesson + 1}
+              </span>
+              <span className="text-xl font-bold text-gray-800">
+                {currentLessonData.title}
+              </span>
+            </div>
+            
+            <div className="prose max-w-none">
+              <p className="text-gray-800 leading-relaxed text-xl mb-6">
+                {currentLessonData.content}
+              </p>
+              
+              {/* Examples section */}
+              {currentLessonData.examples && (
+                <div className="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-400">
+                  <h4 className="font-bold text-blue-800 mb-4 text-lg">Examples:</h4>
+                  <div className="space-y-3">
+                    {currentLessonData.examples.map((example, idx) => (
+                      <div key={idx} className="flex items-start gap-3">
+                        <span className="bg-blue-600 text-white text-sm font-bold px-2 py-1 rounded-full min-w-[24px] text-center">
+                          {idx + 1}
+                        </span>
+                        <p className="text-blue-700 font-medium text-lg leading-relaxed">
+                          {example}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            {currentLesson > 0 && (
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                onClick={handlePrevious}
+                className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                aria-label="Go to previous lesson"
+              >
+                <FaArrowLeft />
+                Previous
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            {currentLesson < totalLessons - 1 ? (
+              <Button 
+                size="sm" 
+                variant="primary" 
+                onClick={handleNext}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                aria-label="Go to next lesson"
+              >
+                Next
+                <FaArrowRight />
+              </Button>
+            ) : (
+              <Button 
+                size="sm" 
+                variant="primary" 
+                onClick={handleComplete}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                aria-label="Complete all lessons and start quiz"
+              >
+                <FaCheckCircle />
+                Complete Lessons & Start Quiz
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Lesson Progress - Integrated into main content */}
+        <div className="mt-8 bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <h3 className="font-semibold text-gray-800 mb-4 text-center">Lesson Progress</h3>
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+            {property.lessons.map((lesson, index) => (
+              <div 
+                key={lesson.id}
+                className={`flex flex-col items-center gap-1 p-2 rounded text-xs ${
+                  index === currentLesson 
+                    ? 'bg-blue-100 text-blue-800 font-medium' 
+                    : index < currentLesson 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'text-gray-600 bg-gray-100'
+                }`}
+              >
+                {index < currentLesson ? (
+                  <FaCheckCircle className="text-green-600 text-sm" />
+                ) : (
+                  <div className="w-3 h-3 rounded-full border border-gray-400"></div>
+                )}
+                <span className="text-center">L{index + 1}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Quiz Component
+const Quiz = ({ property, onQuizComplete, onClose, propertyIndex }) => {
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
+
+  const totalQuestions = property.quiz.length;
+  const currentQuestionData = property.quiz[currentQuestion];
+
+  const handleSubmitQuiz = useCallback(() => {
+    let correctAnswers = 0;
+    
+    property.quiz.forEach((question, index) => {
+      if (selectedAnswers[index] === question.correct) {
+        correctAnswers++;
+      }
+    });
+    
+    setScore(correctAnswers);
+    setShowResults(true);
+  }, [property.quiz, selectedAnswers]);
+
+  const handleAutoAdvance = () => {
+    if (currentQuestion < totalQuestions - 1) {
+      setCurrentQuestion(prev => prev + 1);
+    }
+  };
+
+  const handleAnswerSelect = (questionIndex, answerIndex) => {
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [questionIndex]: answerIndex
+    }));
+    
+    // Auto-advance to next question after selecting an answer
+    if (currentQuestion < totalQuestions - 1) {
+      handleAutoAdvance();
+    }
+  };
+
+  const handleNext = () => {
+    if (currentQuestion < totalQuestions - 1) {
+      setCurrentQuestion(prev => prev + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(prev => prev - 1);
+    }
+  };
+
+  // Timer countdown
+  useEffect(() => {
+    if (timeLeft > 0 && !showResults) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0 && !showResults) {
+      handleSubmitQuiz();
+    }
+  }, [timeLeft, showResults, handleSubmitQuiz]);
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getScoreColor = (score) => {
+    if (score === 10) return "text-green-600";
+    if (score >= 8) return "text-yellow-600";
+    if (score >= 6) return "text-orange-600";
+    return "text-red-600";
+  };
+
+  const getScoreMessage = (score) => {
+    if (score === 10) return "Perfect! You've mastered this property! 🎉";
+    if (score >= 8) return "Great job! You understand this property well! 👍";
+    if (score >= 6) return "Good work! Review the lessons and try again! 📚";
+    return "Keep studying! You'll get it next time! 💪";
+  };
+
+  const getPassFailStatus = (score) => {
+    return score === 10 ? "PASS" : "FAIL";
+  };
+
+  const getPassFailColor = (score) => {
+    return score === 10 ? "text-green-600" : "text-red-600";
+  };
+
+  const getPassFailBgColor = (score) => {
+    return score === 10 ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200";
+  };
+
+  if (showResults) {
+    return (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quiz-results-title"
+      >
+        <div className={`bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative border-4 ${score === 10 ? 'border-green-300' : 'border-red-300'}`}>
+          <button 
+            className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl z-10 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-full p-1"
+            onClick={onClose}
+            aria-label="Close quiz results"
+          >
+            <FaTimes />
+          </button>
+          
+          <div className="text-center">
+            {/* PASS/FAIL Status Banner */}
+            <div className={`${getPassFailBgColor(score)} border-2 rounded-xl p-4 mb-6`}>
+              <div className={`text-5xl font-black ${getPassFailColor(score)} mb-2`}>
+                {getPassFailStatus(score)}
+              </div>
+              <div className="text-lg font-semibold text-gray-700">
+                {score === 10 ? "Congratulations! You passed!" : "Don't worry, try again!"}
+              </div>
+            </div>
+
+            <div className="text-6xl mb-4">
+              {score === 10 ? "🏆" : score >= 8 ? "🎉" : score >= 6 ? "👍" : "💪"}
+            </div>
+            
+            <Header 
+              type="h2" 
+              id="quiz-results-title"
+              className="text-3xl font-bold mb-4"
+            >
+              Quiz Complete!
+            </Header>
+            
+            <div className={`text-4xl font-bold mb-4 ${getScoreColor(score)}`}>
+              {score}/{totalQuestions}
+            </div>
+            
+            <p className="text-lg text-gray-700 mb-6">
+              {getScoreMessage(score)}
+            </p>
+            
+            <div className={`${getPassFailBgColor(score)} p-6 rounded-lg mb-6 border-2`}>
+              <h3 className="font-semibold text-gray-800 mb-3 text-lg">Quiz Summary</h3>
+              <div className="space-y-2">
+                <p className="text-gray-700 font-medium">
+                  You answered <span className={`font-bold ${getPassFailColor(score)}`}>{score}</span> out of <span className="font-bold">{totalQuestions}</span> questions correctly.
+                </p>
+                {score === 10 ? (
+                  <p className="text-green-700 font-semibold">
+                    🎉 Perfect score! You've unlocked the next property!
+                  </p>
+                ) : (
+                  <p className="text-red-700 font-semibold">
+                    📚 You need to answer all 10 questions correctly to pass. Review the lessons and try again!
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex gap-4 justify-center">
+              <Button 
+                variant="secondary" 
+                onClick={onClose}
+                className="flex items-center gap-2"
+              >
+                <FaArrowLeft />
+                Back to Map
+              </Button>
+              
+              {score === 10 ? (
+                <Button 
+                  variant="primary" 
+                  onClick={() => onQuizComplete(propertyIndex, score)}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3"
+                >
+                  <FaTrophy />
+                  Claim Badge & Continue!
+                </Button>
+              ) : (
+                <Button 
+                  variant="primary" 
+                  onClick={() => onQuizComplete(propertyIndex, score)}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3"
+                >
+                  <FaBook />
+                  Review Lessons & Retry
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quiz-modal-title"
+    >
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-5xl w-full max-h-[95vh] overflow-y-auto relative border-4 border-purple-300">
+        {/* Close button */}
+        <button 
+          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl z-10 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-full p-1"
+          onClick={onClose}
+          aria-label="Close quiz"
+        >
+          <FaTimes />
+        </button>
+        
+        {/* Header */}
+        <div className="mb-8">
+          <Header 
+            type="h2" 
+            id="quiz-modal-title"
+            className="text-3xl font-bold text-purple-700 mb-4"
+          >
+            {property.title} - Quiz
+          </Header>
+          
+          <div className="flex items-center justify-between">
+            <p className="text-gray-700 text-lg">
+              Test your knowledge of {property.title.toLowerCase()}
+            </p>
+            <div className="text-2xl font-bold text-purple-600 bg-purple-100 px-4 py-2 rounded-lg">
+              {formatTime(timeLeft)}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress indicator */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">
+              Question {currentQuestion + 1} of {totalQuestions}
+            </span>
+            <span className="text-sm text-gray-500">
+              {Math.round(((currentQuestion + 1) / totalQuestions) * 100)}% Complete
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentQuestion + 1) / totalQuestions) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Question */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 rounded-lg border-2 border-purple-200 shadow-lg">
+            <h3 className="text-2xl font-bold text-gray-800 mb-8 leading-relaxed">
+              {currentQuestionData.question}
+            </h3>
+            
+            <div className="space-y-4">
+              {currentQuestionData.options.map((option, index) => (
+                <button
+                  key={index}
+                  className={`w-full p-6 text-left rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                    selectedAnswers[currentQuestion] === index
+                      ? 'border-purple-500 bg-purple-100 text-purple-800 shadow-md'
+                      : 'border-gray-300 bg-white hover:border-purple-300 hover:bg-purple-50'
+                  }`}
+                  onClick={() => handleAnswerSelect(currentQuestion, index)}
+                  aria-pressed={selectedAnswers[currentQuestion] === index}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
+                      selectedAnswers[currentQuestion] === index
+                        ? 'border-purple-500 bg-purple-500'
+                        : 'border-gray-400'
+                    }`}>
+                      {selectedAnswers[currentQuestion] === index && (
+                        <FaCheckCircle className="text-white text-sm" />
+                      )}
+                    </div>
+                    <span className="font-semibold text-lg">{option}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            {currentQuestion > 0 && (
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                onClick={handlePrevious}
+                className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                aria-label="Go to previous question"
+              >
+                <FaArrowLeft />
+                Previous
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            {currentQuestion < totalQuestions - 1 ? (
+              <Button 
+                size="sm" 
+                variant="primary" 
+                onClick={handleNext}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                aria-label="Go to next question"
+              >
+                Next
+                <FaArrowRight />
+              </Button>
+            ) : (
+              <Button 
+                size="sm" 
+                variant="primary" 
+                onClick={handleSubmitQuiz}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                aria-label="Submit quiz"
+              >
+                <FaCheckCircle />
+                Submit Quiz
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Question navigation - Integrated into main content */}
+        <div className="mt-8 bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <h3 className="font-semibold text-gray-800 mb-4 text-center">Question Navigation</h3>
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+            {property.quiz.map((_, index) => (
+              <button
+                key={index}
+                className={`w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
+                  index === currentQuestion
+                    ? 'bg-purple-500 text-white shadow-md'
+                    : selectedAnswers[index] !== undefined
+                      ? 'bg-green-100 text-green-800 border-2 border-green-300'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300 border border-gray-300'
+                }`}
+                onClick={() => setCurrentQuestion(index)}
+                aria-label={`Go to question ${index + 1}`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-center gap-4 text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+              <span className="text-gray-600">Current</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 rounded-full bg-green-100 border-2 border-green-300"></div>
+              <span className="text-gray-600">Answered</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 rounded-full bg-gray-200 border border-gray-300"></div>
+              <span className="text-gray-600">Not Answered</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LearningMultiplication = () => {
+  // Authentication context
+  const { currentUser } = useAuth();
+  
+  // State management
+  const [currentProperty, setCurrentProperty] = useState(0);
+  const [currentLesson, setCurrentLesson] = useState(0);
+  const [completedProperties, setCompletedProperties] = useState([]);
+  const [completedLessons, setCompletedLessons] = useState({});
+  const [showLessonModal, setShowLessonModal] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showTreasure, setShowTreasure] = useState(false);
+
+  // Load progress from ProgressService on component mount
+  useEffect(() => {
+    console.log('🔄 LearningMultiplication: Component mounted/updated', {
+      currentUser,
+      hasToken: !!localStorage.getItem('token'),
+      timestamp: new Date().toISOString()
+    });
+
+    if (!currentUser) {
+      console.warn('⚠️ No authenticated user found - progress will not be saved');
+      return;
+    }
+
+    console.log('🔍 LearningMultiplication: Loading progress for user:', {
+      user: currentUser,
+      username: currentUser.username,
+      email: currentUser.email,
+      roles: currentUser.roles,
+      token: localStorage.getItem('token'),
+      isAuthenticated: AuthService.isAuthenticated(),
+      isStudent: AuthService.isStudent(),
+      timestamp: new Date().toISOString()
+    });
+
+    const loadUserProgress = async () => {
+      try {
+        console.log('🔄 Starting progress load...');
+        const savedProgress = await ProgressService.loadProgress();
+        console.log('📊 Progress load result:', savedProgress);
+        
+        if (savedProgress) {
+          setCompletedProperties(savedProgress.completedProperties || []);
+          setCompletedLessons(savedProgress.completedLessons || {});
+          setCurrentProperty(savedProgress.currentProperty || 0);
+          setCurrentLesson(savedProgress.currentLesson || 0);
+          console.log('✅ Progress loaded successfully for user:', currentUser.username || currentUser.email);
+          console.log('📈 Loaded progress data:', {
+            completedProperties: savedProgress.completedProperties || [],
+            completedLessons: savedProgress.completedLessons || {},
+            currentProperty: savedProgress.currentProperty || 0,
+            currentLesson: savedProgress.currentLesson || 0
+          });
+        } else {
+          console.log('📝 No saved progress found for user:', currentUser.username || currentUser.email);
+          // Initialize with empty progress
+          setCompletedProperties([]);
+          setCompletedLessons({});
+          setCurrentProperty(0);
+          setCurrentLesson(0);
+        }
+      } catch (error) {
+        console.error('❌ Error loading progress:', error);
+        // Initialize with empty progress on error
+        setCompletedProperties([]);
+        setCompletedLessons({});
+        setCurrentProperty(0);
+        setCurrentLesson(0);
+      }
+    };
+
+    loadUserProgress();
+  }, [currentUser]);
+
+  // Save progress to ProgressService whenever state changes
+  useEffect(() => {
+    console.log('💾 LearningMultiplication: Save effect triggered', {
+      currentUser: !!currentUser,
+      hasToken: !!localStorage.getItem('token'),
+      completedProperties,
+      completedLessons,
+      currentProperty,
+      currentLesson,
+      timestamp: new Date().toISOString()
+    });
+
+    if (!currentUser) {
+      console.warn('⚠️ No authenticated user - skipping progress save');
+      return; // Don't save progress if no authenticated user
+    }
+
+    const saveUserProgress = async () => {
+      try {
+        const progress = {
+          completedProperties,
+          completedLessons,
+          currentProperty,
+          currentLesson
+        };
+        
+        console.log('💾 LearningMultiplication: Saving progress:', {
+          user: currentUser.username || currentUser.email,
+          progress,
+          timestamp: new Date().toISOString(),
+          isAuthenticated: AuthService.isAuthenticated(),
+          isStudent: AuthService.isStudent()
+        });
+        
+        const success = await ProgressService.saveProgress(progress);
+        console.log('💾 Save progress result:', success);
+        
+        if (success) {
+          console.log('✅ Progress saved successfully for user:', currentUser.username || currentUser.email);
+        } else {
+          console.error('❌ Failed to save progress for user:', currentUser.username || currentUser.email);
+        }
+      } catch (error) {
+        console.error('💥 Error saving progress:', error);
+      }
+    };
+
+    saveUserProgress();
+  }, [completedProperties, completedLessons, currentProperty, currentLesson, currentUser]);
+
+  // Check if all properties are completed
+  useEffect(() => {
+    if (completedProperties.length === 5) {
+      setShowTreasure(true);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
+    }
+  }, [completedProperties]);
+
+  const handleLessonComplete = (propertyIndex, lessonIndex) => {
+    const key = `${propertyIndex}-${lessonIndex}`;
+    setCompletedLessons(prev => ({
+      ...prev,
+      [key]: true
+    }));
+
+    // Check if all 10 lessons are completed
+    const allLessonsCompleted = properties[propertyIndex].lessons.every((_, index) => 
+      completedLessons[`${propertyIndex}-${index}`] || index === lessonIndex
+    );
+
+    if (allLessonsCompleted) {
+      setShowQuizModal(true);
+    } else {
+      setCurrentLesson(lessonIndex + 1);
+    }
+  };
+
+  const handleQuizComplete = (propertyIndex, score) => {
+    if (score === 10) { // All 10 questions correct
+      setCompletedProperties(prev => [...prev, propertyIndex]);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+      
+      // Unlock next property
+      if (propertyIndex < 4) {
+        setCurrentProperty(propertyIndex + 1);
+        setCurrentLesson(0);
+      }
+    }
+    setShowQuizModal(false);
+  };
+
+  const openProperty = (propertyIndex) => {
+    if (propertyIndex <= currentProperty) {
+      setCurrentProperty(propertyIndex);
+      setCurrentLesson(0);
+      setShowLessonModal(true);
+    }
+  };
+
+  const handleLessonNavigation = (lessonIndex) => {
+    setCurrentLesson(lessonIndex);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <Header type="h1" fontSize="4xl" weight="bold" className="text-center mb-8 text-gray-800 bg-white p-6 rounded-lg shadow-md">
+          Learning Multiplication: Treasure Hunt
+        </Header>
+        
+        {/* User Info Display */}
+        {currentUser && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-center">
+            <p className="text-blue-800 font-semibold">
+              Welcome, {currentUser.firstName || currentUser.username || currentUser.email}! 
+            </p>
+            <p className="text-blue-600 text-sm">
+              Your progress is automatically saved and will be available when you return.
+            </p>
+            
+            {/* Test Authentication Button */}
+            <div className="mt-4 space-x-4">
+              <Button 
+                variant="secondary" 
+                onClick={async () => {
+                  console.log('🧪 Testing authentication...');
+                  const user = AuthService.getCurrentUser();
+                  const token = localStorage.getItem('token');
+                  console.log('User:', user);
+                  console.log('Token:', token);
+                  console.log('Roles:', user?.roles);
+                  
+                  // Test API connection
+                  try {
+                    const response = await api.get('/api/learning-progress/test');
+                    console.log('✅ API Test Response:', response.data);
+                  } catch (error) {
+                    console.error('❌ API Test Error:', error);
+                  }
+                }}
+                className="text-sm"
+              >
+                Test Auth & API
+              </Button>
+              
+              <Button 
+                variant="secondary" 
+                onClick={async () => {
+                  console.log('🧪 Testing progress save...');
+                  const testProgress = {
+                    completedProperties: [0],
+                    completedLessons: { "0-0": true, "0-1": true },
+                    currentProperty: 0,
+                    currentLesson: 2
+                  };
+                  
+                  try {
+                    const success = await ProgressService.saveProgress(testProgress);
+                    console.log('✅ Progress Save Result:', success);
+                  } catch (error) {
+                    console.error('❌ Progress Save Error:', error);
+                  }
+                }}
+                className="text-sm"
+              >
+                Test Progress Save
+              </Button>
+              
+              <Button 
+                variant="secondary" 
+                onClick={async () => {
+                  console.log('🧪 Testing database connection...');
+                  try {
+                    const response = await api.get('/api/learning-progress/test-db');
+                    console.log('✅ Database Test Response:', response.data);
+                  } catch (error) {
+                    console.error('❌ Database Test Error:', error);
+                  }
+                }}
+                className="text-sm"
+              >
+                Test Database
+              </Button>
+              
+              <Button 
+                variant="secondary" 
+                onClick={async () => {
+                  console.log('🧪 Force saving current progress to backend...');
+                  const currentProgress = {
+                    completedProperties,
+                    completedLessons,
+                    currentProperty,
+                    currentLesson
+                  };
+                  
+                  try {
+                    const success = await ProgressService.forceSaveToBackend(currentProgress);
+                    console.log('✅ Force Save Result:', success);
+                  } catch (error) {
+                    console.error('❌ Force Save Error:', error);
+                  }
+                }}
+                className="text-sm"
+              >
+                Force Save to Backend
+              </Button>
+              
+              <Button 
+                variant="secondary" 
+                onClick={async () => {
+                  console.log('🧪 Testing progress load...');
+                  try {
+                    const progress = await ProgressService.loadProgress();
+                    console.log('✅ Load Progress Result:', progress);
+                    
+                    if (progress) {
+                      setCompletedProperties(progress.completedProperties || []);
+                      setCompletedLessons(progress.completedLessons || {});
+                      setCurrentProperty(progress.currentProperty || 0);
+                      setCurrentLesson(progress.currentLesson || 0);
+                      console.log('✅ Progress loaded and state updated');
+                    } else {
+                      console.log('📝 No progress found');
+                    }
+                  } catch (error) {
+                    console.error('❌ Load Progress Error:', error);
+                  }
+                }}
+                className="text-sm"
+              >
+                Test Load Progress
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* Progress Tracker */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <ProgressTracker 
+            completedProperties={completedProperties}
+            totalProperties={5}
+          />
+        </div>
+
+        {/* Badge System */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <BadgeSystem 
+            properties={properties}
+            completedProperties={completedProperties}
+          />
+        </div>
+
+        {/* Treasure Map */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <Map 
+            properties={properties}
+            completedProperties={completedProperties}
+            currentProperty={currentProperty}
+            onPropertyClick={openProperty}
+          />
+                </div>
+                
+        {/* Lesson Modal */}
+        {showLessonModal && (
+          <LessonViewer
+            property={properties[currentProperty]}
+            currentLesson={currentLesson}
+            onLessonComplete={handleLessonComplete}
+            onLessonNavigation={handleLessonNavigation}
+            onClose={() => setShowLessonModal(false)}
+            propertyIndex={currentProperty}
+          />
+        )}
+
+        {/* Quiz Modal */}
+        {showQuizModal && (
+          <Quiz
+            property={properties[currentProperty]}
+            onQuizComplete={handleQuizComplete}
+            onClose={() => setShowQuizModal(false)}
+            propertyIndex={currentProperty}
+          />
+        )}
+
+        {/* Confetti Animation */}
+        {showConfetti && <Confetti />}
+
+        {/* Treasure Chest */}
+        {showTreasure && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] p-4">
+            <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 p-8 rounded-2xl shadow-2xl text-center max-w-lg mx-4 border-4 border-yellow-300">
+              <div className="text-8xl mb-6 animate-bounce">🏆</div>
+              <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-lg">Congratulations!</h2>
+              <p className="text-white mb-8 text-lg leading-relaxed drop-shadow-md">
+                You've mastered all 5 multiplication properties and found the legendary treasure!
+              </p>
+              <Button 
+                variant="primary" 
+                onClick={() => setShowTreasure(false)}
+                className="bg-white text-yellow-600 hover:bg-yellow-50 px-8 py-3 text-lg font-semibold shadow-lg"
+              >
+                Claim Your Treasure!
+                    </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LearningMultiplication; 

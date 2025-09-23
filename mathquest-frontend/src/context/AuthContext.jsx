@@ -1,5 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AuthService from '../services/authService';
+import ProgressService from '../services/progressService';
+import logger from '../services/logger';
+import MultiplicationLearningService from '../services/multiplicationLearningService';
 
 const AuthContext = createContext();
 
@@ -9,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [multiplicationProgress, setMultiplicationProgress] = useState(null);
 
   useEffect(() => {
     // Load user data from localStorage on initial load
@@ -49,9 +53,64 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear user-specific progress from memory (but keep in localStorage)
+    ProgressService.clearProgress();
+    
     AuthService.logout();
     setCurrentUser(null);
     setToken(null);
+    
+    logger.info('User logged out and progress cleared from memory');
+  };
+
+  // Multiplication Learning: load user's progress from backend
+  const loadMultiplicationProgress = async () => {
+    try {
+      if (!token) return null;
+      const progress = await MultiplicationLearningService.loadProgress();
+      setMultiplicationProgress(progress);
+      return progress;
+    } catch (error) {
+      logger.error('Failed to load multiplication progress', { error: error.message });
+      return null;
+    }
+  };
+
+  // Multiplication Learning: save overall progress snapshot
+  const saveMultiplicationProgress = async (progressData) => {
+    try {
+      if (!token) return null;
+      const saved = await MultiplicationLearningService.saveProgress(progressData);
+      setMultiplicationProgress(saved);
+      return saved;
+    } catch (error) {
+      logger.error('Failed to save multiplication progress', { error: error.message });
+      throw error;
+    }
+  };
+
+  // Multiplication Learning: complete a property
+  const completeMultiplicationProperty = async (propertyIndex, propertyData) => {
+    try {
+      if (!token) return null;
+      const updated = await MultiplicationLearningService.completeProperty(propertyIndex, propertyData);
+      setMultiplicationProgress(updated);
+      return updated;
+    } catch (error) {
+      logger.error('Failed to complete multiplication property', { error: error.message });
+      throw error;
+    }
+  };
+
+  // Multiplication Learning: save a quiz/challenge attempt
+  const saveMultiplicationQuizAttempt = async (propertyIndex, stepIndex, quizData) => {
+    try {
+      if (!token) return null;
+      return await MultiplicationLearningService.saveQuizAttempt(propertyIndex, stepIndex, quizData);
+    } catch (error) {
+      logger.error('Failed to save multiplication quiz attempt', { error: error.message });
+      throw error;
+    }
   };
 
   const refreshCurrentUser = async () => {
@@ -64,7 +123,7 @@ export const AuthProvider = ({ children }) => {
       }
       return updatedUser;
     } catch (error) {
-      console.error("Failed to refresh user data:", error);
+      logger.error("Failed to refresh user data", { error: error.message });
       return null;
     }
   };
@@ -90,7 +149,13 @@ export const AuthProvider = ({ children }) => {
     refreshCurrentUser,
     isAdmin,
     isTeacher,
-    isStudent
+    isStudent,
+    // Multiplication learning
+    multiplicationProgress,
+    loadMultiplicationProgress,
+    saveMultiplicationProgress,
+    completeMultiplicationProperty,
+    saveMultiplicationQuizAttempt
   };
 
   return (

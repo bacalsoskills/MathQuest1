@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import LevelProgressionModal from './LevelProgressionModal';
 import gameService from '../../services/gameService';
-import { useRef } from 'react';
 import { FaPlay, FaPause, FaCog, FaRedo, FaTable, FaVolumeUp, FaVolumeMute, FaStar } from 'react-icons/fa';
 import { BsFullscreen } from "react-icons/bs";
 import Modal from '../../ui/modal';
 import { Button } from '../../ui/button';
 import { Header } from '../../ui/heading';
+import logger from '../../services/logger';
 
 // Add these constants at the top after imports
 const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
@@ -111,7 +111,7 @@ const MultipleChoiceGame = ({ game, onGameComplete }) => {
   // Add callGroqApi function
   const callGroqApi = useCallback(async (topic, numberOfQuestions) => {
     if (!GROQ_API_KEY) {
-      console.warn('[MultipleChoiceGame] Groq API key not found');
+      logger.warn('[MultipleChoiceGame] Groq API key not found');
       return null;
     }
 
@@ -123,7 +123,7 @@ const MultipleChoiceGame = ({ game, onGameComplete }) => {
     }
 
     if (apiState.callCount >= MAX_CALLS_PER_WINDOW) {
-      console.error('[MultipleChoiceGame] Rate limit exceeded');
+      logger.error('[MultipleChoiceGame] Rate limit exceeded');
       throw new Error('Rate limit exceeded');
     }
 
@@ -210,7 +210,7 @@ Respond ONLY with a JSON array where each object has:
 
       return filteredProblems;
     } catch (error) {
-      console.error('[MultipleChoiceGame] Groq API error:', error);
+      logger.error('[MultipleChoiceGame] Groq API error', { error: error.message });
       return null;
     }
   }, []);
@@ -218,7 +218,7 @@ Respond ONLY with a JSON array where each object has:
   // Update generateQuestions to use Groq API only
   const generateQuestions = useCallback(async () => {
     if (!game?.id || !game?.topic || apiState.isGenerating) {
-      console.warn('[MultipleChoiceGame] Game or topic not available yet, or already generating');
+      logger.warn('[MultipleChoiceGame] Game or topic not available yet, or already generating');
       return [];
     }
 
@@ -272,7 +272,7 @@ Respond ONLY with a JSON array where each object has:
       }
 
       // If no problems returned, show error and retry
-      console.error('[MultipleChoiceGame] No problems generated from Groq API');
+      logger.error('[MultipleChoiceGame] No problems generated from Groq API');
       
       // Generate fallback questions based on topic
       const fallbackQuestions = generateFallbackQuestions(game.topic, problemCount);
@@ -286,7 +286,7 @@ Respond ONLY with a JSON array where each object has:
       return [];
       
     } catch (error) {
-      console.error('[MultipleChoiceGame] Error generating problems:', error);
+      logger.error('[MultipleChoiceGame] Error generating problems', { error: error.message });
       toast.error('Failed to generate questions. Please try again.');
       setQuestions([]);
       return [];
@@ -357,7 +357,7 @@ Respond ONLY with a JSON array where each object has:
         }
       }
     } catch (error) {
-      console.error('Error submitting score:', error);
+      logger.error('Error submitting score', { error: error.message });
       toast.error('Failed to submit score');
       
       if (currentUser) {
@@ -497,7 +497,7 @@ Respond ONLY with a JSON array where each object has:
         }
       }, 1000);
     }).catch(error => {
-      console.error('[MultipleChoiceGame] Error generating questions:', error);
+      logger.error('[MultipleChoiceGame] Error generating questions', { error: error.message });
       toast.error('Failed to start game. Please try again.');
       setCountdownModal(null);
     });
@@ -601,7 +601,7 @@ Respond ONLY with a JSON array where each object has:
       setTimeLeft(countdown * PROBLEMS_PER_LEVEL);
       generateQuestions();
     } catch (error) {
-      console.error('Error submitting level completion:', error);
+      logger.error('Error submitting level completion', { error: error.message });
       toast.error('Failed to save level progress');
     }
   }, [currentLevel, game?.id, score, questions.length, countdown, timeLeft, generateQuestions]);

@@ -89,19 +89,27 @@ public class WebSecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Your React app URL
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
-        configuration.setExposedHeaders(Arrays.asList("Content-Disposition"));
-        configuration.setMaxAge(3600L); // 1 hour for preflight cache
-        configuration.setAllowCredentials(true);
+@Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+    // ✅ use patterns instead of fixed origins
+    configuration.setAllowedOriginPatterns(Arrays.asList(
+            "http://localhost:3000",
+            "http://127.0.0.1:3000"
+            // add your prod domain: "https://your-frontend.com"
+    ));
+
+    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"));
+    configuration.setExposedHeaders(Arrays.asList("Content-Disposition", "Content-Type"));
+    configuration.setAllowCredentials(true);
+    configuration.setMaxAge(3600L); // 1 hour preflight cache
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+}
+
 
 }
