@@ -9,7 +9,8 @@ import { Label } from "../ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import AuthService from '../services/authService';
-import { FaRegEyeSlash, FaRegEye } from "react-icons/fa";
+import { FaRegEyeSlash, FaRegEye, FaSkullCrossbones, FaCompass, FaAnchor, FaShip, FaSun, FaMoon } from "react-icons/fa";
+import { useTheme } from '../context/ThemeContext';
 
 const ProfilePage = () => {
   const { currentUser, logout, refreshCurrentUser } = useAuth();
@@ -48,6 +49,7 @@ const ProfilePage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const fileInputRef = useRef(null);
+  const { darkMode, setDarkMode, isInitialized } = useTheme();
 
   const getInitials = (firstName, lastName) => {
     const firstInitial = firstName ? firstName[0] : '';
@@ -354,30 +356,72 @@ const ProfilePage = () => {
 
   if (loading && !profile) {
     return (
-      <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center min-h-[60vh] sm:min-h-[70vh] md:min-h-[80vh] lg:min-h-[85vh]"
+           style={{
+             backgroundImage: darkMode
+               ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
+               : "url('/images/game-images/map.png')",
+             backgroundSize: darkMode ? 'cover' : 'cover',
+             backgroundRepeat: 'repeat',
+           }}
+      >
+      <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-xl font-semibold text-red-600">{error || "Could not load profile."}</div>
+      <div className="flex justify-center items-center min-h-[60vh] sm:min-h-[70vh] md:min-h-[80vh] lg:min-h-[85vh]"
+           style={{
+             backgroundImage: darkMode
+               ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
+               : "url('/images/game-images/map.png')",
+             backgroundSize: darkMode ? 'cover' : 'cover',
+             backgroundRepeat: 'repeat',
+           }}
+      >
+        <div className="text-base sm:text-lg md:text-xl font-semibold text-red-600">{error || "Could not load profile."}</div>
       </div>
     );
   }
 
   return (
-    <div className="px-4 sm:px-6  lg:py-8">
+    <div
+      className="px-4 sm:px-6 lg:py-10 py-6"
+      style={{
+        backgroundImage: darkMode
+          ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
+          : "url('/images/game-images/map.png')",
+        backgroundSize: darkMode ? 'cover' : 'cover',
+        backgroundRepeat: 'repeat',
+      }}
+    >
       <div className="max-w-6xl mx-auto">
-      <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white"> {pageTitle} </Header>
-      <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] mb-5 md:mb-8"></div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-lg sm:text-xl'} />
+          <Header type="h1" fontSize="5xl" weight="bold" className={(darkMode ? 'text-yellow-300' : 'text-primary') + ' mb-1 text-3xl sm:text-4xl lg:text-5xl'}> {pageTitle} </Header>
+          <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-lg sm:text-xl'} />
+        </div>
+        {isInitialized && (
+          <Button
+            variant="outlineWhite"
+            size="sm"
+            onClick={() => setDarkMode(!darkMode)}
+            className="!rounded-full flex items-center gap-2 w-full sm:w-auto"
+          >
+            {darkMode ? <FaSun className="text-yellow-300" /> : <FaMoon className="text-blue-700" />}
+            {darkMode ? 'Light Mode' : 'Dark Mode'}
+          </Button>
+        )}
+      </div>
+      <div className="h-[2px] w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 mb-4 sm:mb-6 md:mb-8 opacity-80"></div>
 
 
         {/* Add verification reminders */}
         {profile?.createdByAdmin && !profile?.emailVerified && profile?.emailVerificationRequired && (
-          <div className="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+          <div className="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
             <strong>Email Verification Required:</strong> Please verify your email address to access all features.
             {!showResendVerification ? (
               <button 
@@ -400,16 +444,22 @@ const ProfilePage = () => {
         )}
 
         {profile?.temporaryPassword && (
-          <div className="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+          <div className="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
             <strong>Password Update Required:</strong> You are using a temporary password. Please update your password for security.
-            <p className="text-sm mt-1">Your temporary password will expire in 7 days.</p>
+            <p className="text-xs sm:text-sm mt-1">Your temporary password will expire in 7 days.</p>
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row gap-8">
-   
-          <div className="w-full md:w-1/3 flex flex-col items-center space-y-4 mt-10 md:mt-20 px-10">
-            <Avatar className="h-52 w-52 shadow-sm rounded-md overflow-hidden">
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+  
+          <div
+            className="w-full md:w-1/3 flex flex-col items-center space-y-4 mt-6 md:mt-12 px-6 sm:px-10 rounded-2xl border border-white/10 dark:border-yellow-600/40 shadow-xl"
+            style={{
+              background: darkMode ? 'rgba(10, 13, 26, 0.85)' : '#f5ecd2',
+              boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.1)'
+            }}
+          >
+            <Avatar className="h-40 w-40 sm:h-48 sm:w-48 md:h-52 md:w-52 shadow-sm rounded-md overflow-hidden mt-6">
               {profileImageSrc ? (
                 <AvatarImage 
                   src={profileImageSrc} 
@@ -420,7 +470,7 @@ const ProfilePage = () => {
                   style={{objectFit: 'cover'}}
                 />
               ) : (
-                <AvatarFallback className="text-4xl bg-blue-500 text-white">
+                <AvatarFallback className="text-3xl sm:text-4xl bg-yellow-500 text-white">
                   {getInitials(profile?.firstName, profile?.lastName)}
                 </AvatarFallback>
               )}
@@ -442,31 +492,41 @@ const ProfilePage = () => {
               rounded="full"
               disabled={photoUploadLoading}
             >
-              {photoUploadLoading ? 'Uploading...' : profile?.profileImage ? 'Change Photo' : 'Upload a Photo'}
+              {photoUploadLoading ? 'Hoisting Portrait...' : profile?.profileImage ? 'Change Portrait' : 'Upload a Portrait'}
             </Button>
+            <div className="flex items-center gap-2 mb-6 opacity-80">
+              <FaShip className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-base sm:text-lg'} />
+              <span className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-sm sm:text-base'}>Captain {editFormData.fullName || currentUser?.username}</span>
+            </div>
           </div>
 
-       
-          <div className="w-full md:w-2/3">
+      
+          <div
+            className="w-full md:w-2/3 rounded-2xl border border-white/10 dark:border-yellow-600/40 shadow-xl"
+            style={{
+              background: darkMode ? 'rgba(10, 13, 26, 0.85)' : '#f5ecd2',
+              boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.1)'
+            }}
+          >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="mb-6  !font-montserrat tracking-wide">
-                <TabsTrigger value="edit" className={`py-2 !rounded-none !px-0 text-lg !text-left !bg-transparent mr-3 ${activeTab === 'edit' ? 'dark:text-white text-primary font-bold border-b-2 dark:border-gray-200 border-primary' : 'dark:text-gray-200 text-primary/80 dark:border-gray-200 border-primary'}`}>
+              <TabsList className="mb-4 sm:mb-6 !font-montserrat tracking-wide bg-transparent p-3 sm:p-4 flex gap-4 sm:gap-6 border-b border-yellow-600/30 overflow-x-auto">
+                <TabsTrigger value="edit" className={`py-2 !rounded-none !px-0 text-base sm:text-lg !text-left !bg-transparent mr-3 ${activeTab === 'edit' ? 'dark:text-yellow-300 text-yellow-800 font-bold border-b-2 border-yellow-500' : 'dark:text-gray-300 text-yellow-900/80'}`}>
                   Edit Info
                 </TabsTrigger>
-                <TabsTrigger value="password" className={`!px-2 rounded-none py-2 text-lg !bg-transparent ${activeTab === 'password' ? 'dark:text-white text-primary font-bold border-b-2 dark:border-gray-200 border-primary ' : 'dark:text-gray-200 text-primary/80 dark:border-gray-200 border-primary '}`}>
+                <TabsTrigger value="password" className={`!px-0 sm:!px-2 rounded-none py-2 text-base sm:text-lg !bg-transparent ${activeTab === 'password' ? 'dark:text-yellow-300 text-yellow-800 font-bold border-b-2 border-yellow-500 ' : 'dark:text-gray-300 text-yellow-900/80 '}`}>
                   Change Password
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="edit">
+              <TabsContent value="edit" className="px-4 sm:px-6 pb-6 sm:pb-8">
                 <div>
                   {error && (
-                    <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
                       {error}
                     </div>
                   )}
                   {success && (
-                    <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                    <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
                       {success}
                     </div>
                   )}
@@ -478,40 +538,40 @@ const ProfilePage = () => {
                   )} */}
                   <form onSubmit={handleEditSubmit} className="space-y-4">
                     <div>
-                      <Label htmlFor="fullName" className="block mb-1 dark:text-white text-gray-700"  >Full Name</Label>
+                      <Label htmlFor="fullName" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Full Name</Label>
                       <Input
                         id="fullName"
                         name="fullName"
                         type="text"
                         required
-                        className="mt-1 block w-full dark:bg-gray-200 bg-gray-100"
+                        className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                         value={editFormData.fullName}
                         onChange={handleEditChange}
                         disabled={profileUpdateLoading}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="username" className="block mb-1 dark:text-white text-gray-700"  >Username</Label>
+                      <Label htmlFor="username" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Username</Label>
                       <Input
                         id="username"
                         name="username"
                         type="text"
                         required
-                        className="mt-1 block w-full dark:bg-gray-200 bg-gray-100"
+                        className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                         value={editFormData.username}
                         onChange={handleEditChange}
                         disabled={profileUpdateLoading}
                       />
-                      <p className="text-xs text-gray-500 mt-1 dark:text-blue-500">Username can be changed if not already taken by another user.</p>
+                      <p className={"text-xs mt-1 " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>Username can be changed if not already taken by another user.</p>
                     </div>
                     <div>
-                      <Label htmlFor="email" className="block mb-1 dark:text-white text-gray-700"  >Email</Label>
+                      <Label htmlFor="email" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Email</Label>
                       <Input
                         id="email"
                         name="email"
                         type="email"
                         required
-                        className="mt-1 block w-full dark:bg-gray-200 bg-gray-100"
+                        className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                         value={editFormData.email}
                         onChange={handleEditChange}
                         disabled={profileUpdateLoading}
@@ -529,18 +589,18 @@ const ProfilePage = () => {
                         </div>
                       )}
                       {pendingEmailVerification && (
-                        <div className="mt-2 text-sm text-yellow-600">
+                        <div className={"mt-2 text-sm " + (darkMode ? 'text-yellow-300' : 'text-yellow-700')}>
                           A verification email has been sent to your new email address. Please check your inbox and verify to complete the update.
                         </div>
                       )}
                       {!pendingEmailVerification && !profile?.createdByAdmin && (
-                        <p className="text-xs text-gray-500 mt-1 dark:text-blue-500">
+                        <p className={"text-xs mt-1 " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>
                           Changing your email will require verification of the new address.
                         </p>
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="role" className="block mb-1 dark:text-white text-gray-700"  >Account Role</Label>
+                      <Label htmlFor="role" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Account Role</Label>
                       <Input
                         id="role"
                         name="role"
@@ -551,16 +611,16 @@ const ProfilePage = () => {
                       />
                     </div>
 
-                    <div className="flex justify-start space-x-3 pt-4">
+                    <div className="flex flex-col sm:flex-row justify-start gap-3 pt-4">
                       <Button 
                         type="submit" 
                         disabled={profileUpdateLoading} 
                         variant="default" 
                         size="sm" 
                         rounded="full"
-                        className="w-full md:w-1/2 lg:w-1/4"
+                        className="w-full sm:w-1/2 lg:w-1/4"
                       >
-                        {profileUpdateLoading ? 'Saving...' : 'Save Changes'}
+                        {profileUpdateLoading ? 'Saving Booty...' : 'Save Changes'}
                       </Button> 
                       <Button 
                         type="button" 
@@ -569,7 +629,7 @@ const ProfilePage = () => {
                         rounded="full"
                         onClick={() => navigate(-1)} 
                         disabled={profileUpdateLoading} 
-                        className="w-full md:w-1/2 lg:w-1/4"
+                        className="w-full sm:w-1/2 lg:w-1/4"
                       >
                         Cancel
                       </Button>
@@ -597,29 +657,29 @@ const ProfilePage = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="password">
+              <TabsContent value="password" className="px-4 sm:px-6 pb-6 sm:pb-8">
                 <div className="">
                  
                   {passwordError && (
-                    <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
                       {passwordError}
                     </div>
                   )}
                   {passwordSuccess && (
-                    <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                    <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
                       {passwordSuccess}
                     </div>
                   )}
                   <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
                     <div>
-                      <Label htmlFor="currentPassword" className="block mb-1 dark:text-white text-gray-700"  >Current Password</Label>
+                      <Label htmlFor="currentPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Current Password</Label>
                       <div className="relative">
                         <Input
                           id="currentPassword"
                           name="currentPassword"
                           type={showCurrentPassword ? 'text' : 'password'}
                           required
-                         className="mt-1 block w-full dark:bg-gray-200 bg-gray-100"
+                         className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                           value={passwordFormData.currentPassword}
                           onChange={handlePasswordChange}
                           disabled={passwordLoading}
@@ -637,14 +697,14 @@ const ProfilePage = () => {
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="newPassword" className="block mb-1 dark:text-white text-gray-700"  >New Password</Label>
+                      <Label htmlFor="newPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>New Password</Label>
                       <div className="relative">
                         <Input
                           id="newPassword"
                           name="newPassword"
                           type={showNewPassword ? 'text' : 'password'}
                           required
-                        className="mt-1 block w-full dark:bg-gray-200 bg-gray-100"
+                        className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                           value={passwordFormData.newPassword}
                           onChange={handlePasswordChange}
                           disabled={passwordLoading}
@@ -660,17 +720,17 @@ const ProfilePage = () => {
                           {showNewPassword ? <FaRegEyeSlash /> : <FaRegEye />}
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1 dark:text-blue-500">Must be at least 6 characters long.</p>
+                      <p className={"text-xs mt-1 " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>Must be at least 6 characters long.</p>
                     </div>
                     <div>
-                      <Label htmlFor="confirmPassword" className="block mb-1 dark:text-white text-gray-700"  >Confirm New Password</Label>
+                      <Label htmlFor="confirmPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Confirm New Password</Label>
                       <div className="relative">
                         <Input
                           id="confirmPassword"
                           name="confirmPassword"
                           type={showConfirmPassword ? 'text' : 'password'}
                           required
-                         className="mt-1 block w-full dark:bg-gray-200 bg-gray-100"
+                         className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                           value={passwordFormData.confirmPassword}
                           onChange={handlePasswordChange}
                           disabled={passwordLoading}
@@ -687,12 +747,12 @@ const ProfilePage = () => {
                         </button>
                       </div>
                     </div>
-                    <div className="flex justify-start space-x-3 pt-4">
+                    <div className="flex flex-col sm:flex-row justify-start gap-3 pt-4">
                     
-                      <Button type="submit" disabled={passwordLoading} variant="default" size="sm" className="w-full md:w-1/2 lg:w-1/4" rounded="full">
-                        {passwordLoading ? 'Saving...' : 'Save Changes'}
-                      </Button>  
-                      <Button type="button"  variant="cancel" size="sm" className="w-full md:w-1/2 lg:w-1/4" rounded="full" onClick={() => setPasswordFormData({ currentPassword: '', newPassword: '', confirmPassword: '' })} disabled={passwordLoading}>
+                      <Button type="submit" disabled={passwordLoading} variant="default" size="sm" className="w-full sm:w-1/2 lg:w-1/4" rounded="full">
+                        {passwordLoading ? 'Saving Booty...' : 'Save Changes'}
+                      </Button>
+                      <Button type="button"  variant="cancel" size="sm" className="w-full sm:w-1/2 lg:w-1/4" rounded="full" onClick={() => setPasswordFormData({ currentPassword: '', newPassword: '', confirmPassword: '' })} disabled={passwordLoading}>
                         Cancel
                       </Button>
                     </div>

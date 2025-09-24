@@ -3,6 +3,7 @@ import { FaLock, FaCheckCircle, FaMedal, FaMap, FaCompass, FaShip, FaMountain, F
 import { Button } from "../../ui";
 import { Header } from "../../ui";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import { debugAuth } from "../../utils/debugAuth";
 
 const properties = [
@@ -414,15 +415,60 @@ const LearningMultiplication = () => {
     completeMultiplicationProperty,
     saveMultiplicationQuizAttempt,
   } = useAuth();
+  const { darkMode, isInitialized } = useTheme();
+
+  // Add CSS animation for dashed path
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes dash {
+        to {
+          stroke-dashoffset: -100;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   React.useEffect(() => {
-    if (mapRef.current) {
-      setMapSize({
-        width: mapRef.current.offsetWidth,
-        height: mapRef.current.offsetHeight,
-      });
-    }
+    const updateMapSize = () => {
+      if (mapRef.current) {
+        setMapSize({
+          width: mapRef.current.offsetWidth,
+          height: mapRef.current.offsetHeight,
+        });
+      }
+    };
+
+    // Initial size calculation with a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(updateMapSize, 100);
+
+    // Update on window resize
+    window.addEventListener('resize', updateMapSize);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateMapSize);
+    };
   }, []);
+
+  // Update map size when loading completes
+  React.useEffect(() => {
+    if (!loading && mapRef.current) {
+      const updateMapSize = () => {
+        if (mapRef.current) {
+          setMapSize({
+            width: mapRef.current.offsetWidth,
+            height: mapRef.current.offsetHeight,
+          });
+        }
+      };
+      
+      // Small delay to ensure the map container is fully rendered
+      setTimeout(updateMapSize, 200);
+    }
+  }, [loading]);
 
   // Load progress from backend on component mount
   useEffect(() => {
@@ -431,7 +477,7 @@ const LearningMultiplication = () => {
       
       // Debug authentication
       console.log('Current user:', currentUser);
-      console.log('Token exists:', !!localStorage.getItem('token'));
+      console.log('Token exists:', localStorage.getItem('token'));
       
       try {
         setLoading(true);
@@ -474,8 +520,7 @@ const LearningMultiplication = () => {
           setActive(activePropertyIndex);
         }
       } catch (error) {
-        console.error('Error loading progress:', error);
-        // If backend fails, continue with default state and mark backend as unavailable
+        console.log('Error loading progress');
         setBackendAvailable(false);
         setCompleted([false, false, false, false, false]);
         setActive(0);
@@ -495,76 +540,59 @@ const LearningMultiplication = () => {
 
   // Save progress to backend whenever it changes
   useEffect(() => {
-    const saveProgress = async () => {
-      if (!currentUser || loading || !backendAvailable) return;
-      
-      try {
-        setSaving(true);
-        // Convert UI booleans -> backend expected indices array
-        const completedIndices = completed
-          .map((isDone, idx) => (isDone ? idx : null))
-          .filter((v) => v !== null);
+      console.log("Effect triggered:", { completed, active, currentUser, loading, backendAvailable });
 
-        const progressData = {
-          completedProperties: completedIndices,
-          activePropertyIndex: active,
-          totalPropertiesCompleted: completedIndices.length
-        };
-        
-        console.log('Saving progress to backend:', progressData);
-        const result = await saveMultiplicationProgress(progressData);
-        console.log('Progress saved successfully:', result);
-      } catch (error) {
-        console.error('Error saving progress:', error);
-        setBackendAvailable(false);
-        // Don't throw error, just log it so the app continues to work
-      } finally {
-        setSaving(false);
-      }
-    };
+  if (!currentUser || loading ) return;
 
-    // Debounce the save operation
-    const timeoutId = setTimeout(saveProgress, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [completed, active, currentUser, loading, backendAvailable]);
-
-  const handleComplete = async (idx) => {
+  const saveProgress = async () => {
     try {
       setSaving(true);
-      
-      // Update local state first
-      const updated = [...completed];
-      updated[idx] = true;
-      setCompleted(updated);
-      
-      if (idx + 1 < 5) setActive(idx + 1);
-      
-      // Save to backend if available
-      if (backendAvailable) {
-        const propertyData = {
-          propertyName: properties[idx].title,
-          badgeName: properties[idx].badge,
-          totalSteps: properties[idx].steps.length,
-          completionTimeSeconds: 0 // You can track this if needed
-        };
-        
-        console.log('Completing property:', idx, propertyData);
-        const result = await completeMultiplicationProperty(idx, propertyData);
-        console.log('Property completed successfully:', result);
-      }
-      
-      setModalOpen(false);
-      setStepIdx(0);
-      setQuizInput("");
-      setQuizFeedback("");
-      setShowHint(false);
+
+      const completedIndices = completed
+        .map((isDone, idx) => (isDone ? idx : null))
+        .filter((v) => v !== null);
+            console.log("Effect triggered again:", { completed, active, currentUser, loading, backendAvailable });
+
+      const progressData = {
+        completedProperties: completedIndices,
+        activePropertyIndex: active,
+        totalPropertiesCompleted: completedIndices.length,
+      };
+
+      console.log("Saving progress to backend:", progressData);
+      const result = await saveMultiplicationProgress(progressData);
+      console.log("Progress saved successfully:", result);
     } catch (error) {
-      console.error('Error completing property:', error);
-      // Don't revert local state changes, just log the error
+      console.error("Error saving progress:", error);
+      setBackendAvailable(false);
     } finally {
       setSaving(false);
     }
   };
+
+  const timeoutId = setTimeout(saveProgress, 500); // shorter debounce
+  return () => clearTimeout(timeoutId);
+}, [completed, active, currentUser, loading, backendAvailable]);
+
+const handleComplete = (idx) => {
+  console.log('handleComplete called with idx:', idx);
+
+  // Just update local state
+  const updatedCompleted = [...completed];
+  updatedCompleted[idx] = true;
+
+  let newActive = active;
+  if (idx + 1 < 5) newActive = idx + 1;
+
+  setCompleted(updatedCompleted);
+  setActive(newActive);
+  setModalOpen(false);
+  setSelectedIdx(null);
+  setStepIdx(0);
+  setQuizInput("");
+  setQuizFeedback("");
+  setShowHint(false);
+};
 
   const openModal = (idx) => {
     if (idx > active || idx >= properties.length) return;
@@ -640,12 +668,36 @@ const LearningMultiplication = () => {
 
   if (loading) {
     return (
-      <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="flex flex-col items-center gap-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-              <p className="text-gray-600 text-lg">Loading your progress...</p>
+      <div className={`min-h-screen transition-colors duration-300 ${
+        darkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+          : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
+      }`}>
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative">
+                  <div className={`animate-spin rounded-full h-16 w-16 border-4 ${
+                    darkMode 
+                      ? 'border-gray-700 border-t-blue-400' 
+                      : 'border-blue-200 border-t-blue-600'
+                  }`}></div>
+                  <div className={`absolute inset-0 rounded-full border-4 border-transparent animate-spin ${
+                    darkMode 
+                      ? 'border-t-blue-500' 
+                      : 'border-t-blue-400'
+                  }`} style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+                </div>
+                <div className="text-center">
+                  <h3 className={`text-xl font-semibold mb-2 transition-colors duration-300 ${
+                    darkMode ? 'text-white' : 'text-gray-800'
+                  }`}>Loading Your Adventure</h3>
+                  <p className={`transition-colors duration-300 ${
+                    darkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>Preparing your multiplication journey...</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -654,260 +706,806 @@ const LearningMultiplication = () => {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <Header type="h1" fontSize="5xl" weight="bold" className="text-primary dark:text-white">Learning Multiplication: Treasure Hunt</Header>
-          <div className="flex items-center gap-4">
-            {!backendAvailable && (
-              <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-                <span>⚠️</span>
-                <span>Offline Mode</span>
-              </div>
-            )}
-            {saving && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600"></div>
-                <span>Saving progress...</span>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Progress indicator */}
-        <div className="mb-6 bg-white rounded-lg p-4 shadow-md border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-semibold text-gray-800">Multiplication Properties Badges</span>
-            <span className="text-sm text-gray-500">{completed.filter(Boolean).length}/5 Completed</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {properties.slice(0, 5).map((prop, idx) => (
-              <div key={prop.key} className="flex flex-col items-center">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
-                  completed[idx] 
-                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg' 
-                    : 'bg-gray-200 border-2 border-gray-300'
-                }`}>
-                  {completed[idx] ? (
-                    <FaMedal className="text-white text-2xl" />
-                  ) : (
-                    <FaLock className="text-gray-500 text-xl" />
+    <div className={`min-h-screen transition-colors duration-300 ${
+      darkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
+    }`}>
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Enhanced Header Section */}
+          <div className="relative mb-8">
+            <div className={`backdrop-blur-sm rounded-2xl shadow-xl border p-6 sm:p-8 transition-colors duration-300 ${
+              darkMode 
+                ? 'bg-gray-800/80 border-gray-700/20' 
+                : 'bg-white/80 border-white/20'
+            }`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <FaMap className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <Header type="h1" fontSize="4xl" weight="bold" className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                        Learning Multiplication: Treasure Hunt
+                      </Header>
+                      <p className={`text-sm mt-1 transition-colors duration-300 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-600'
+                      }`}>Master the properties of multiplication through an epic adventure!</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                  {!backendAvailable && (
+                    <div className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full shadow-sm transition-colors duration-300 ${
+                      darkMode 
+                        ? 'text-orange-300 bg-orange-900/30 border border-orange-700/50' 
+                        : 'text-orange-700 bg-orange-100 border border-orange-200'
+                    }`}>
+                      <span className="text-lg">⚠️</span>
+                      <span className="font-medium">Offline Mode</span>
+                    </div>
+                  )}
+                  {saving && (
+                    <div className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full shadow-sm transition-colors duration-300 ${
+                      darkMode 
+                        ? 'text-blue-300 bg-blue-900/30 border border-blue-700/50' 
+                        : 'text-blue-700 bg-blue-100 border border-blue-200'
+                    }`}>
+                      <div className={`animate-spin rounded-full h-4 w-4 border-2 ${
+                        darkMode 
+                          ? 'border-blue-700 border-t-blue-400' 
+                          : 'border-blue-200 border-t-blue-600'
+                      }`}></div>
+                      <span className="font-medium">Saving progress...</span>
+                    </div>
                   )}
                 </div>
-                <span className={`text-xs font-medium text-center ${
-                  completed[idx] ? 'text-yellow-700' : 'text-gray-500'
-                }`}>
-                  {prop.badge}
-                </span>
-                <span className={`text-xs text-center mt-1 ${
-                  completed[idx] ? 'text-green-600' : 'text-gray-400'
-                }`}>
-                  {completed[idx] ? '✓ Achieved' : 'Locked'}
-                </span>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-        <div className="relative w-full h-[40vw] min-h-[350px]" ref={mapRef}>
-          {/* Map background */}
-          <img src="/images/game-images/map.png" alt="Treasure Map" className="w-full h-full object-cover rounded-2xl shadow-xl border-4 border-yellow-300" />
-          {/* SVG Dashed Path: connects properties in order */}
-          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-10" width={mapSize.width} height={mapSize.height} style={{overflow: 'visible'}}>
-            <polyline
-              points={getSVGPoints(propertyPositions, mapSize.width, mapSize.height)}
-              fill="none"
-              stroke="#000000"
-              strokeWidth="4"
-              strokeDasharray="10,8"
-              strokeLinecap="round"
-              style={{ filter: 'drop-shadow(0 1px 2px #000000aa)' }}
-            />
-          </svg>
-          {/* Map locations */}
-          {properties.slice(0, 5).map((prop, idx) => (
-            <button
-              key={prop.key}
-              className={`absolute ${prop.style} z-20 group focus:outline-none`}
-              style={{ width: '160px', height: '160px', transform: 'translate(-50%, -50%)' }}
-              onClick={() => openModal(idx)}
-              disabled={idx > active}
-              aria-label={prop.title}
-            >
-              <img
-                src={prop.image}
-                alt={prop.title}
-                className={`w-full h-full object-contain drop-shadow-lg transition-all duration-300 ${idx > active ? 'opacity-40 grayscale' : ''}`}
-              />
-              {/* Overlay icon */}
-              <span className="absolute bottom-1 right-1">
-                {completed[idx] ? (
-                  <FaCheckCircle className="text-green-500 text-xl" />
-                ) : idx === active ? (
-                  <span className="inline-block text-2xl font-bold text-blue-700">×</span>
-                ) : (
-                  <FaLock className="text-gray-400 text-xl" />
-                )}
-              </span>
-            </button>
-          ))}
-        </div>
-        {/* Modal for property details with comprehensive lesson structure */}
-        {modalOpen && selectedIdx !== null && properties[selectedIdx] && properties[selectedIdx].steps && properties[selectedIdx].steps[stepIdx] && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative border-4 border-yellow-300">
-              <button className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl z-10" onClick={() => setModalOpen(false)}>&times;</button>
+        
+          {/* Enhanced Progress Badges Section */}
+          <div className="mb-8">
+            <div className={`backdrop-blur-sm rounded-2xl shadow-xl border p-6 sm:p-8 transition-colors duration-300 ${
+              darkMode 
+                ? 'bg-gray-800/90 border-gray-700/20' 
+                : 'bg-white/90 border-white/20'
+            }`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
+                <div className="flex items-center gap-3 mb-3 sm:mb-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <FaMedal className="text-white text-lg" />
+                  </div>
+                  <div>
+                    <h2 className={`text-xl font-bold transition-colors duration-300 ${
+                      darkMode ? 'text-white' : 'text-gray-800'
+                    }`}>Multiplication Properties Badges</h2>
+                    <p className={`text-sm transition-colors duration-300 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>Collect all badges to become a multiplication master!</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg">
+                    <span className="font-bold text-lg">{completed.filter(Boolean).length}</span>
+                    <span className="text-sm opacity-90">/5</span>
+                  </div>
+                  <span className={`text-sm font-medium transition-colors duration-300 ${
+                    darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>Completed</span>
+                </div>
+              </div>
               
-              {/* Header with story intro */}
-              <div className="mb-6">
-                <Header type="h3" className="text-xl font-bold text-blue-700 mb-2">{properties[selectedIdx].title}</Header>
-                <p className="text-gray-700 mb-3">{properties[selectedIdx].description}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {properties.slice(0, 5).map((prop, idx) => (
+                  <div key={prop.key} className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-xl ${
+                    completed[idx] 
+                      ? darkMode
+                        ? 'bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border-2 border-yellow-700/50 shadow-lg'
+                        : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 shadow-lg'
+                      : darkMode
+                        ? 'bg-gray-700/50 border-2 border-gray-600 hover:border-gray-500'
+                        : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
+                  }`}>
+                    {/* Badge Icon */}
+                    <div className="flex justify-center mb-3">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
+                        completed[idx] 
+                          ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 group-hover:from-yellow-500 group-hover:to-yellow-700' 
+                          : darkMode
+                            ? 'bg-gray-600 group-hover:bg-gray-500'
+                            : 'bg-gray-200 group-hover:bg-gray-300'
+                      }`}>
+                        {completed[idx] ? (
+                          <FaMedal className="text-white text-2xl animate-pulse" />
+                        ) : (
+                          <FaLock className={`text-xl ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Badge Info */}
+                    <div className="text-center">
+                      <span className={`text-sm font-bold text-center block mb-1 transition-colors duration-300 ${
+                        completed[idx] 
+                          ? darkMode 
+                            ? 'text-yellow-300' 
+                            : 'text-yellow-800'
+                          : darkMode 
+                            ? 'text-gray-300' 
+                            : 'text-gray-600'
+                      }`}>
+                        {prop.badge}
+                      </span>
+                      <span className={`text-xs text-center px-2 py-1 rounded-full font-medium transition-colors duration-300 ${
+                        completed[idx] 
+                          ? darkMode
+                            ? 'bg-green-900/50 text-green-300'
+                            : 'bg-green-100 text-green-700'
+                          : darkMode
+                            ? 'bg-gray-600 text-gray-400'
+                            : 'bg-gray-200 text-gray-500'
+                      }`}>
+                        {completed[idx] ? '✓ Achieved' : 'Locked'}
+                      </span>
+                    </div>
+                    
+                    {/* Hover Effect Overlay */}
+                    {completed[idx] && (
+                      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                        darkMode 
+                          ? 'bg-gradient-to-br from-yellow-400/20 to-orange-500/20' 
+                          : 'bg-gradient-to-br from-yellow-400/10 to-orange-500/10'
+                      }`}></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-medium transition-colors duration-300 ${
+                    darkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Overall Progress</span>
+                  <span className={`text-sm font-bold transition-colors duration-300 ${
+                    darkMode ? 'text-white' : 'text-gray-800'
+                  }`}>{Math.round((completed.filter(Boolean).length / 5) * 100)}%</span>
+                </div>
+                <div className={`w-full rounded-full h-3 overflow-hidden transition-colors duration-300 ${
+                  darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                }`}>
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out shadow-sm"
+                    style={{ width: `${(completed.filter(Boolean).length / 5) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Enhanced Treasure Map Section */}
+          <div className="relative mb-8">
+            <div className={`backdrop-blur-sm rounded-3xl shadow-2xl border p-6 sm:p-8 transition-colors duration-300 ${
+              darkMode 
+                ? 'bg-gray-800/90 border-gray-700/20' 
+                : 'bg-white/90 border-white/20'
+            }`}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <FaMap className="text-white text-lg" />
+                  </div>
+                  <div>
+                    <h2 className={`text-xl font-bold transition-colors duration-300 ${
+                      darkMode ? 'text-white' : 'text-gray-800'
+                    }`}>Treasure Map</h2>
+                    <p className={`text-sm transition-colors duration-300 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>Follow the path to discover all multiplication properties!</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="relative w-full h-[55vw] min-h-[260px] sm:min-h-[360px] md:min-h-[460px] lg:min-h-[560px] xl:min-h-[640px] max-h-[760px]" ref={mapRef}>
+                {/* Enhanced Map Background */}
+                <div className={`relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 transition-colors duration-300 ${
+                  darkMode 
+                    ? 'border-yellow-600 bg-gradient-to-br from-gray-800 to-gray-900' 
+                    : 'border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50'
+                }`}>
+                  <img 
+                    src="/images/game-images/map.png" 
+                    alt="Treasure Map" 
+                    className={`w-full h-full object-cover transition-all duration-300 hover:scale-105 ${
+                      darkMode ? 'brightness-75 contrast-110' : ''
+                    }`}
+                  />
+                  {/* Map Overlay Effects */}
+                  <div className={`absolute inset-0 pointer-events-none transition-colors duration-300 ${
+                    darkMode 
+                      ? 'bg-gradient-to-br from-yellow-400/20 to-orange-500/20' 
+                      : 'bg-gradient-to-br from-yellow-400/10 to-orange-500/10'
+                  }`}></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"></div>
+                </div>
+                
+                {/* Enhanced SVG Dashed Path */}
+                <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-10" viewBox={`0 0 ${mapSize.width} ${mapSize.height}`} preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8"/>
+                      <stop offset="50%" stopColor="#8B5CF6" stopOpacity="0.8"/>
+                      <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.8"/>
+                    </linearGradient>
+                  </defs>
+                  <polyline
+                    points={getSVGPoints(propertyPositions, mapSize.width, mapSize.height)}
+                    fill="none"
+                    stroke="url(#pathGradient)"
+                    strokeWidth="6"
+                    strokeDasharray="15,10"
+                    strokeLinecap="round"
+                    style={{ 
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                      animation: 'dash 3s linear infinite'
+                    }}
+                  />
+                </svg>
+                
+                {/* Enhanced Map Locations */}
+                {properties.slice(0, 5).map((prop, idx) => (
+                  <button
+                    key={prop.key}
+                    className={`absolute ${prop.style} z-20 group focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50 rounded-2xl transition-all duration-300 ${
+                      idx > active ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-110'
+                    } w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40`}
+                    style={{ transform: 'translate(-50%, -50%)' }}
+                    onClick={() => openModal(idx)}
+                    disabled={idx > active}
+                    aria-label={prop.title}
+                  >
+                    <div className={`relative w-full h-full rounded-2xl overflow-hidden transition-all duration-300 ${
+                      completed[idx] 
+                        ? 'shadow-2xl ring-4 ring-yellow-400 ring-opacity-50' 
+                        : idx === active 
+                          ? 'shadow-xl ring-4 ring-blue-400 ring-opacity-50' 
+                          : 'shadow-lg'
+                    }`}>
+                      <img
+                        src={prop.image}
+                        alt={prop.title}
+                        className={`w-full h-full object-contain transition-all duration-300 ${
+                          idx > active 
+                            ? 'opacity-40 grayscale blur-sm' 
+                            : completed[idx] 
+                              ? 'brightness-110 saturate-110' 
+                              : 'hover:brightness-105 hover:saturate-105'
+                        }`}
+                      />
+                      
+                      {/* Enhanced Overlay Effects */}
+                      {completed[idx] && (
+                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 to-orange-500/20 pointer-events-none"></div>
+                      )}
+                      
+                      {/* Status Icon */}
+                      <div className="absolute bottom-2 right-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shadow-lg transition-all duration-300">
+                        {completed[idx] ? (
+                          <div className="w-full h-full bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center animate-pulse">
+                            <FaCheckCircle className="text-white text-sm sm:text-lg" />
+                          </div>
+                        ) : idx === active ? (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center animate-bounce">
+                            <span className="text-white text-sm sm:text-base font-bold">×</span>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full bg-gray-400 rounded-full flex items-center justify-center">
+                            <FaLock className="text-white text-xs sm:text-sm" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Property Title Overlay */}
+                      <div className={`absolute bottom-0 left-0 right-0 p-1.5 sm:p-2 text-center transition-all duration-300 ${
+                        completed[idx] 
+                          ? 'bg-gradient-to-t from-yellow-500/90 to-yellow-400/70' 
+                          : idx === active 
+                            ? 'bg-gradient-to-t from-blue-500/90 to-blue-400/70' 
+                            : 'bg-gradient-to-t from-gray-500/90 to-gray-400/70'
+                      }`}>
+                        <span className={`block font-bold text-white drop-shadow-sm text-[10px] sm:text-xs md:text-sm ${
+                          completed[idx] ? 'text-yellow-900' : idx === active ? 'text-blue-900' : 'text-gray-900'
+                        }`}>
+                          {prop.title}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+                
+                {/* Map Legend */}
+                <div className={`absolute top-2 left-2 sm:top-4 sm:left-4 backdrop-blur-sm rounded-xl p-2 sm:p-3 shadow-lg border transition-colors duration-300 ${
+                  darkMode 
+                    ? 'bg-gray-800/90 border-gray-700/20' 
+                    : 'bg-white/90 border-white/20'
+                }`}>
+                  <div className="flex flex-col gap-1.5 sm:gap-2 text-[10px] sm:text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className={`font-medium transition-colors duration-300 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>Completed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
+                      <span className={`font-medium transition-colors duration-300 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>Current</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                      <span className={`font-medium transition-colors duration-300 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>Locked</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {/* Enhanced Modal for property details */}
+        {modalOpen && selectedIdx !== null && properties[selectedIdx] && properties[selectedIdx].steps && properties[selectedIdx].steps[stepIdx] && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+            <div className={`backdrop-blur-md rounded-3xl shadow-2xl border p-6 sm:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto relative animate-in zoom-in-95 duration-300 transition-colors duration-300 ${
+              darkMode 
+                ? 'bg-gray-800/95 border-gray-700/20' 
+                : 'bg-white/95 border-white/20'
+            }`}>
+              <button 
+                className={`absolute top-4 right-4 w-10 h-10 rounded-full text-xl z-10 flex items-center justify-center transition-all duration-200 hover:scale-110 ${
+                  darkMode 
+                    ? 'bg-gray-700 hover:bg-red-900 text-gray-300 hover:text-red-400' 
+                    : 'bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600'
+                }`}
+                onClick={() => setModalOpen(false)}
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+              
+              {/* Enhanced Header with story intro */}
+              <div className="mb-8">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    {React.createElement(properties[selectedIdx].icon, { className: "text-white text-2xl" })}
+                  </div>
+                  <div className="flex-1">
+                    <Header type="h3" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                      {properties[selectedIdx].title}
+                    </Header>
+                    <p className={`text-lg transition-colors duration-300 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>{properties[selectedIdx].description}</p>
+                  </div>
+                </div>
                 {stepIdx === 0 && (
-                  <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
-                    <p className="text-blue-800 italic">{properties[selectedIdx].storyIntro}</p>
+                  <div className={`p-6 rounded-2xl border shadow-lg transition-colors duration-300 ${
+                    darkMode 
+                      ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' 
+                      : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span className="text-white text-sm">📖</span>
+                      </div>
+                      <div>
+                        <h4 className={`font-semibold mb-2 transition-colors duration-300 ${
+                          darkMode ? 'text-blue-300' : 'text-blue-800'
+                        }`}>Story Introduction</h4>
+                        <p className={`italic leading-relaxed transition-colors duration-300 ${
+                          darkMode ? 'text-blue-200' : 'text-blue-700'
+                        }`}>{properties[selectedIdx].storyIntro}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Step content */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium capitalize">
-                    {properties[selectedIdx].steps[stepIdx]?.type || 'Unknown'}
-                  </span>
+              {/* Enhanced Step content */}
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
+                      properties[selectedIdx].steps[stepIdx]?.type === 'quiz' ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
+                      properties[selectedIdx].steps[stepIdx]?.type === 'challenge' ? 'bg-gradient-to-br from-purple-400 to-pink-500' :
+                      properties[selectedIdx].steps[stepIdx]?.type === 'lesson' ? 'bg-gradient-to-br from-blue-400 to-indigo-500' :
+                      'bg-gradient-to-br from-gray-400 to-gray-500'
+                    }`}>
+                      <span className="text-white text-sm font-bold">
+                        {properties[selectedIdx].steps[stepIdx]?.type === 'quiz' ? '❓' :
+                         properties[selectedIdx].steps[stepIdx]?.type === 'challenge' ? '⚡' :
+                         properties[selectedIdx].steps[stepIdx]?.type === 'lesson' ? '📚' :
+                         properties[selectedIdx].steps[stepIdx]?.type === 'story' ? '📖' :
+                         properties[selectedIdx].steps[stepIdx]?.type === 'explanation' ? '💡' :
+                         properties[selectedIdx].steps[stepIdx]?.type === 'trivia' ? '🎯' :
+                         properties[selectedIdx].steps[stepIdx]?.type === 'celebration' ? '🎉' : '📄'}
+                      </span>
+                    </div>
+                    <span className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide ${
+                      properties[selectedIdx].steps[stepIdx]?.type === 'quiz' ? 'bg-yellow-100 text-yellow-800' :
+                      properties[selectedIdx].steps[stepIdx]?.type === 'challenge' ? 'bg-purple-100 text-purple-800' :
+                      properties[selectedIdx].steps[stepIdx]?.type === 'lesson' ? 'bg-blue-100 text-blue-800' :
+                      properties[selectedIdx].steps[stepIdx]?.type === 'story' ? 'bg-green-100 text-green-800' :
+                      properties[selectedIdx].steps[stepIdx]?.type === 'explanation' ? 'bg-indigo-100 text-indigo-800' :
+                      properties[selectedIdx].steps[stepIdx]?.type === 'trivia' ? 'bg-orange-100 text-orange-800' :
+                      properties[selectedIdx].steps[stepIdx]?.type === 'celebration' ? 'bg-pink-100 text-pink-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {properties[selectedIdx].steps[stepIdx]?.type || 'Unknown'}
+                    </span>
+                  </div>
                   {properties[selectedIdx].steps[stepIdx]?.title && (
-                    <span className="text-lg font-semibold text-gray-800">
+                    <span className={`text-xl font-bold transition-colors duration-300 ${
+                      darkMode ? 'text-white' : 'text-gray-800'
+                    }`}>
                       {properties[selectedIdx].steps[stepIdx].title}
                     </span>
                   )}
                 </div>
 
-                {/* Content based on step type */}
+                {/* Types content unchanged for logic */}
                 {properties[selectedIdx].steps[stepIdx].type === "quiz" ? (
-                  <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
-                    <form onSubmit={handleQuizSubmit} className="flex flex-col gap-3">
-                      <p className="text-gray-800 font-medium text-center">{properties[selectedIdx].steps[stepIdx].content.question}</p>
-                      <input
-                        className="border-2 border-yellow-400 rounded-lg px-4 py-2 text-lg text-center focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        value={quizInput}
-                        onChange={e => setQuizInput(e.target.value)}
-                        placeholder="Enter your answer..."
-                        autoFocus
-                      />
-                      <Button size="sm" variant="primary" type="submit" className="mt-2">Check Answer</Button>
+                  <div className={`p-6 rounded-2xl border-2 shadow-lg transition-colors duration-300 ${
+                    darkMode 
+                      ? 'bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border-yellow-700/50' 
+                      : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200'
+                  }`}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm">❓</span>
+                      </div>
+                      <h4 className={`text-lg font-bold transition-colors duration-300 ${
+                        darkMode ? 'text-yellow-300' : 'text-yellow-800'
+                      }`}>Quiz Time!</h4>
+                    </div>
+                    <form onSubmit={handleQuizSubmit} className="flex flex-col gap-4">
+                      <div className={`p-4 rounded-xl border transition-colors duration-300 ${
+                        darkMode 
+                          ? 'bg-gray-700/70 border-yellow-700/50' 
+                          : 'bg-white/70 border-yellow-200'
+                      }`}>
+                        <p className={`font-semibold text-center text-lg transition-colors duration-300 ${
+                          darkMode ? 'text-gray-100' : 'text-gray-800'
+                        }`}>{properties[selectedIdx].steps[stepIdx].content.question}</p>
+                      </div>
+                      <div className="relative">
+                        <input
+                          className={`w-full border-2 rounded-xl px-6 py-4 text-xl text-center focus:outline-none focus:ring-4 transition-all duration-200 ${
+                            darkMode 
+                              ? 'border-yellow-600 focus:ring-yellow-500/30 focus:border-yellow-500 bg-gray-700 text-white placeholder-gray-400' 
+                              : 'border-yellow-400 focus:ring-yellow-300 focus:border-yellow-500 bg-white/80 text-gray-900 placeholder-gray-500'
+                          }`}
+                          value={quizInput}
+                          onChange={e => setQuizInput(e.target.value)}
+                          placeholder="Type your answer here..."
+                          autoFocus
+                        />
+                      </div>
+                      <Button 
+                        size="lg" 
+                        variant="primary" 
+                        type="submit" 
+                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                      >
+                        Check Answer
+                      </Button>
                       {quizFeedback && (
-                        <div className={`p-3 rounded-lg ${quizFeedback === 'Correct! 🎉' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          <span className="font-semibold">{quizFeedback}</span>
+                        <div className={`p-4 rounded-xl border-2 shadow-lg transition-all duration-300 ${
+                          quizFeedback === 'Correct! 🎉' 
+                            ? darkMode
+                              ? 'bg-gradient-to-br from-green-900/50 to-emerald-900/50 border-green-700/50 text-green-300'
+                              : 'bg-gradient-to-br from-green-100 to-emerald-100 border-green-300 text-green-800'
+                            : darkMode
+                              ? 'bg-gradient-to-br from-red-900/50 to-pink-900/50 border-red-700/50 text-red-300'
+                              : 'bg-gradient-to-br from-red-100 to-pink-100 border-red-300 text-red-800'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-2xl">{quizFeedback === 'Correct! 🎉' ? '🎉' : '😅'}</span>
+                            <span className="font-bold text-lg">{quizFeedback}</span>
+                          </div>
                           {quizFeedback === 'Correct! 🎉' && properties[selectedIdx].steps[stepIdx].content.explanation && (
-                            <p className="mt-2 text-sm">{properties[selectedIdx].steps[stepIdx].content.explanation}</p>
+                            <p className={`text-sm p-2 rounded-lg transition-colors duration-300 ${
+                              darkMode 
+                                ? 'bg-gray-700/50 text-gray-300' 
+                                : 'bg-white/50 text-gray-700'
+                            }`}>{properties[selectedIdx].steps[stepIdx].content.explanation}</p>
                           )}
                         </div>
                       )}
                     </form>
                   </div>
                 ) : properties[selectedIdx].steps[stepIdx].type === "challenge" ? (
-                  <div className="bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
-                    <p className="text-gray-800 font-medium mb-3">{properties[selectedIdx].steps[stepIdx].content}</p>
-                    <form onSubmit={handleQuizSubmit} className="flex flex-col gap-3">
-                      <input
-                        className="border-2 border-purple-400 rounded-lg px-4 py-2 text-lg text-center focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        value={quizInput}
-                        onChange={e => setQuizInput(e.target.value)}
-                        placeholder="Enter your answer..."
-                        autoFocus
-                      />
-                      <Button size="sm" variant="primary" type="submit" className="mt-2">Submit Challenge</Button>
+                  <div className={`p-6 rounded-2xl border-2 shadow-lg transition-colors duration-300 ${
+                    darkMode 
+                      ? 'bg-gradient-to-br from-purple-900/30 to-pink-900/30 border-purple-700/50' 
+                      : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'
+                  }`}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm">⚡</span>
+                      </div>
+                      <h4 className={`text-lg font-bold transition-colors duration-300 ${
+                        darkMode ? 'text-purple-300' : 'text-purple-800'
+                      }`}>Challenge Time!</h4>
+                    </div>
+                    <div className={`p-4 rounded-xl border mb-4 transition-colors duration-300 ${
+                      darkMode 
+                        ? 'bg-gray-700/70 border-purple-700/50' 
+                        : 'bg-white/70 border-purple-200'
+                    }`}>
+                      <p className={`font-medium text-lg transition-colors duration-300 ${
+                        darkMode ? 'text-gray-100' : 'text-gray-800'
+                      }`}>{properties[selectedIdx].steps[stepIdx].content}</p>
+                    </div>
+                    <form onSubmit={handleQuizSubmit} className="flex flex-col gap-4">
+                      <div className="relative">
+                        <input
+                          className={`w-full border-2 rounded-xl px-6 py-4 text-xl text-center focus:outline-none focus:ring-4 transition-all duration-200 ${
+                            darkMode 
+                              ? 'border-purple-600 focus:ring-purple-500/30 focus:border-purple-500 bg-gray-700 text-white placeholder-gray-400' 
+                              : 'border-purple-400 focus:ring-purple-300 focus:border-purple-500 bg-white/80 text-gray-900 placeholder-gray-500'
+                          }`}
+                          value={quizInput}
+                          onChange={e => setQuizInput(e.target.value)}
+                          placeholder="Type your answer here..."
+                          autoFocus
+                        />
+                      </div>
+                      <Button 
+                        size="lg" 
+                        variant="primary" 
+                        type="submit" 
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                      >
+                        Submit Challenge
+                      </Button>
                       {quizFeedback && (
-                        <div className={`p-3 rounded-lg ${quizFeedback === 'Correct! 🎉' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          <span className="font-semibold">{quizFeedback}</span>
+                        <div className={`p-4 rounded-xl border-2 shadow-lg transition-all duration-300 ${
+                          quizFeedback === 'Correct! 🎉' 
+                            ? darkMode
+                              ? 'bg-gradient-to-br from-green-900/50 to-emerald-900/50 border-green-700/50 text-green-300'
+                              : 'bg-gradient-to-br from-green-100 to-emerald-100 border-green-300 text-green-800'
+                            : darkMode
+                              ? 'bg-gradient-to-br from-red-900/50 to-pink-900/50 border-red-700/50 text-red-300'
+                              : 'bg-gradient-to-br from-red-100 to-pink-100 border-red-300 text-red-800'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-2xl">{quizFeedback === 'Correct! 🎉' ? '🎉' : '😅'}</span>
+                            <span className="font-bold text-lg">{quizFeedback}</span>
+                          </div>
                           {quizFeedback === 'Correct! 🎉' && properties[selectedIdx].steps[stepIdx].explanation && (
-                            <p className="mt-2 text-sm">{properties[selectedIdx].steps[stepIdx].explanation}</p>
+                            <p className={`text-sm p-2 rounded-lg transition-colors duration-300 ${
+                              darkMode 
+                                ? 'bg-gray-700/50 text-gray-300' 
+                                : 'bg-white/50 text-gray-700'
+                            }`}>{properties[selectedIdx].steps[stepIdx].explanation}</p>
                           )}
                         </div>
                       )}
                     </form>
                   </div>
                 ) : (
-                  <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                    <p className="text-gray-800 leading-relaxed mb-4">{properties[selectedIdx].steps[stepIdx].content}</p>
-                    
-                    {/* Examples section */}
-                    {properties[selectedIdx].steps[stepIdx].examples && (
-                      <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                        <h4 className="font-semibold text-blue-800 mb-2">Examples:</h4>
-                        <ul className="space-y-1">
-                          {properties[selectedIdx].steps[stepIdx].examples.map((example, idx) => (
-                            <li key={idx} className="text-blue-700 font-mono">{example}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                  <div className={`p-6 rounded-2xl border-2 shadow-lg transition-colors duration-300 ${
+                    darkMode 
+                      ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' 
+                      : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
+                  }`}>
+                    <div className={`p-6 rounded-xl border transition-colors duration-300 ${
+                      darkMode 
+                        ? 'bg-gray-700/80 border-blue-700/30' 
+                        : 'bg-white/80 border-blue-100'
+                    }`}>
+                      <p className={`leading-relaxed mb-6 text-lg transition-colors duration-300 ${
+                        darkMode ? 'text-gray-100' : 'text-gray-800'
+                      }`}>{properties[selectedIdx].steps[stepIdx].content}</p>
+                      
+                      {/* Examples section */}
+                      {properties[selectedIdx].steps[stepIdx].examples && (
+                        <div className={`p-5 rounded-xl mb-6 border transition-colors duration-300 ${
+                          darkMode 
+                            ? 'bg-gradient-to-r from-blue-900/50 to-indigo-900/50 border-blue-700/50' 
+                            : 'bg-gradient-to-r from-blue-100 to-indigo-100 border-blue-200'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs">💡</span>
+                            </div>
+                            <h4 className={`font-bold text-lg transition-colors duration-300 ${
+                              darkMode ? 'text-blue-300' : 'text-blue-800'
+                            }`}>Examples:</h4>
+                          </div>
+                          <div className="grid gap-2">
+                            {properties[selectedIdx].steps[stepIdx].examples.map((example, idx) => (
+                              <div key={idx} className={`p-3 rounded-lg border transition-colors duration-300 ${
+                                darkMode 
+                                  ? 'bg-gray-700/70 border-blue-700/50' 
+                                  : 'bg-white/70 border-blue-200'
+                              }`}>
+                                <span className={`font-mono text-lg font-semibold transition-colors duration-300 ${
+                                  darkMode ? 'text-blue-300' : 'text-blue-700'
+                                }`}>{example}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-                    {/* Visual example */}
-                    {properties[selectedIdx].steps[stepIdx].visualExample && (
-                      <div className="bg-green-50 p-3 rounded-lg mb-4">
-                        <h4 className="font-semibold text-green-800 mb-2">Visual Example:</h4>
-                        <p className="text-green-700 font-mono text-sm">{properties[selectedIdx].steps[stepIdx].visualExample}</p>
-                      </div>
-                    )}
+                      {/* Visual example */}
+                      {properties[selectedIdx].steps[stepIdx].visualExample && (
+                        <div className={`p-5 rounded-xl border transition-colors duration-300 ${
+                          darkMode 
+                            ? 'bg-gradient-to-r from-green-900/50 to-emerald-900/50 border-green-700/50' 
+                            : 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-200'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs">👁️</span>
+                            </div>
+                            <h4 className={`font-bold text-lg transition-colors duration-300 ${
+                              darkMode ? 'text-green-300' : 'text-green-800'
+                            }`}>Visual Example:</h4>
+                          </div>
+                          <div className={`p-4 rounded-lg border transition-colors duration-300 ${
+                            darkMode 
+                              ? 'bg-gray-700/70 border-green-700/50' 
+                              : 'bg-white/70 border-green-200'
+                          }`}>
+                            <p className={`font-mono text-sm whitespace-pre-line transition-colors duration-300 ${
+                              darkMode ? 'text-green-300' : 'text-green-700'
+                            }`}>{properties[selectedIdx].steps[stepIdx].visualExample}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Step navigation */}
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-600">
-                  Step {stepIdx + 1} of {properties[selectedIdx]?.steps?.length || 0}
+              {/* Enhanced Step navigation */}
+              <div className={`rounded-2xl p-6 border transition-colors duration-300 ${
+                darkMode 
+                  ? 'bg-gray-700/50 border-gray-600' 
+                  : 'bg-gray-50 border-gray-200'
+              }`}>
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg">
+                      <span className="font-bold text-lg">{stepIdx + 1}</span>
+                      <span className="text-sm opacity-90">/{properties[selectedIdx]?.steps?.length || 0}</span>
+                    </div>
+                    <span className={`font-medium transition-colors duration-300 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Step Progress</span>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    {stepIdx > 0 && (
+                      <Button 
+                        size="md" 
+                        variant="secondary" 
+                        onClick={() => setStepIdx(stepIdx - 1)}
+                        className="bg-white border-2 border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-700 font-semibold px-6 py-2 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                      >
+                        ← Previous
+                      </Button>
+                    )}
+                    
+                    {properties[selectedIdx].steps[stepIdx] && 
+                     properties[selectedIdx].steps[stepIdx].type !== "quiz" && 
+                     properties[selectedIdx].steps[stepIdx].type !== "challenge" && 
+                     stepIdx < properties[selectedIdx].steps.length - 1 && (
+                      <Button 
+                        size="md" 
+                        variant="primary" 
+                        onClick={() => setStepIdx(stepIdx + 1)}
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                      >
+                        Next →
+                      </Button>
+                    )}
+                    
+                    {/* Auto-complete button for last step if it's not a quiz/challenge */}
+                    {properties[selectedIdx].steps[stepIdx] && 
+                     properties[selectedIdx].steps[stepIdx].type !== "quiz" && 
+                     properties[selectedIdx].steps[stepIdx].type !== "challenge" && 
+                     stepIdx === properties[selectedIdx].steps.length - 1 && 
+                     !completed[selectedIdx] && 
+                     selectedIdx === active && (
+                      <Button 
+                        size="md" 
+                        variant="primary" 
+                        onClick={() => handleComplete(selectedIdx)}
+                        className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                      >
+                        🏆 Complete Lesson
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  {stepIdx > 0 && (
-                    <Button size="sm" variant="secondary" onClick={() => setStepIdx(stepIdx - 1)}>
-                      Previous
-                    </Button>
-                  )}
-                  
-                  {properties[selectedIdx].steps[stepIdx] && 
-                   properties[selectedIdx].steps[stepIdx].type !== "quiz" && 
-                   properties[selectedIdx].steps[stepIdx].type !== "challenge" && 
-                   stepIdx < properties[selectedIdx].steps.length - 1 && (
-                    <Button size="sm" variant="primary" onClick={() => setStepIdx(stepIdx + 1)}>
-                      Next
-                    </Button>
-                  )}
-                  
-                  {/* Auto-complete button for last step if it's not a quiz/challenge */}
-                  {properties[selectedIdx].steps[stepIdx] && 
-                   properties[selectedIdx].steps[stepIdx].type !== "quiz" && 
-                   properties[selectedIdx].steps[stepIdx].type !== "challenge" && 
-                   stepIdx === properties[selectedIdx].steps.length - 1 && 
-                   !completed[selectedIdx] && 
-                   selectedIdx === active && (
-                    <Button size="sm" variant="primary" onClick={() => handleComplete(selectedIdx)}>
-                      Complete Lesson
-                    </Button>
-                  )}
+                {/* Progress bar */}
+                <div className="mt-4">
+                  <div className={`w-full rounded-full h-2 overflow-hidden transition-colors duration-300 ${
+                    darkMode ? 'bg-gray-600' : 'bg-gray-200'
+                  }`}>
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${((stepIdx + 1) / (properties[selectedIdx]?.steps?.length || 1)) * 100}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
 
-              {/* Badge display */}
+              {/* Enhanced Badge display */}
               {completed[selectedIdx] && selectedIdx < 5 && (
-                <div className="flex items-center gap-2 mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <FaMedal className="text-yellow-500 text-xl" />
-                  <span className="text-green-700 font-semibold">{properties[selectedIdx].badge}</span>
+                <div className={`mt-6 p-6 rounded-2xl border-2 shadow-lg transition-colors duration-300 ${
+                  darkMode 
+                    ? 'bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-yellow-700/50' 
+                    : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
+                }`}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                      <FaMedal className="text-white text-2xl" />
+                    </div>
+                    <div>
+                      <h4 className={`text-xl font-bold mb-1 transition-colors duration-300 ${
+                        darkMode ? 'text-yellow-300' : 'text-yellow-800'
+                      }`}>Badge Earned!</h4>
+                      <span className={`font-semibold text-lg transition-colors duration-300 ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-700'
+                      }`}>{properties[selectedIdx].badge}</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Treasure chest after all complete */}
+              {/* Enhanced Treasure chest after all complete */}
               {selectedIdx === 4 && completed.every(Boolean) && (
-                <div className="flex flex-col items-center mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <span className="text-4xl mb-2">🏆</span>
-                  <span className="text-yellow-700 font-bold text-lg">You found the treasure!</span>
-                  <p className="text-yellow-600 text-center mt-2">Congratulations! You've mastered all properties of multiplication!</p>
+                <div className={`mt-8 p-8 rounded-3xl border-4 shadow-2xl transition-colors duration-300 ${
+                  darkMode 
+                    ? 'bg-gradient-to-br from-yellow-900/30 via-orange-900/30 to-red-900/30 border-yellow-600' 
+                    : 'bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 border-yellow-300'
+                }`}>
+                  <div className="flex flex-col items-center text-center">
+                    <div className="text-8xl mb-4 animate-bounce">🏆</div>
+                    <h3 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-3">
+                      You Found the Treasure!
+                    </h3>
+                    <p className={`text-xl font-medium leading-relaxed transition-colors duration-300 ${
+                      darkMode ? 'text-yellow-200' : 'text-yellow-700'
+                    }`}>
+                      Congratulations! You've mastered all properties of multiplication! 
+                    </p>
+                    <div className={`mt-4 p-4 rounded-xl border transition-colors duration-300 ${
+                      darkMode 
+                        ? 'bg-gray-700/70 border-yellow-700/50' 
+                        : 'bg-white/70 border-yellow-200'
+                    }`}>
+                      <p className={`font-semibold transition-colors duration-300 ${
+                        darkMode ? 'text-gray-200' : 'text-gray-700'
+                      }`}>
+                        You are now a true Multiplication Master! 🎉
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

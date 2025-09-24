@@ -27,6 +27,7 @@ import { CiSearch } from "react-icons/ci";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import Modal from "../../ui/modal";
+import { FaSkullCrossbones, FaCompass, FaUsers, FaCoins, FaAnchor, FaMap, FaShip, FaScroll, FaFeatherAlt } from "react-icons/fa";
 
 const TeacherClassroomPage = () => {
   const { classroomId, lessonId: initialLessonId } = useParams();
@@ -622,12 +623,37 @@ const TeacherClassroomPage = () => {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+    <div className="relative px-4 sm:px-6 lg:px-8 pt-16 md:pt-0 lg:py-8 transition-colors duration-300 ">
+      {/* Pirate background layers */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        {/* Light mode parchment map */}
+        <div
+          className="absolute inset-0 opacity-70 dark:opacity-0"
+          style={{
+            backgroundImage: "url('/images/game-images/map.png')",
+            backgroundRepeat: 'repeat',
+            backgroundSize: '600px 600px'
+          }}
+        />
+        {/* Dark mode deep sea */}
+        <div
+          className="absolute inset-0 opacity-0 dark:opacity-70"
+          style={{
+            backgroundImage: "linear-gradient(180deg, rgba(1,10,20,0.9), rgba(1,10,20,0.95)), url('/images/game-images/underwater.png')",
+            backgroundRepeat: 'repeat',
+            backgroundSize: '700px 700px'
+          }}
+        />
+        {/* Subtle vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgba(0,0,0,0.25))]" />
+      </div>
+
       <div className="max-w-6xl mx-auto">
-        <div className="classroom-header flex flex-col md:flex-row md:space-x-8 h-full md:h-auto">
+        <div className="classroom-header relative flex flex-col md:flex-row md:space-x-8 h-full md:h-auto">
+          {/* Theme toggle removed to sync with Navbar's global theme */}
           {/* Left - Image */}
           <div className="w-full md:w-1/3 h-full">
-            <div className="h-full bg-gray-200 rounded-tl-3xl rounded-bl-3xl overflow-hidden mb-5 md:mb-0">
+            <div className="h-full bg-[#e9dcc0] dark:bg-[#0f172a] border-2 border-amber-700/70 dark:border-yellow-500/40 rounded-tl-3xl rounded-bl-3xl overflow-hidden shadow-lg shadow-amber-900/20 dark:shadow-yellow-600/10 mb-5 md:mb-0">
               {classroomDetails.image ? (
                 <img
                   src={`data:image/jpeg;base64,${classroomDetails.image}`}
@@ -635,8 +661,8 @@ const TeacherClassroomPage = () => {
                   className="w-full h-[280px] object-cover"
                 />
               ) : (
-                <div className="w-full h-[280px] flex items-center justify-center bg-gradient-to-r from-blue-100 to-blue-200">
-                  <span className="text-2xl text-blue-500 font-medium">
+                <div className="w-full h-[280px] flex items-center justify-center bg-gradient-to-br from-amber-100 to-amber-200 dark:from-slate-800 dark:to-slate-900">
+                  <span className="text-2xl text-blue-600 dark:text-yellow-400 font-semibold tracking-wide">
                     {classroomDetails.shortCode}
                   </span>
                 </div>
@@ -648,16 +674,17 @@ const TeacherClassroomPage = () => {
           <div className="w-full md:w-2/3 flex flex-col md:pl-4 md:pr-6 py-5 h-full">
             <div className="flex flex-col md:flex-row justify-between">
               <div>
-                <div className="text-sm font-bold text-blue-600 mb-1">
+                <div className="flex items-center gap-2 text-sm font-bold text-blue-700 dark:text-yellow-400 mb-1">
+                  <FaSkullCrossbones className="opacity-70" />
                   {classroomDetails.shortCode}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Header type="h1" fontSize="3xl" weight="bold" className="dark:text-gray-50 text-gray-800">
+                  <Header type="h1" fontSize="3xl" weight="bold" className="dark:text-yellow-50 text-gray-900">
                     {classroomDetails.name}
                   </Header>
                   <button 
                     onClick={handleOpenEditClassroomModal}
-                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                    className="text-blue-700 hover:text-blue-900 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
                     title="Edit classroom details"
                   >
                     <MdEdit className="w-5 h-5" />
@@ -667,7 +694,8 @@ const TeacherClassroomPage = () => {
 
               {/* Teacher */}
               <div className="mt-2 md:mt-0">
-                <div className="text-sm font-medium dark:text-gray-50 text-gray-800">
+                <div className="flex items-center gap-2 text-sm font-medium dark:text-gray-50 text-gray-800">
+                  <FaShip className="text-blue-600 dark:text-yellow-400" />
                   Teacher:{' '}
                   {classroomDetails.teacher?.firstName && classroomDetails.teacher?.lastName
                     ? `${classroomDetails.teacher.firstName} ${classroomDetails.teacher.lastName}`
@@ -678,123 +706,116 @@ const TeacherClassroomPage = () => {
 
             {/* Description */}
             <div className="mt-3">
-              <p className="text-gray-700 dark:text-gray-100">{classroomDetails.description}</p>
+              <p className="text-gray-800 dark:text-gray-200">{classroomDetails.description}</p>
             </div>
 
             {/* Stats */}
-            <div className="mt-10 grid grid-cols-4 divide-x divide-gray-300 text-center">
-              <div className="stat-counter px-4">
-                <div className="text-2xl font-bold dark:text-gray-100">{lessons.length}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-100">Lessons</div>
-              </div>
-              <div className="stat-counter px-4">
-                <div className="text-2xl font-bold dark:text-gray-100">{activities.length}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-100">Activities</div>
-              </div>
-              <div className="stat-counter px-4">
-                <div className="text-2xl font-bold dark:text-gray-100">
-                  {totalStudents}
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200 shadow-sm dark:bg-slate-800/60 dark:border-yellow-500/30">
+                <div className="flex items-center justify-center gap-2">
+                  <FaMap className="text-amber-700 dark:text-yellow-400" />
+                  <div className="text-2xl font-extrabold text-amber-900 dark:text-yellow-300">{lessons.length}</div>
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-100">Students</div>
+                <div className="mt-1 text-xs tracking-wide text-amber-700/80 dark:text-yellow-200/90 text-center">Lessons</div>
+              </div>
+              <div className="px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200 shadow-sm dark:bg-slate-800/60 dark:border-yellow-500/30">
+                <div className="flex items-center justify-center gap-2">
+                  <FaCompass className="text-amber-700 dark:text-yellow-400" />
+                  <div className="text-2xl font-extrabold text-amber-900 dark:text-yellow-300">{activities.length}</div>
+                </div>
+                <div className="mt-1 text-xs tracking-wide text-amber-700/80 dark:text-yellow-200/90 text-center">Quests</div>
+              </div>
+              <div className="px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200 shadow-sm dark:bg-slate-800/60 dark:border-yellow-500/30">
+                <div className="flex items-center justify-center gap-2">
+                  <FaUsers className="text-amber-700 dark:text-yellow-400" />
+                  <div className="text-2xl font-extrabold text-amber-900 dark:text-yellow-300">{totalStudents}</div>
+                </div>
+                <div className="mt-1 text-xs tracking-wide text-amber-700/80 dark:text-yellow-200/90 text-center">Crew</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="my-10">
-          <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] "></div>
-          
-          <div className="flex flex-col items-center justify-center py-4">
-            <div className="tabs-nav flex items-center">
-              <button
-                onClick={() => handleTabChange("lessons")}
-                className="md:px-4 py-2 mr-1 md:mr-2 text-gray-500 hover:text-gray-800 "
-                id="lessons-tab"
-              >
-                <span
-                  className={`${
-                    activeTab === "lessons"
-                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
-                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
-                  }`}
-                >
-                  Lessons
-                </span>
-              </button>
-
-              <div className="border-l border-gray-300 h-6 mx-2" />
-            
-              <button
-                onClick={() => handleTabChange("activities")}
-                className="md:px-4 py-2 mr-1 md:mr-2 text-gray-500 hover:text-gray-800 "
-                id="activities-tab"
-              >
-                <span
-                  className={`${
-                    activeTab === "activities"
-                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
-                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
-                  }`}
-                >
-                  Activities
-                </span>
-              </button>
-
-              <div className="border-l border-gray-300 h-6 mx-2" />
-              <button
-                onClick={() => handleTabChange("class-record")}
-                className="md:px-4 py-2 mr-1 md:mr-2 text-gray-500 hover:text-gray-800 "
-                id="class-record-tab"
-              >
-                <span
-                  className={`${
-                    activeTab === "class-record"
-                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
-                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
-                  }`}
-                >
-                  Class Record
-                </span>
-              </button>
-
-              <div className="border-l border-gray-300 h-6 mx-2" />
-              <button
-                onClick={() => handleTabChange("students")}
-                className="md:px-4 py-2 mr-1 md:mr-2 text-gray-500 hover:text-gray-800 "
-                id="students-tab"
-              >
-                <span
-                  className={`${
-                    activeTab === "students"
-                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
-                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
-                  }`}
-                >
-                  Students
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] "></div>
-        </div>
+        {/* Tabs Navigation removed in favor of Quick Action Bar */}
 
         {/* Tab Contents */}
         <div className="mt-6 tab-content-section">
+          {/* Quick Action Bar - Pirate themed */}
+          <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3 sticky top-16 md:static z-10">
+            <button
+              onClick={() => handleTabChange("lessons")}
+              title="Lessons (Scrolls)"
+              aria-label="Go to Lessons"
+              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md bg-amber-50/80 dark:bg-slate-800/60 ${
+                activeTab === 'lessons' ? 'border-amber-400 ring-2 ring-amber-300' : 'border-amber-200 dark:border-yellow-500/30'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-amber-700 dark:text-yellow-300"><FaScroll /></span>
+                <span className="text-sm font-semibold text-amber-900 dark:text-yellow-100">Lessons</span>
+              </div>
+              <span className="text-amber-400">→</span>
+            </button>
+            <button
+              onClick={() => handleTabChange("activities")}
+              title="Quests (Treasure & Games)"
+              aria-label="Go to Quests"
+              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md bg-amber-50/80 dark:bg-slate-800/60 ${
+                activeTab === 'activities' ? 'border-amber-400 ring-2 ring-amber-300' : 'border-amber-200 dark:border-yellow-500/30'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-amber-700 dark:text-yellow-300"><FaFeatherAlt /></span>
+                <span className="text-sm font-semibold text-amber-900 dark:text-yellow-100">Quests</span>
+              </div>
+              <span className="text-amber-400">→</span>
+            </button>
+            <button
+              onClick={() => handleTabChange("class-record")}
+              title="Class Record (Coins & Compass)"
+              aria-label="Go to Class Record"
+              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md bg-amber-50/80 dark:bg-slate-800/60 ${
+                activeTab === 'class-record' ? 'border-amber-400 ring-2 ring-amber-300' : 'border-amber-200 dark:border-yellow-500/30'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-amber-700 dark:text-yellow-300"><FaCoins /></span>
+                <span className="text-sm font-semibold text-amber-900 dark:text-yellow-100">Class Record</span>
+              </div>
+              <span className="text-amber-400">→</span>
+            </button>
+            <button
+              onClick={() => handleTabChange("students")}
+              title="Crew (Roster)"
+              aria-label="Go to Crew"
+              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md bg-amber-50/80 dark:bg-slate-800/60 ${
+                activeTab === 'students' ? 'border-amber-400 ring-2 ring-amber-300' : 'border-amber-200 dark:border-yellow-500/30'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-amber-700 dark:text-yellow-300"><FaUsers /></span>
+                <span className="text-sm font-semibold text-amber-900 dark:text-yellow-100">Crew</span>
+              </div>
+              <span className="text-amber-400">→</span>
+            </button>
+          </div>
           <div className="flex justify-end my-5 gap-2">
             {activeTab === "activities" && (
               <>
                 <button
                   onClick={handleOpenAddQuizModal}
-                   className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+                   title="Add Quiz"
+                   aria-label="Add Quiz"
+                   className="text-amber-800 dark:text-yellow-300 font-semibold flex items-center gap-2 h-10 order-1 sm:order-2 hover:brightness-110 hover:underline"
                 >
                   <AiOutlinePlusCircle className="w-5 h-5" />
                   Add Quiz
                 </button>
                 <button
                   onClick={handleOpenAddActivityModal}
-                 className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+                 title="Add Game Activity"
+                 aria-label="Add Game Activity"
+                 className="text-amber-800 dark:text-yellow-300 font-semibold flex items-center gap-2 h-10 order-1 sm:order-2 hover:brightness-110 hover:underline"
                 >
                   <AiOutlinePlusCircle className="w-5 h-5" />
                   Add Game
@@ -804,7 +825,9 @@ const TeacherClassroomPage = () => {
             {activeTab === "lessons" && (
               <button
                 onClick={handleOpenAddModal}
-                className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+                title="Add Lesson"
+                aria-label="Add Lesson"
+                className="text-amber-800 dark:text-yellow-300 font-semibold flex items-center gap-2 h-10 order-1 sm:order-2 hover:brightness-110 hover:underline"
               >
                 <AiOutlinePlusCircle className="w-5 h-5" />
                 Add Lesson
@@ -813,7 +836,9 @@ const TeacherClassroomPage = () => {
             {activeTab === "students" && (
               <button
                 onClick={() => setIsAddStudentModalOpen(true)}
-                className="dark:text-blue-300 text-secondary font-semibold flex items-center gap-2 h-10 order-1 sm:order-2"
+                title="Add Student"
+                aria-label="Add Student"
+                className="text-amber-800 dark:text-yellow-300 font-semibold flex items-center gap-2 h-10 order-1 sm:order-2 hover:brightness-110 hover:underline"
               >
                 <AiOutlinePlusCircle className="w-5 h-5" />
                 Add Student
@@ -824,7 +849,7 @@ const TeacherClassroomPage = () => {
           {activeTab === "lessons" && (
             <div className="flex flex-col md:flex-row gap-6">
               
-              <div className="w-full md:w-1/3 bg-[#60B5FF] rounded-tl-3xl rounded-bl-3xl overflow-hidden p-5">
+              <div className="w-full md:w-1/3 rounded-tl-3xl rounded-bl-3xl overflow-hidden p-5 bg-[rgba(255,255,255,0.7)] dark:bg-slate-900/60 border-2 border-amber-700/50 dark:border-yellow-500/30" style={{ backgroundImage: "url('/images/game-images/treasure.png')", backgroundRepeat: 'no-repeat', backgroundPosition: 'right bottom', backgroundSize: '120px' }}>
                 <LessonSidebar
                   lessons={lessons}
                   currentLessonId={currentLessonId}
@@ -833,10 +858,10 @@ const TeacherClassroomPage = () => {
               </div>
 
      
-              <div className="w-full md:w-2/3 bg-[#60B5FF]/20 dark:bg-gray-50 rounded-lg shadow h-[calc(85vh)] flex flex-col relative">
+              <div className="w-full md:w-2/3 rounded-lg shadow h-[70vh] sm:h-[75vh] md:h-[calc(85vh)] min-h-[420px] flex flex-col relative bg-amber-50/80 dark:bg-slate-800/70 border border-amber-200 dark:border-yellow-500/20">
                 
                 {lessonLoading && (
-                  <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                  <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/70 flex items-center justify-center z-10">
                     <div className="flex flex-col items-center gap-3">
                       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
                       <p className="text-gray-600 text-sm">Loading lesson...</p>
@@ -845,13 +870,13 @@ const TeacherClassroomPage = () => {
                 )}
                 
                 {!lessons || lessons.length === 0 ? (
-                  <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                  <main className="lesson-detail-placeholder p-6 bg-amber-50/80 dark:bg-slate-800/60 rounded-md min-h-[300px] flex items-center justify-center shadow flex-1 border border-amber-200 dark:border-yellow-500/20">
                     <div className="text-center">
                       <Header
                         type="h1"
                         weight="bold"
                         size="3xl"
-                        className="!text-4xl text-gray-800 mb-4"
+                        className="!text-4xl text-amber-900 dark:text-yellow-100 mb-4"
                       >
                         Add New Lesson
                       </Header>
@@ -868,7 +893,7 @@ const TeacherClassroomPage = () => {
                     </div>
                   </main>
                 ) : loading && currentLessonId && !selectedLesson ? (
-                  <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                  <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow flex-1 bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200/50 dark:border-yellow-500/20">
                     <div className="flex flex-col items-center gap-3">
                       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
                       <p className="text-gray-500 text-lg">Loading lesson details...</p>
@@ -877,16 +902,16 @@ const TeacherClassroomPage = () => {
                 ) : selectedLesson ? (
                   <div className="flex flex-col h-full">
                     {/* Fixed Title Section */}
-                    <div className="p-5 border-b dark:border-blue-400 border-gray-100">
+                    <div className="p-5 border-b border-amber-200 dark:border-yellow-500/30 bg-amber-100/60 dark:bg-slate-900/40">
                       <div className="flex justify-between items-center">
                         <Header
                           type="h2"
                           weight="bold"
-                          className="!text-4xl text-primary "
+                          className="!text-4xl text-amber-900 dark:text-yellow-200 "
                         >{selectedLesson.title}</Header>
                         <button 
                           onClick={handleOpenEditLessonModal}
-                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                          className="text-amber-800 hover:text-amber-900 dark:text-yellow-300 dark:hover:text-yellow-200 transition-colors p-1"
                           title="Edit lesson details"
                         >
                           <MdEdit className="w-6 h-6" />
@@ -897,18 +922,17 @@ const TeacherClassroomPage = () => {
                     {/* Scrollable Content Section */}
                     <div className="flex-1 overflow-y-auto p-5">
                       {stats && (
-                        <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
+                        <div className="rounded-lg p-4 shadow-sm mb-6 border border-amber-200 dark:border-yellow-500/30 bg-amber-50/70 dark:bg-slate-900/40">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center gap-1" title={`Students who read the content`}>
-                                <BookOpen className="w-4 h-4" />
-                                <span>{stats.studentsRead} / {stats.totalStudents} Read</span>
+                              <div className="flex items-center gap-2" title={`Students who read the content`}>
+                                <BookOpen className="w-4 h-4 text-amber-700 dark:text-yellow-300" />
+                                <span className="text-amber-900 dark:text-yellow-100">{stats.studentsRead} / {stats.totalStudents} Read</span>
                               </div>
-                              {/* Only show quiz completion if there's a quiz in the lesson */}
                               {selectedLesson.activities?.some(activity => activity?.type === 'QUIZ') && (
-                                <div className="flex items-center gap-1" title={`Students who completed the quiz`}>
-                                  <CheckCircle className="w-4 h-4" />
-                                  <span>{stats.studentsCompletedQuiz} / {stats.totalStudents} Completed Quiz</span>
+                                <div className="flex items-center gap-2" title={`Students who completed the quiz`}>
+                                  <CheckCircle className="w-4 h-4 text-amber-700 dark:text-yellow-300" />
+                                  <span className="text-amber-900 dark:text-yellow-100">{stats.studentsCompletedQuiz} / {stats.totalStudents} Completed Quiz</span>
                                 </div>
                               )}
                             </div>
@@ -920,7 +944,11 @@ const TeacherClassroomPage = () => {
                       {selectedLesson.contentBlocks?.length > 0 ? (
                         <div className="content-blocks space-y-8">
                           {selectedLesson.contentBlocks.map((block) => (
-                            <div key={block.id} className="content-block">
+                            <div
+                              key={block.id}
+                              className="content-block bg-right-bottom bg-no-repeat"
+                              style={{ backgroundImage: "url('/images/game-images/dash-path.png')", backgroundSize: '100px' }}
+                            >
                               <ContentBlockDisplay block={block} />
                             </div>
                           ))}
@@ -929,7 +957,7 @@ const TeacherClassroomPage = () => {
                           {selectedLesson.activities?.filter(activity => activity?.type === 'QUIZ' && activity?.id)?.length > 0 && (
                             <div className="mt-8">
                               <div className="quiz-section">
-                                <Header type="h3" weight="semibold" className="mb-4">
+                                <Header type="h3" weight="semibold" className="mb-4 text-amber-900 dark:text-yellow-200">
                                   Lesson Quiz
                                 </Header>
                                 {selectedLesson.activities
@@ -937,41 +965,41 @@ const TeacherClassroomPage = () => {
                                   .map(activity => {
                                     const quizData = quizDataMap[activity.id];
                                     return (
-                                      <div key={activity.id} className="mb-6 p-4 bg-white rounded-lg shadow">
-                                        <h4 className="text-lg font-semibold mb-2">{activity.title || quizData?.quizName || 'Quiz'}</h4>
-                                        <p className="text-gray-600 mb-4">{activity.description || quizData?.description}</p>
+                                      <div key={activity.id} className="mb-6 p-4 rounded-lg shadow border border-amber-200 dark:border-yellow-500/30 bg-amber-50/70 dark:bg-slate-900/40">
+                                        <h4 className="text-lg font-semibold mb-2 text-amber-900 dark:text-yellow-200">{activity.title || quizData?.quizName || 'Quiz'}</h4>
+                                        <p className="text-amber-800/90 dark:text-yellow-100/90 mb-4">{activity.description || quizData?.description}</p>
                                         
                                         {/* Quiz Details */}
                                         <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                                           <div>
-                                            <span className="font-medium">Time Limit:</span> {quizData?.timeLimitMinutes || 0} minutes
+                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Time Limit:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.timeLimitMinutes || 0} minutes</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium">Quiz Type:</span> {quizData?.quizType || 'Standard'}
+                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Quiz Type:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.quizType || 'Standard'}</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium">Passing Score:</span> {quizData?.passingScore || 0}/{quizData?.overallScore || 0}
+                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Passing Score:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.passingScore || 0}/{quizData?.overallScore || 0}</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium">Max Attempts:</span> {quizData?.maxAttempts || '1'}
+                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Max Attempts:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.maxAttempts || '1'}</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium">Available From:</span> {quizData?.availableFrom ? new Date(quizData.availableFrom).toLocaleString() : 'Not set'}
+                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Available From:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.availableFrom ? new Date(quizData.availableFrom).toLocaleString() : 'Not set'}</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium">Available To:</span> {quizData?.availableTo ? new Date(quizData.availableTo).toLocaleString() : 'Not set'}
+                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Available To:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.availableTo ? new Date(quizData.availableTo).toLocaleString() : 'Not set'}</span>
                                           </div>
                                           {quizData?.attempts && (
                                             <div>
-                                              <span className="font-medium">Total Attempts:</span> {quizData.attempts.length || 0}
+                                              <span className="font-medium text-amber-900 dark:text-yellow-200">Total Attempts:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData.attempts.length || 0}</span>
                                             </div>
                                           )}
                                         </div>
                                         
                                         {/* Quiz Status */}
-                                        <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-100">
-                                          <p className="font-medium text-blue-700">Quiz Status:</p>
-                                          <p className="text-blue-600">
+                                        <div className="mt-4 p-3 rounded border border-amber-200 dark:border-yellow-500/30 bg-amber-100/60 dark:bg-slate-900/40">
+                                          <p className="font-medium text-amber-900 dark:text-yellow-200">Quiz Status:</p>
+                                          <p className="text-amber-800 dark:text-yellow-100">
                                             {stats?.studentsCompletedQuiz || 0} out of {stats?.totalStudents || 0} students have completed this quiz.
                                           </p>
                                         </div>
@@ -984,7 +1012,7 @@ const TeacherClassroomPage = () => {
                         </div>
                       ) : (
                         <div className="text-center py-8">
-                          <p className="text-gray-500">No content has been added to this lesson yet.</p>
+                          <p className="text-amber-800/90 dark:text-yellow-100/90">No content has been added to this lesson yet.</p>
                         </div>
                       )}
                     </div>
@@ -1001,7 +1029,7 @@ const TeacherClassroomPage = () => {
                               display: "flex",
                               alignItems: "center",
                               zIndex: 10,
-                              background: "white",
+                              background: "rgba(255,255,255,0.95)",
                               borderRadius: "9999px",
                               padding: "4px 8px",
                               boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
@@ -1010,7 +1038,7 @@ const TeacherClassroomPage = () => {
                             {studentsWhoRead.length > 4 && (
                               <div
                                 style={{
-                                  background: "#444950",
+                                  background: "#8b5e34",
                                   color: "#fff",
                                   borderRadius: "9999px",
                                   padding: "2px 8px",
@@ -1023,7 +1051,7 @@ const TeacherClassroomPage = () => {
                               </div>
                             )}
                             {studentsWhoRead.slice(-4).map((student) => (
-                              <Avatar key={student.id} className="h-8 w-8 border-2 border-[#23272f] -ml-2 first:ml-0">
+                              <Avatar key={student.id} className="h-8 w-8 border-2 border-amber-700 -ml-2 first:ml-0 dark:border-yellow-500">
                                 {renderStudentAvatar(student)}
                               </Avatar>
                             ))}
@@ -1033,13 +1061,13 @@ const TeacherClassroomPage = () => {
                     )}
                   </div>
                 ) : lessons.length > 0 && !currentLessonId ? (
-                  <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
-                    <p className="text-gray-500 text-lg">Please select a lesson to view its details.</p>
+                  <main className="lesson-detail-placeholder p-6 bg-amber-50/80 dark:bg-slate-800/60 rounded-md min-h-[300px] flex items-center justify-center shadow flex-1 border border-amber-200 dark:border-yellow-500/20">
+                    <p className="text-amber-800/90 dark:text-yellow-100/90 text-lg">Please select a lesson to view its details.</p>
                   </main>
                 ) : (
-                  <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                  <main className="lesson-detail-placeholder p-6 bg-amber-50/80 dark:bg-slate-800/60 rounded-md min-h-[300px] flex items-center justify-center shadow flex-1 border border-amber-200 dark:border-yellow-500/20">
                     <div className="text-center">
-                      <p className="text-gray-500 text-lg mb-4">This classroom currently has no lessons.</p>
+                      <p className="text-amber-800/90 dark:text-yellow-100/90 text-lg mb-4">This classroom currently has no lessons.</p>
                     </div>
                   </main>
                 )}
@@ -1048,9 +1076,17 @@ const TeacherClassroomPage = () => {
           )}
 
           {activeTab === "activities" && (
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-amber-50/80 dark:bg-slate-900/50 p-6 rounded-lg shadow border border-amber-200 dark:border-yellow-500/20">
               <div className="mb-8">
+                <div className="flex items-center gap-2 mb-3 text-amber-900 dark:text-yellow-200">
+                  <FaCoins />
+                  <span className="font-semibold">Quizzes</span>
+                </div>
                 <QuizManager classroomId={classroomId} refreshTrigger={activityRefreshTrigger} />
+              </div>
+              <div className="flex items-center gap-2 mb-3 text-amber-900 dark:text-yellow-200">
+                <FaAnchor />
+                <span className="font-semibold">Game Activities</span>
               </div>
               <ActivityManager 
                 classroomId={classroomId} 
@@ -1060,7 +1096,7 @@ const TeacherClassroomPage = () => {
           )}
 
           {activeTab === "class-record" && (
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-amber-50/80 dark:bg-slate-900/50 p-6 rounded-lg shadow border border-amber-200 dark:border-yellow-500/20">
               <ClassRecordManager 
                 classroomId={classroomId}
                 teacherId={user?.id}
@@ -1069,22 +1105,22 @@ const TeacherClassroomPage = () => {
           )}
 
           {activeTab === "students" && (
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-amber-50/80 dark:bg-slate-900/50 p-6 rounded-lg shadow border border-amber-200 dark:border-yellow-500/20">
               <div className="mb-6">
-                <Header type="h2" fontSize="2xl" weight="bold" className="text-gray-800 mb-2">
-                  Enrolled Students ({classroomStudents.length})
+                <Header type="h2" fontSize="2xl" weight="bold" className="text-amber-900 dark:text-yellow-200 mb-2">
+                  Crew Roster ({classroomStudents.length})
                 </Header>
-                <p className="text-gray-600 mb-4">Manage students enrolled in this classroom</p>
+                <p className="text-amber-800/90 dark:text-yellow-100/90 mb-4">Manage students enrolled in this classroom</p>
                 
                 {/* Search box for enrolled students */}
-                <div className="relative max-w-md">
+              <div className="relative w-full md:max-w-md">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <CiSearch className="text-gray-400" />
                   </div>
                   <Input
                     type="text"
                     placeholder="Search enrolled students..."
-                    className="pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="pl-10 pr-3 py-2 border border-amber-300 bg-white/70 dark:bg-slate-800/50 dark:text-yellow-100 dark:border-yellow-500/30 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                     value={enrolledStudentsSearchTerm}
                     onChange={(e) => setEnrolledStudentsSearchTerm(e.target.value)}
                   />
@@ -1097,7 +1133,7 @@ const TeacherClassroomPage = () => {
                 </div>
               ) : classroomStudents.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">No students enrolled in this classroom yet.</p>
+                  <p className="text-amber-800/90 dark:text-yellow-100/90 mb-4">No students enrolled in this classroom yet.</p>
                   <Button
                     variant="default"
                     size="sm"
@@ -1110,7 +1146,7 @@ const TeacherClassroomPage = () => {
                 </div>
               ) : getFilteredEnrolledStudents().length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">No students found matching '{enrolledStudentsSearchTerm}' <span className="underline text-blue-500" onClick={() => setEnrolledStudentsSearchTerm('')}>clear search</span></p>
+                  <p className="text-amber-800/90 dark:text-yellow-100/90 mb-4">No students found matching '{enrolledStudentsSearchTerm}' <span className="underline text-amber-700 dark:text-yellow-300" onClick={() => setEnrolledStudentsSearchTerm('')}>clear search</span></p>
                   {/* <Button
                     variant="link"
                     size="sm"
@@ -1122,26 +1158,26 @@ const TeacherClassroomPage = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-amber-200 dark:divide-yellow-500/30">
+                    <thead className="bg-amber-100/60 dark:bg-slate-900/40">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 dark:text-yellow-200 uppercase tracking-wider">
                           Student
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 dark:text-yellow-200 uppercase tracking-wider">
                           Username
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 dark:text-yellow-200 uppercase tracking-wider">
                           Email
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 dark:text-yellow-200 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-white/70 dark:bg-slate-900/40 divide-y divide-amber-100 dark:divide-yellow-500/20">
                       {getFilteredEnrolledStudents().map(student => (
-                        <tr key={student.id} className="hover:bg-gray-50">
+                        <tr key={student.id} className="hover:bg-amber-50/80 dark:hover:bg-slate-800/60">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               {/* <Avatar className="h-10 w-10 mr-3">
@@ -1151,19 +1187,19 @@ const TeacherClassroomPage = () => {
                                 {renderStudentAvatar(student)}
                               </Avatar>
                               <div>
-                                <div className="text-sm font-medium text-gray-900">
+                                <div className="text-sm font-medium text-amber-900 dark:text-yellow-100">
                                   {student.firstName} {student.lastName}
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-amber-700/80 dark:text-yellow-300/80">
                                   ID: {student.id}
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-amber-900 dark:text-yellow-100">
                             @{student.username}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-amber-900 dark:text-yellow-100">
                             {student.email}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1171,7 +1207,7 @@ const TeacherClassroomPage = () => {
                               variant="danger"
                               size="sm"
                               onClick={() => handleRemoveStudent(student.id)}
-                              className="text-red-600 hover:text-red-900"
+                              className="text-red-700 hover:text-red-900"
                             >
                               Remove
                             </Button>

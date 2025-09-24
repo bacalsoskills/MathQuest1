@@ -7,7 +7,7 @@ import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Header } from '../../ui/heading';
 import { Textarea } from '../../ui/textarea';
-import { MdKeyboardBackspace } from "react-icons/md";
+import { FaShip, FaCompass, FaScroll, FaCoins } from 'react-icons/fa';
 
 
 const CreateClassroom = () => {
@@ -98,12 +98,40 @@ const CreateClassroom = () => {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
+    <div className="relative px-4 sm:px-6 lg:px-8 pt-16 md:pt-0 lg:py-8 transition-colors duration-300">
+      {/* Pirate background layers */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          className="absolute inset-0 opacity-70 dark:opacity-0"
+          style={{
+            backgroundImage: "url('/images/game-images/map.png')",
+            backgroundRepeat: 'repeat',
+            backgroundSize: '600px 600px'
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-0 dark:opacity-70"
+          style={{
+            backgroundImage: "linear-gradient(180deg, rgba(1,10,20,0.9), rgba(1,10,20,0.95)), url('/images/game-images/underwater.png')",
+            backgroundRepeat: 'repeat',
+            backgroundSize: '700px 700px'
+          }}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgba(0,0,0,0.25))]" />
+      </div>
+
       <div className="max-w-6xl mx-auto">
-      <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-primary dark:text-white">Create a New Classroom</Header>
+        {/* Nautical banner */}
+        <div className="flex items-center gap-3 mb-4 text-amber-900 dark:text-yellow-200">
+          <FaShip className="text-blue-700 dark:text-yellow-400" />
+          <span className="text-sm font-semibold tracking-wide">Set Sail on a New Classroom Adventure</span>
+        </div>
+        <Header type="h1" fontSize="5xl" weight="bold" className="mb-6 text-amber-900 dark:text-yellow-50">Create a New Classroom</Header>
       
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="p-8">
+        <div className="rounded-2xl overflow-hidden border border-amber-200 dark:border-yellow-500/30 shadow-lg bg-amber-50/80 dark:bg-slate-900/60">
+          {/* Rope divider */}
+          <div className="h-[2px] w-full bg-[repeating-linear-gradient(90deg,rgba(180,83,9,0.35)_0px,rgba(180,83,9,0.35)_10px,transparent_10px,transparent_20px)] dark:bg-[repeating-linear-gradient(90deg,rgba(234,179,8,0.5)_0px,rgba(234,179,8,0.5)_10px,transparent_10px,transparent_20px)]" />
+          <div className="p-6 sm:p-8">
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
               <span className="block sm:inline">{error}</span>
@@ -135,58 +163,81 @@ const CreateClassroom = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                <Label htmlFor="shortCode" className="block text-sm font-medium text-gray-700 mb-1">
+              {/* Classroom Code */}
+              <div>
+                <Label htmlFor="shortCode" className="block text-sm font-medium text-amber-900 dark:text-yellow-200 mb-1">
                   Classroom Code <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="shortCode"
-                  name="shortCode"
-                  type="text"
-                  required
-                  placeholder="e.g. Math 101"
-                  variant="gray"
-                  className="mt-1 block w-full rounded-none"
-                  value={formData.shortCode}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Classroom Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  variant="gray"
-                  placeholder="e.g. Mathematics for Beginners"
-                  className="mt-1 block w-full rounded-none"
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  rows="3"
-                  placeholder="Brief description of the classroom"
-                  variant="gray"
-                  className="mt-1 block w-full rounded-none"
-                  value={formData.description}
-                  required
-                  onChange={handleChange}
-                />
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-amber-700 dark:text-yellow-300">
+                    <FaCompass />
+                  </span>
+                  <Input
+                    id="shortCode"
+                    name="shortCode"
+                    type="text"
+                    required
+                    placeholder="e.g. MATH-101"
+                    variant="gray"
+                    className="mt-1 block w-full rounded-none pl-10"
+                    value={formData.shortCode}
+                    onChange={handleChange}
+                    title="A short code to identify your classroom (e.g., MATH-101)"
+                  />
+                </div>
               </div>
 
+              {/* Classroom Name */}
               <div>
-                <Label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+                <Label htmlFor="name" className="block text-sm font-medium text-amber-900 dark:text-yellow-200 mb-1">
+                  Classroom Name <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-amber-700 dark:text-yellow-300">
+                    <FaScroll />
+                  </span>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    variant="gray"
+                    placeholder="e.g. Mathematics for Beginners"
+                    className="mt-1 block w-full rounded-none pl-10"
+                    value={formData.name}
+                    onChange={handleChange}
+                    title="The display name of your classroom"
+                  />
+                </div>
+              </div>
+              
+              {/* Description */}
+              <div>
+                <Label htmlFor="description" className="block text-sm font-medium text-amber-900 dark:text-yellow-200 mb-1">
+                  Description <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <span className="absolute top-3 left-3 text-amber-700 dark:text-yellow-300">
+                    <FaShip />
+                  </span>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    rows="3"
+                    placeholder="Brief description of the classroom (mission, topics, schedule)"
+                    variant="gray"
+                    className="mt-1 block w-full rounded-none pl-10"
+                    value={formData.description}
+                    required
+                    onChange={handleChange}
+                    title="A short summary to guide your crew"
+                  />
+                </div>
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <Label htmlFor="image" className="block text-sm font-medium text-amber-900 dark:text-yellow-200 mb-1">
                   Classroom Image (Optional)
                 </Label>
                 <Input
@@ -195,27 +246,33 @@ const CreateClassroom = () => {
                   type="file"
                   accept="image/*"
                   variant="gray"
-                  className="mt-1 block w-full text-sm text-gray-500
+                  className="mt-1 block w-full text-sm text-gray-700 dark:text-yellow-100
                     file:mr-4 file:py-5 file:px-4
                     file:rounded-md file:border-0
                     file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100 !border-none rounded-none"
+                    file:bg-amber-100 file:text-amber-800 dark:file:bg-yellow-200 dark:file:text-amber-900
+                    hover:file:bg-amber-200 dark:hover:file:bg-yellow-300 !border-none rounded-none"
                   onChange={handleImageChange}
+                  title="Optional banner for your classroom"
                 />
-                <p className="mt-1 text-sm text-gray-500">Maximum file size: 5MB</p>
+                <p className="mt-1 text-sm text-amber-800 dark:text-yellow-200">Maximum file size: 5MB</p>
               </div>
               
+              {/* Submit */}
               <div className="pt-4">
                 <Button
                   type="submit"
                   disabled={loading}
                   variant="default"
                   size="sm"
-                  className="w-full "
+                  className="w-full bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 text-amber-900 hover:from-yellow-500 hover:via-amber-500 hover:to-yellow-600 transition-colors shadow-md border-amber-300 dark:border-yellow-400"
                   rounded="full"
+                  title="Create classroom"
                 >
-                  {loading ? 'Creating...' : 'Create Classroom'}
+                  <span className="inline-flex items-center gap-2">
+                    <FaCoins />
+                    {loading ? 'Creating...' : 'Create Classroom'}
+                  </span>
                 </Button>
               </div>
             </form>
@@ -223,13 +280,18 @@ const CreateClassroom = () => {
           
           {!createdClassroom && (
             <div className="mt-6 max-w-[200px] md:max-w-none ">
-              <p className="text-sm text-gray-600">
-                Already have classrooms? <a href="/classrooms" className="text-blue-600 underline-offset-2 underline hover:text-blue-800">View your classrooms</a>
+              <p className="text-sm text-amber-800 dark:text-yellow-100">
+                Already have classrooms? <a href="/classrooms" className="text-blue-700 dark:text-yellow-300 underline-offset-2 underline hover:text-blue-900 dark:hover:text-yellow-200">View your classrooms</a>
               </p>
             </div>
           )}
+          {/* Close inner content (p-6) */}
+          </div>
+          {/* Rope divider */
+          }
+          <div className="h-[2px] w-full bg-[repeating-linear-gradient(90deg,rgba(180,83,9,0.35)_0px,rgba(180,83,9,0.35)_10px,transparent_10px,transparent_20px)] dark:bg-[repeating-linear-gradient(90deg,rgba(234,179,8,0.5)_0px,rgba(234,179,8,0.5)_10px,transparent_10px,transparent_20px)]" />
         </div>
-      </div>
+        {/* End parchment container */}
       </div>
     </div>
   );

@@ -2,6 +2,8 @@ package com.mathquest.demo.Controller;
 
 import com.mathquest.demo.DTO.*;
 import com.mathquest.demo.Model.User;
+import com.mathquest.demo.Repository.UserRepository;
+import com.mathquest.demo.Security.services.UserDetailsImpl;
 import com.mathquest.demo.Service.MultiplicationLearningService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +20,18 @@ public class MultiplicationLearningController {
     @Autowired
     private MultiplicationLearningService multiplicationLearningService;
 
+    @Autowired
+    private UserRepository userRepository;
+    
+    
     @GetMapping("/progress")
     public ResponseEntity<MultiplicationLearningProgressDTO> getProgress(Authentication authentication) {
         try {
-            User user = (User) authentication.getPrincipal();
+          Object principal = authentication.getPrincipal();
+        // Get user ID from your UserDetailsImpl
+        Long userId = ((UserDetailsImpl) principal).getId();
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
             MultiplicationLearningProgressDTO progress = multiplicationLearningService.getProgress(user);
             return ResponseEntity.ok(progress);
         } catch (Exception e) {
@@ -29,18 +39,24 @@ public class MultiplicationLearningController {
         }
     }
 
-    @PostMapping("/progress")
-    public ResponseEntity<MultiplicationLearningProgressDTO> saveProgress(
-            @RequestBody SaveProgressRequest request,
-            Authentication authentication) {
-        try {
-            User user = (User) authentication.getPrincipal();
-            MultiplicationLearningProgressDTO progress = multiplicationLearningService.saveProgress(user, request);
-            return ResponseEntity.ok(progress);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+   @PostMapping("/progress")
+public ResponseEntity<MultiplicationLearningProgressDTO> saveProgress(
+        @RequestBody SaveProgressRequest request,
+        Authentication authentication) {
+    try {
+        Object principal = authentication.getPrincipal();
+        // Get user ID from your UserDetailsImpl
+        Long userId = ((UserDetailsImpl) principal).getId();
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        MultiplicationLearningProgressDTO progress = multiplicationLearningService.saveProgress(user, request);
+        return ResponseEntity.ok(progress);
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.badRequest().build();
     }
+}
 
     @PostMapping("/complete-property")
     public ResponseEntity<MultiplicationLearningProgressDTO> completeProperty(

@@ -11,8 +11,9 @@ import QuizManager from "../../components/teacher/QuizManager";
 import Leaderboard from "../../components/leaderboard/Leaderboard";
 import { Header } from '../../ui/heading';
 import activityService from "../../services/activityService";
-import { AlertCircle, CheckCircle, BookOpen } from "lucide-react";
+import { AlertCircle, CheckCircle, BookOpen, Anchor, MapPin, Compass, Ship, Scroll, Crown, Sword, Shield } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import QuizDisplay from "../../components/quiz/QuizDisplay";
 import { Button } from "../../ui/button";
 
@@ -20,6 +21,7 @@ const StudentClassroomPage = () => {
   const { classroomId, lessonId: initialLessonId } = useParams();
   const location = useLocation();
   const { currentUser: user } = useAuth();
+  const { darkMode, isInitialized } = useTheme();
   const isStudent = true; // Since this is StudentClassroomPage, we're always in student mode
   const [classroomDetails, setClassroomDetails] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -568,19 +570,31 @@ const StudentClassroomPage = () => {
     return (
       <div className="mt-8">
         {!completionStatus?.contentRead && isStudent && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-yellow-600" />
-            <p className="text-yellow-700">
-              Please read through the entire lesson content to access the quiz.
+          <div className={`border-2 rounded-xl p-6 mb-6 flex items-center gap-3 shadow-lg transition-colors duration-300 ${
+            darkMode
+              ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-yellow-400'
+              : 'bg-gradient-to-r from-yellow-100 to-orange-100 border-yellow-400'
+          }`}>
+            <div className="text-2xl">⚠️</div>
+            <AlertCircle className="w-6 h-6 text-yellow-700" />
+            <p className="text-yellow-800 font-medium text-lg">
+              Ahoy! Study the treasure map completely before attempting the quest!
             </p>
           </div>
         )}
         
         {completionStatus?.contentRead && (
           <div className="quiz-section">
-            <Header type="h3" weight="semibold" className="mb-4">
-              Lesson Quiz
-            </Header>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="text-3xl">⚔️</div>
+              <Header type="h3" weight="semibold" className={`text-2xl transition-colors duration-300 ${
+                darkMode
+                  ? 'text-gray-800'
+                  : 'text-amber-800'
+              }`}>
+                Pirate Quest
+              </Header>
+            </div>
             {selectedLesson.activities
               .filter(activity => activity.type === 'QUIZ')
               .map(activity => {
@@ -590,55 +604,150 @@ const StudentClassroomPage = () => {
                 const lastAttempt = quizData?.lastAttempt;
 
                 return (
-                  <div key={activity.id} className="mb-6 p-4 bg-white rounded-lg shadow">
-                    <div className="mb-4">
-                      <h4 className="text-lg font-semibold">{quizData?.quiz?.quizName || 'Quiz'}</h4>
-                      <p className="text-gray-600">{quizData?.quiz?.description}</p>
+                  <div key={activity.id} className={`mb-6 p-6 rounded-2xl shadow-xl border-2 transition-colors duration-300 ${
+                    darkMode
+                      ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-300'
+                      : 'bg-gradient-to-br from-amber-100 to-amber-50 border-amber-300'
+                  }`}>
+                    <div className="mb-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="text-2xl">🗡️</div>
+                        <h4 className={`text-xl font-bold transition-colors duration-300 ${
+                          darkMode
+                            ? 'text-gray-800'
+                            : 'text-amber-800'
+                        }`}>{quizData?.quiz?.quizName || 'Pirate Quest'}</h4>
+                      </div>
+                      <p className={`font-medium transition-colors duration-300 ${
+                        darkMode
+                          ? 'text-gray-700'
+                          : 'text-amber-700'
+                      }`}>{quizData?.quiz?.description}</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                      <div>
-                        <span className="font-medium">Time Limit:</span> {quizData?.quiz?.timeLimitMinutes || 0} minutes
+                    <div className={`grid grid-cols-2 gap-4 mb-6 text-sm rounded-xl p-4 border transition-colors duration-300 ${
+                      darkMode
+                        ? 'bg-white/60 border-gray-200'
+                        : 'bg-white/60 border-amber-200'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg">⏰</div>
+                        <div>
+                          <span className={`font-bold transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}>Quest Duration:</span> {quizData?.quiz?.timeLimitMinutes || 0} minutes
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Total Items:</span> {quizData?.quiz?.totalItems || 0}
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg">🗺️</div>
+                        <div>
+                          <span className={`font-bold transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}>Challenges:</span> {quizData?.quiz?.totalItems || 0}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Passing Score:</span> {quizData?.quiz?.passingScore || 0}/{quizData?.quiz?.overallScore || 0}
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg">🏆</div>
+                        <div>
+                          <span className={`font-bold transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}>Victory Threshold:</span> {quizData?.quiz?.passingScore || 0}/{quizData?.quiz?.overallScore || 0}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Max Attempts:</span> {quizData?.quiz?.maxAttempts || '1'}
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg">⚔️</div>
+                        <div>
+                          <span className={`font-bold transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}>Max Attempts:</span> {quizData?.quiz?.maxAttempts || '1'}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Available From:</span> {quizData?.quiz?.availableFrom ? new Date(quizData.quiz.availableFrom).toLocaleString() : 'Not set'}
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg">🌅</div>
+                        <div>
+                          <span className={`font-bold transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}>Quest Begins:</span> {quizData?.quiz?.availableFrom ? new Date(quizData.quiz.availableFrom).toLocaleString() : 'Anytime'}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Available To:</span> {quizData?.quiz?.availableTo ? new Date(quizData.quiz.availableTo).toLocaleString() : 'Not set'}
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg">🌇</div>
+                        <div>
+                          <span className={`font-bold transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}>Quest Ends:</span> {quizData?.quiz?.availableTo ? new Date(quizData.quiz.availableTo).toLocaleString() : 'Never'}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Attempts:</span> {quizData?.attempts?.length || 0}/{quizData?.quiz?.maxAttempts || '1'}
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg">📊</div>
+                        <div>
+                          <span className={`font-bold transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}>Attempts:</span> {quizData?.attempts?.length || 0}/{quizData?.quiz?.maxAttempts || '∞'}
+                        </div>
                       </div>
                     </div>
 
                     {lastAttempt && (
-                      <div className="mb-4 p-3 bg-gray-50 rounded">
-                        <p className="font-medium">Last Attempt:</p>
-                        <p>Score: {lastAttempt.score}/{quizData?.quiz?.overallScore || 0}</p>
-                        <p>Date: {new Date(lastAttempt.completedAt).toLocaleString()}</p>
-                        {/* <p>Attempt: {quizData?.attempts?.length || 0}/{quizData?.quiz?.maxAttempts || '∞'}</p> */}
+                      <div className={`mb-6 p-4 rounded-xl border-2 transition-colors duration-300 ${
+                        darkMode
+                          ? 'bg-gradient-to-r from-gray-200 to-gray-300 border-gray-300'
+                          : 'bg-gradient-to-r from-amber-200 to-yellow-200 border-amber-300'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="text-xl">🏴‍☠️</div>
+                          <p className={`font-bold transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}>Last Adventure:</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className={`font-medium transition-colors duration-300 ${
+                              darkMode
+                                ? 'text-gray-700'
+                                : 'text-amber-700'
+                            }`}>Score:</span> {lastAttempt.score}/{quizData?.quiz?.overallScore || 0}
+                          </div>
+                          <div>
+                            <span className={`font-medium transition-colors duration-300 ${
+                              darkMode
+                                ? 'text-gray-700'
+                                : 'text-amber-700'
+                            }`}>Date:</span> {new Date(lastAttempt.completedAt).toLocaleDateString()}
+                          </div>
+                        </div>
                       </div>
                     )}
 
                     <button
                       onClick={() => handleStartQuiz(activity.id)}
-                      className={`w-full px-3 py-2  transition-colors text-base rounded-full ${
+                      className={`w-full px-6 py-4 transition-all duration-300 text-lg font-bold rounded-xl shadow-lg transform hover:scale-105 ${
                         canAttempt 
-                          ? 'bg-blue-400 text-white hover:bg-blue-700' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700 shadow-xl' 
+                          : 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                       }`}
                       disabled={!canAttempt}
                     >
-                      {buttonText}
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="text-xl">{canAttempt ? '⚔️' : '🔒'}</div>
+                        <span>{buttonText}</span>
+                      </div>
                     </button>
                   </div>
                 );
@@ -716,160 +825,401 @@ const StudentClassroomPage = () => {
 
   if (loading && !error) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+          : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100'
+      } relative overflow-hidden`}>
+        {/* Pirate-themed background elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 text-6xl">⚓</div>
+          <div className="absolute top-20 right-20 text-5xl">🗺️</div>
+          <div className="absolute bottom-20 left-20 text-5xl">🏴‍☠️</div>
+          <div className="absolute bottom-10 right-10 text-6xl">⚔️</div>
+        </div>
+        
+        <div className="flex flex-col justify-center items-center h-screen relative z-10">
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative">
+              <div className={`animate-spin rounded-full h-16 w-16 border-4 ${
+                darkMode
+                  ? 'border-amber-200 border-t-amber-600'
+                  : 'border-amber-200 border-t-amber-600'
+              }`}></div>
+              <div className={`absolute inset-0 rounded-full border-4 border-transparent animate-spin ${
+                darkMode
+                  ? 'border-t-amber-400'
+                  : 'border-t-amber-400'
+              }`} style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+            </div>
+            <div className="text-center">
+              <h3 className={`text-xl font-semibold mb-2 ${
+                darkMode
+                  ? 'text-amber-300'
+                  : 'text-amber-800'
+              }`}>⚓ Preparing Your Pirate Adventure</h3>
+              <p className={`${
+                darkMode
+                  ? 'text-amber-400'
+                  : 'text-amber-600'
+              }`}>Charting the course to your classroom...</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
-    return <div style={{ color: "red" }}>Error: {error}</div>;
+    return (
+      <div className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+          : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100'
+      } flex items-center justify-center`}>
+        <div className={`text-center p-8 rounded-2xl shadow-xl border-2 transition-colors duration-300 ${
+          darkMode
+            ? 'bg-gray-800/80 border-red-500/50'
+            : 'bg-white/80 border-amber-200'
+        }`}>
+          <div className="text-6xl mb-4">🚨</div>
+          <h3 className={`text-2xl font-bold mb-2 ${
+            darkMode
+              ? 'text-red-400'
+              : 'text-red-600'
+          }`}>Ahoy! We've Hit Rough Waters!</h3>
+          <p className={`${
+            darkMode
+              ? 'text-red-300'
+              : 'text-red-500'
+          }`}>Error: {error}</p>
+        </div>
+      </div>
+    );
   }
 
   if (!classroomDetails) {
-    return <div>Classroom not found or failed to load.</div>;
+    return (
+      <div className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+          : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100'
+      } flex items-center justify-center`}>
+        <div className={`text-center p-8 rounded-2xl shadow-xl border-2 transition-colors duration-300 ${
+          darkMode
+            ? 'bg-gray-800/80 border-amber-500/50'
+            : 'bg-white/80 border-amber-200'
+        }`}>
+          <div className="text-6xl mb-4">🗺️</div>
+          <h3 className={`text-2xl font-bold mb-2 ${
+            darkMode
+              ? 'text-amber-300'
+              : 'text-amber-800'
+          }`}>Lost at Sea!</h3>
+          <p className={`${
+            darkMode
+              ? 'text-amber-400'
+              : 'text-amber-600'
+          }`}>Classroom not found or failed to load.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 lg:py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="classroom-header flex flex-col md:flex-row md:space-x-8 h-full md:h-auto">
-          {/* Left - Image */}
-          <div className="w-full md:w-1/3 h-full">
-            <div className="h-full bg-gray-200 rounded-tl-3xl rounded-bl-3xl overflow-hidden mb-5 md:mb-0">
-              {classroomDetails.image ? (
-                <img
-                  src={`data:image/jpeg;base64,${classroomDetails.image}`}
-                  alt={classroomDetails.name}
-                  className="w-full h-[280px] object-cover"
-                />
-              ) : (
-                <div className="w-full h-[280px] flex items-center justify-center bg-gradient-to-r from-blue-100 to-blue-200">
-                  <span className="text-2xl text-blue-500 font-medium">
-                    {classroomDetails.shortCode}
-                  </span>
-                </div>
-              )}
+    <div className={`min-h-screen transition-colors duration-300 ${
+      darkMode
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+        : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100'
+    } relative overflow-hidden`}>
+      {/* Pirate-themed background elements */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-20 left-10 text-8xl">⚓</div>
+        <div className="absolute top-40 right-20 text-6xl">🗺️</div>
+        <div className="absolute bottom-40 left-20 text-7xl">🏴‍☠️</div>
+        <div className="absolute bottom-20 right-10 text-8xl">⚔️</div>
+        <div className="absolute top-1/2 left-1/4 text-5xl">🏴</div>
+        <div className="absolute top-1/3 right-1/3 text-6xl">⚓</div>
+        <div className="absolute bottom-1/3 left-1/2 text-5xl">🗺️</div>
+      </div>
+      
+      <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto">
+        {/* Pirate Ship Deck Header */}
+        <div className={`classroom-header transition-colors duration-300 ${
+          darkMode
+            ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 border-gray-600'
+            : 'bg-gradient-to-r from-amber-800 via-amber-700 to-amber-800 border-amber-600'
+        } rounded-3xl shadow-2xl border-4 mb-8 overflow-hidden relative`}>
+          {/* Ship deck wood texture overlay */}
+          <div className={`absolute inset-0 transition-colors duration-300 ${
+            darkMode
+              ? 'bg-gradient-to-b from-gray-900/20 to-transparent'
+              : 'bg-gradient-to-b from-amber-900/20 to-transparent'
+          }`}></div>
+          <div className="absolute inset-0 opacity-20" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23d97706\" fill-opacity=\"0.1\"%3E%3Cpath d=\"M0 30h60v30H0z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"}}></div>
+          
+          <div className="flex flex-col md:flex-row md:space-x-8 h-full md:h-auto relative z-10">
+            {/* Left - Ship Figurehead */}
+            <div className="w-full md:w-1/3 h-full">
+              <div className={`h-full transition-colors duration-300 ${
+                darkMode
+                  ? 'bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600'
+                  : 'bg-gradient-to-br from-amber-900 to-amber-800 border-amber-600'
+              } rounded-tl-3xl rounded-bl-3xl overflow-hidden mb-5 md:mb-0 border-r-4 relative`}>
+                {/* Ship wheel decoration */}
+                <div className="absolute top-4 right-4 text-3xl opacity-60">⚓</div>
+                {classroomDetails.image ? (
+                  <div className="relative">
+                    <img
+                      src={`data:image/jpeg;base64,${classroomDetails.image}`}
+                      alt={classroomDetails.name}
+                      className="w-full h-[280px] object-cover"
+                    />
+                    <div className={`absolute inset-0 transition-colors duration-300 ${
+                      darkMode
+                        ? 'bg-gradient-to-t from-gray-900/50 to-transparent'
+                        : 'bg-gradient-to-t from-amber-900/50 to-transparent'
+                    }`}></div>
+                  </div>
+                ) : (
+                  <div className={`w-full h-[280px] flex flex-col items-center justify-center transition-colors duration-300 ${
+                    darkMode
+                      ? 'bg-gradient-to-br from-gray-800 to-gray-900'
+                      : 'bg-gradient-to-br from-amber-800 to-amber-900'
+                  } relative`}>
+                    <div className="text-6xl mb-2">🏴‍☠️</div>
+                    <span className={`text-2xl font-bold transition-colors duration-300 ${
+                      darkMode
+                        ? 'text-gray-100'
+                        : 'text-amber-100'
+                    }`}>
+                      {classroomDetails.shortCode}
+                    </span>
+                  </div>
+                )}
+                {/* Decorative rope */}
+                <div className={`absolute bottom-0 left-0 right-0 h-2 transition-colors duration-300 ${
+                  darkMode
+                    ? 'bg-gradient-to-r from-gray-600 to-gray-700'
+                    : 'bg-gradient-to-r from-amber-600 to-amber-700'
+                }`}></div>
+              </div>
             </div>
-          </div>
 
-          {/* Right - Details */}
-          <div className="w-full md:w-2/3 flex flex-col md:pl-4 md:pr-6 py-5 h-full">
-            <div className="flex flex-col md:flex-row justify-between">
-              <div>
-                <div className="text-sm font-bold text-blue-600 mb-1">
-                  {classroomDetails.shortCode}
+            {/* Right - Ship Captain's Log */}
+            <div className="w-full md:w-2/3 flex flex-col md:pl-6 md:pr-6 py-6 h-full">
+              <div className="flex flex-col md:flex-row justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="text-2xl">🏴‍☠️</div>
+                    <div className={`text-sm font-bold px-3 py-1 rounded-full transition-colors duration-300 ${
+                      darkMode
+                        ? 'text-gray-200 bg-gray-900/50'
+                        : 'text-amber-200 bg-amber-900/50'
+                    }`}>
+                      {classroomDetails.shortCode}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Crown className={`w-8 h-8 transition-colors duration-300 ${
+                      darkMode
+                        ? 'text-gray-300'
+                        : 'text-amber-300'
+                    }`} />
+                    <Header type="h1" fontSize="3xl" weight="bold" className={`drop-shadow-lg transition-colors duration-300 ${
+                      darkMode
+                        ? 'text-gray-100'
+                        : 'text-amber-100'
+                    }`}>
+                      {classroomDetails.name}
+                    </Header>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Header type="h1" fontSize="3xl" weight="bold" className="dark:text-gray-50 text-gray-800">
-                    {classroomDetails.name}
-                  </Header>
+
+                {/* Captain */}
+                <div className="mt-2 md:mt-0">
+                  <div className={`flex items-center gap-2 transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-100'
+                      : 'text-amber-100'
+                  }`}>
+                    <Ship className="w-5 h-5" />
+                    <div className="text-sm font-medium">
+                      Captain:{' '}
+                      {classroomDetails.teacher?.firstName && classroomDetails.teacher?.lastName
+                        ? `${classroomDetails.teacher.firstName} ${classroomDetails.teacher.lastName}`
+                        : classroomDetails.teacher?.name || 'N/A'}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Teacher */}
-              <div className="mt-2 md:mt-0">
-                <div className="text-sm font-medium dark:text-gray-50 text-gray-800">
-                  Teacher:{' '}
-                  {classroomDetails.teacher?.firstName && classroomDetails.teacher?.lastName
-                    ? `${classroomDetails.teacher.firstName} ${classroomDetails.teacher.lastName}`
-                    : classroomDetails.teacher?.name || 'N/A'}
+              {/* Ship's Mission */}
+              <div className="mt-4">
+                <div className="flex items-start gap-2">
+                  <Scroll className={`w-5 h-5 mt-1 flex-shrink-0 transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-300'
+                      : 'text-amber-300'
+                  }`} />
+                  <p className={`leading-relaxed transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-100'
+                      : 'text-amber-100'
+                  }`}>{classroomDetails.description}</p>
                 </div>
-                
               </div>
-            </div>
 
-            {/* Description */}
-            <div className="mt-3">
-              <p className="text-gray-700 dark:text-gray-100">{classroomDetails.description}</p>
-            </div>
-
-            {/* Stats */}
-            <div className="mt-10 grid grid-cols-4 divide-x divide-gray-300 text-center">
-              <div className="stat-counter px-4">
-                <div className="text-2xl font-bold dark:text-gray-100">{lessons.length}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-100">Lessons</div>
-              </div>
-              <div className="stat-counter px-4">
-                <div className="text-2xl font-bold dark:text-gray-100">{activities.length}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-100">Activities</div>
-              </div>
-              <div className="stat-counter px-4">
-                <div className="text-2xl font-bold text-green-500">
-                  {quizStats.passedQuizzes}
+              {/* Treasure Stats */}
+              <div className={`mt-8 grid grid-cols-4 text-center rounded-2xl p-4 border transition-colors duration-300 ${
+                darkMode
+                  ? 'divide-x divide-gray-600 bg-gray-900/30 border-gray-600/50'
+                  : 'divide-x divide-amber-600 bg-amber-900/30 border-amber-600/50'
+              }`}>
+                <div className="stat-counter px-4">
+                  <div className="text-3xl mb-1">📜</div>
+                  <div className={`text-2xl font-bold transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-100'
+                      : 'text-amber-100'
+                  }`}>{lessons.length}</div>
+                  <div className={`text-sm transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-200'
+                      : 'text-amber-200'
+                  }`}>Treasure Maps</div>
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-100">Passed</div>
-              </div>
-              <div className="stat-counter px-4">
-                <div className="text-2xl font-bold text-orange-500">
-                  {quizStats.notTakenQuizzes}
+                <div className="stat-counter px-4">
+                  <div className="text-3xl mb-1">⚔️</div>
+                  <div className={`text-2xl font-bold transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-100'
+                      : 'text-amber-100'
+                  }`}>{activities.length}</div>
+                  <div className={`text-sm transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-200'
+                      : 'text-amber-200'
+                  }`}>Quests</div>
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-100">Incomplete</div>
+                <div className="stat-counter px-4">
+                  <div className="text-3xl mb-1">🏆</div>
+                  <div className="text-2xl font-bold text-emerald-300">
+                    {quizStats.passedQuizzes}
+                  </div>
+                  <div className={`text-sm transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-200'
+                      : 'text-amber-200'
+                  }`}>Victories</div>
+                </div>
+                <div className="stat-counter px-4">
+                  <div className="text-3xl mb-1">🗺️</div>
+                  <div className="text-2xl font-bold text-orange-300">
+                    {quizStats.notTakenQuizzes}
+                  </div>
+                  <div className={`text-sm transition-colors duration-300 ${
+                    darkMode
+                      ? 'text-gray-200'
+                      : 'text-amber-200'
+                  }`}>Uncharted</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs Navigation */}
+        {/* Pirate Map Navigation */}
         <div className="my-10">
-        <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] "></div>
+          {/* Decorative map border */}
+          <div className={`h-[2px] w-full shadow-lg transition-colors duration-300 ${
+            darkMode
+              ? 'bg-gradient-to-r from-gray-600 via-gray-500 to-gray-600'
+              : 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600'
+          }`}></div>
           
-          <div className="flex flex-col items-center justify-center py-4">
-            <div className="tabs-nav flex items-center">
-              <button
-                onClick={() => handleTabChange("lessons")}
-                className="px-4 py-2 mr-2 text-gray-500 hover:text-gray-800 "
-                id="lessons-tab"
-              >
-                <span
-                  className={`${
+          <div className="flex flex-col items-center justify-center py-6">
+            <div className={`rounded-2xl p-2 shadow-xl border-2 transition-colors duration-300 ${
+              darkMode
+                ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-gray-600'
+                : 'bg-gradient-to-r from-amber-800 to-amber-700 border-amber-600'
+            }`}>
+              <div className={`tabs-nav flex items-center rounded-xl p-1 transition-colors duration-300 ${
+                darkMode
+                  ? 'bg-gray-100'
+                  : 'bg-amber-100'
+              }`}>
+                <button
+                  onClick={() => handleTabChange("lessons")}
+                  className={`px-6 py-3 mr-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                     activeTab === "lessons"
-                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
-                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
+                      ? darkMode
+                        ? "bg-gray-600 text-white shadow-lg transform scale-105"
+                        : "bg-amber-600 text-white shadow-lg transform scale-105"
+                      : darkMode
+                        ? "text-gray-700 hover:bg-gray-200 hover:text-gray-800"
+                        : "text-amber-700 hover:bg-amber-200 hover:text-amber-800"
                   }`}
+                  id="lessons-tab"
                 >
-                  Lessons
-                </span>
-              </button>
+                  <MapPin className="w-5 h-5" />
+                  <span className="font-semibold">Treasure Maps</span>
+                </button>
 
-              <div className="border-l border-gray-300 h-6 mx-2" />
-            
-              <button
-                onClick={() => handleTabChange("activities")}
-                className="px-4 py-2 text-gray-500 hover:text-gray-800 "
-                id="activities-tab"
-              >
-                <span
-                  className={`${
+                <div className={`border-l-2 h-8 mx-2 transition-colors duration-300 ${
+                  darkMode
+                    ? 'border-gray-400'
+                    : 'border-amber-400'
+                }`} />
+              
+                <button
+                  onClick={() => handleTabChange("activities")}
+                  className={`px-6 py-3 mr-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                     activeTab === "activities"
-                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
-                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
+                      ? darkMode
+                        ? "bg-gray-600 text-white shadow-lg transform scale-105"
+                        : "bg-amber-600 text-white shadow-lg transform scale-105"
+                      : darkMode
+                        ? "text-gray-700 hover:bg-gray-200 hover:text-gray-800"
+                        : "text-amber-700 hover:bg-amber-200 hover:text-amber-800"
                   }`}
+                  id="activities-tab"
                 >
-                  Activities
-                </span>
-              </button>
+                  <Sword className="w-5 h-5" />
+                  <span className="font-semibold">Adventures</span>
+                </button>
 
-              <div className="border-l border-gray-300 h-6 mx-2" />
-              <button
-                onClick={() => handleTabChange("leaderboard")}
-                className="px-4 py-2 text-gray-500 hover:text-gray-800 "
-                id="leaderboard-tab"
-              >
-                <span
-                  className={`${
+                <div className={`border-l-2 h-8 mx-2 transition-colors duration-300 ${
+                  darkMode
+                    ? 'border-gray-400'
+                    : 'border-amber-400'
+                }`} />
+                <button
+                  onClick={() => handleTabChange("leaderboard")}
+                  className={`px-6 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                     activeTab === "leaderboard"
-                      ? "font-semibold border-b-2 border-blue-600 text-blue-600 "
-                      : "text-gray-500 hover:text-gray-800 dark:!text-gray-100  dark:hover:!text-gray-100/50"
+                      ? darkMode
+                        ? "bg-gray-600 text-white shadow-lg transform scale-105"
+                        : "bg-amber-600 text-white shadow-lg transform scale-105"
+                      : darkMode
+                        ? "text-gray-700 hover:bg-gray-200 hover:text-gray-800"
+                        : "text-amber-700 hover:bg-amber-200 hover:text-amber-800"
                   }`}
+                  id="leaderboard-tab"
                 >
-                  Leaderboard
-                </span>
-              </button>
+                  <Crown className="w-5 h-5" />
+                  <span className="font-semibold">Captain's Board</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="h-[1px] w-full bg-gradient-to-r from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] "></div>
+          <div className={`h-[2px] w-full shadow-lg transition-colors duration-300 ${
+            darkMode
+              ? 'bg-gradient-to-r from-gray-600 via-gray-500 to-gray-600'
+              : 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600'
+          }`}></div>
         </div>
 
         {/* Tab Contents */}
@@ -877,65 +1227,158 @@ const StudentClassroomPage = () => {
           {activeTab === "lessons" && (
             <div className="flex flex-col md:flex-row gap-6">
               
-              <div className="w-full md:w-1/3 bg-[#60B5FF] rounded-tl-3xl rounded-bl-3xl overflow-hidden p-5">
-                <LessonSidebar
-                  lessons={lessons}
-                  currentLessonId={currentLessonId}
-                  onSelectLesson={handleSelectLesson}
-                  isStudent={true}
-                  unlockedLessons={unlockedLessons}
-                />
+              {/* Pirate Scroll Sidebar */}
+              <div className={`w-full md:w-1/3 rounded-tl-3xl rounded-bl-3xl overflow-hidden p-5 border-4 shadow-2xl relative transition-colors duration-300 ${
+                darkMode
+                  ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600'
+                  : 'bg-gradient-to-br from-amber-800 to-amber-900 border-amber-600'
+              }`}>
+                {/* Scroll texture overlay */}
+                <div className={`absolute inset-0 transition-colors duration-300 ${
+                  darkMode
+                    ? 'bg-gradient-to-b from-gray-900/30 to-transparent'
+                    : 'bg-gradient-to-b from-amber-900/30 to-transparent'
+                }`}></div>
+                <div className="absolute inset-0 opacity-20" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%23d97706\" fill-opacity=\"0.1\"%3E%3Cpath d=\"M0 20h40v20H0z\"/%3E%3C/g%3E%3C/svg%3E')"}}></div>
+                
+                {/* Decorative scroll elements */}
+                <div className="absolute top-4 right-4 text-2xl opacity-60">📜</div>
+                <div className="absolute bottom-4 left-4 text-2xl opacity-60">⚓</div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Scroll className={`w-6 h-6 transition-colors duration-300 ${
+                      darkMode
+                        ? 'text-gray-300'
+                        : 'text-amber-300'
+                    }`} />
+                    <h3 className={`text-xl font-bold transition-colors duration-300 ${
+                      darkMode
+                        ? 'text-gray-100'
+                        : 'text-amber-100'
+                    }`}>Treasure Map Collection</h3>
+                  </div>
+                  <LessonSidebar
+                    lessons={lessons}
+                    currentLessonId={currentLessonId}
+                    onSelectLesson={handleSelectLesson}
+                    isStudent={true}
+                    unlockedLessons={unlockedLessons}
+                  />
+                </div>
               </div>
 
-     
-              <div className="w-full md:w-2/3 bg-[#60B5FF]/20 dark:bg-gray-50 rounded-lg shadow h-[calc(85vh)] flex flex-col relative">
+              {/* Pirate Treasure Chest Content Area */}
+              <div className={`w-full md:w-2/3 rounded-lg shadow-2xl border-4 h-[calc(85vh)] flex flex-col relative overflow-hidden transition-colors duration-300 ${
+                darkMode
+                  ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-400'
+                  : 'bg-gradient-to-br from-amber-100 to-amber-50 border-amber-400'
+              }`}>
                 
                 {lessonLoading && (
-                  <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-                      <p className="text-gray-600 text-sm">Loading lesson...</p>
+                  <div className={`absolute inset-0 backdrop-blur-sm flex items-center justify-center z-10 transition-colors duration-300 ${
+                    darkMode
+                      ? 'bg-gray-100/90'
+                      : 'bg-amber-100/90'
+                  }`}>
+                    <div className={`flex flex-col items-center gap-4 rounded-2xl p-6 shadow-xl border-2 transition-colors duration-300 ${
+                      darkMode
+                        ? 'bg-white/80 border-gray-300'
+                        : 'bg-white/80 border-amber-300'
+                    }`}>
+                      <div className="relative">
+                        <div className={`animate-spin rounded-full h-12 w-12 border-4 transition-colors duration-300 ${
+                          darkMode
+                            ? 'border-gray-200 border-t-gray-600'
+                            : 'border-amber-200 border-t-amber-600'
+                        }`}></div>
+                        <div className={`absolute inset-0 rounded-full border-4 border-transparent animate-spin transition-colors duration-300 ${
+                          darkMode
+                            ? 'border-t-gray-400'
+                            : 'border-t-amber-400'
+                        }`} style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+                      </div>
+                      <p className={`font-medium transition-colors duration-300 ${
+                        darkMode
+                          ? 'text-gray-700'
+                          : 'text-amber-700'
+                      }`}>Unfurling the treasure map...</p>
                     </div>
                   </div>
                 )}
                 
                 {loading && currentLessonId && !selectedLesson ? (
                   <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-                      <p className="text-gray-500 text-lg">Loading lesson details...</p>
+                    <div className={`flex flex-col items-center gap-4 rounded-2xl p-6 shadow-xl border-2 transition-colors duration-300 ${
+                      darkMode
+                        ? 'bg-white/80 border-gray-300'
+                        : 'bg-white/80 border-amber-300'
+                    }`}>
+                      <div className="text-4xl">🗺️</div>
+                      <div className="relative">
+                        <div className={`animate-spin rounded-full h-12 w-12 border-4 transition-colors duration-300 ${
+                          darkMode
+                            ? 'border-gray-200 border-t-gray-600'
+                            : 'border-amber-200 border-t-amber-600'
+                        }`}></div>
+                      </div>
+                      <p className={`font-medium transition-colors duration-300 ${
+                        darkMode
+                          ? 'text-gray-700'
+                          : 'text-amber-700'
+                      }`}>Charting the course...</p>
                     </div>
                   </main>
                 ) : selectedLesson ? (
                   <div className="flex flex-col h-full">
-                    {/* Fixed Title Section */}
-                    <div className="p-5 border-b dark:border-blue-400 border-gray-100">
-                      <Header
-                        type="h2"
-                        weight="bold"
-                        className="!text-4xl text-primary "
-                      >{selectedLesson.title}</Header>
+                    {/* Fixed Title Section - Treasure Map Header */}
+                    <div className={`p-6 border-b-2 transition-colors duration-300 ${
+                      darkMode
+                        ? 'border-gray-300 bg-gradient-to-r from-gray-200 to-gray-100'
+                        : 'border-amber-300 bg-gradient-to-r from-amber-200 to-amber-100'
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <div className="text-3xl">🗺️</div>
+                        <Header
+                          type="h2"
+                          weight="bold"
+                          className={`!text-4xl drop-shadow-sm transition-colors duration-300 ${
+                            darkMode
+                              ? 'text-gray-800'
+                              : 'text-amber-800'
+                          }`}
+                        >{selectedLesson.title}</Header>
+                      </div>
                     </div>
 
-                    {/* Scrollable Content Section */}
+                    {/* Scrollable Content Section - Ancient Scroll */}
                     <div 
-                      className="flex-1 overflow-y-auto p-5"
+                      className={`flex-1 overflow-y-auto p-6 transition-colors duration-300 ${
+                        darkMode
+                          ? 'bg-gradient-to-b from-gray-50 to-gray-100'
+                          : 'bg-gradient-to-b from-amber-50 to-amber-100'
+                      }`}
                       onScroll={handleScroll}
                     >
                       {selectedLesson.contentBlocks?.length > 0 ? (
                         <div className="content-blocks space-y-8">
                           {selectedLesson.contentBlocks.map((block) => (
-                            <div key={block.id} className="content-block">
+                            <div key={block.id} className={`content-block rounded-xl p-6 shadow-lg border transition-colors duration-300 ${
+                              darkMode
+                                ? 'bg-white/80 border-gray-200'
+                                : 'bg-white/80 border-amber-200'
+                            }`}>
                               <ContentBlockDisplay block={block} />
                             </div>
                           ))}
 
-                          {/* Read Status */}
+                          {/* Read Status - Treasure Discovered */}
                           {completionStatus?.contentRead && (
                             <div className="mt-8">
-                              <div className="flex items-center gap-2 text-green-600">
-                                <CheckCircle className="w-5 h-5" />
-                                <span className="font-medium">Read</span>
+                              <div className="flex items-center gap-3 text-emerald-600 bg-emerald-50 rounded-xl p-4 border-2 border-emerald-200 shadow-lg">
+                                <div className="text-2xl">🏆</div>
+                                <CheckCircle className="w-6 h-6" />
+                                <span className="font-bold text-lg">Treasure Map Studied!</span>
                               </div>
                             </div>
                           )}
@@ -943,31 +1386,70 @@ const StudentClassroomPage = () => {
                           {/* Quiz Section */}
                           {renderQuizSection()}
 
-                          {/* Quiz Completion Status */}
+                          {/* Quiz Completion Status - Quest Completed */}
                           {completionStatus?.quizCompleted && (
                             <div className="mt-8">
-                              <div className="flex items-center gap-1 text-green-600">
-                                <CheckCircle className="w-4 h-4" />
-                                <span>Quiz Completed </span>
+                              <div className="flex items-center gap-3 text-emerald-600 bg-emerald-50 rounded-xl p-4 border-2 border-emerald-200 shadow-lg">
+                                <div className="text-2xl">⚔️</div>
+                                <CheckCircle className="w-6 h-6" />
+                                <span className="font-bold text-lg">Quest Completed!</span>
                               </div>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="text-center py-8">
-                          <p className="text-gray-500">No content has been added to this lesson yet.</p>
+                        <div className="text-center py-12">
+                          <div className={`rounded-2xl p-8 shadow-lg border-2 transition-colors duration-300 ${
+                            darkMode
+                              ? 'bg-white/80 border-gray-200'
+                              : 'bg-white/80 border-amber-200'
+                          }`}>
+                            <div className="text-6xl mb-4">🗺️</div>
+                            <p className={`text-lg font-medium transition-colors duration-300 ${
+                              darkMode
+                                ? 'text-gray-700'
+                                : 'text-amber-700'
+                            }`}>This treasure map is still being charted by the captain!</p>
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
                 ) : lessons.length > 0 && !currentLessonId ? (
-                  <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
-                    <p className="text-gray-500 text-lg">Please select a lesson to view its details.</p>
+                  <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                    <div className={`rounded-2xl p-8 shadow-xl border-2 text-center transition-colors duration-300 ${
+                      darkMode
+                        ? 'bg-white/80 border-gray-300'
+                        : 'bg-white/80 border-amber-300'
+                    }`}>
+                      <div className="text-6xl mb-4">🗺️</div>
+                      <p className={`text-lg font-medium transition-colors duration-300 ${
+                        darkMode
+                          ? 'text-gray-700'
+                          : 'text-amber-700'
+                      }`}>Choose a treasure map from your collection to begin your adventure!</p>
+                    </div>
                   </main>
                 ) : (
-                  <main className="lesson-detail-placeholder p-6 bg-gray-50 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
+                  <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow h-full">
                     <div className="text-center">
-                      <p className="text-gray-500 text-lg mb-4">This classroom currently has no lessons.</p>
+                      <div className={`rounded-2xl p-8 shadow-xl border-2 transition-colors duration-300 ${
+                        darkMode
+                          ? 'bg-white/80 border-gray-300'
+                          : 'bg-white/80 border-amber-300'
+                      }`}>
+                        <div className="text-6xl mb-4">🏴‍☠️</div>
+                        <p className={`text-lg font-medium mb-2 transition-colors duration-300 ${
+                          darkMode
+                            ? 'text-gray-700'
+                            : 'text-amber-700'
+                        }`}>The captain hasn't charted any treasure maps yet!</p>
+                        <p className={`transition-colors duration-300 ${
+                          darkMode
+                            ? 'text-gray-600'
+                            : 'text-amber-600'
+                        }`}>Check back later for new adventures.</p>
+                      </div>
                     </div>
                   </main>
                 )}
@@ -976,7 +1458,23 @@ const StudentClassroomPage = () => {
           )}
 
           {activeTab === "activities" && (
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className={`p-8 rounded-2xl shadow-2xl border-4 transition-colors duration-300 ${
+              darkMode
+                ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-400'
+                : 'bg-gradient-to-br from-amber-100 to-amber-50 border-amber-400'
+            }`}>
+              <div className="flex items-center gap-3 mb-6">
+                <Sword className={`w-8 h-8 transition-colors duration-300 ${
+                  darkMode
+                    ? 'text-gray-700'
+                    : 'text-amber-700'
+                }`} />
+                <h2 className={`text-3xl font-bold transition-colors duration-300 ${
+                  darkMode
+                    ? 'text-gray-800'
+                    : 'text-amber-800'
+                }`}>Adventure Quests</h2>
+              </div>
               <div className="mb-8">
                 <QuizManager classroomId={classroomId} isStudent={true}/>
               </div>
@@ -985,40 +1483,68 @@ const StudentClassroomPage = () => {
           )}
 
           {activeTab === "leaderboard" && (
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className={`p-8 rounded-2xl shadow-2xl border-4 transition-colors duration-300 ${
+              darkMode
+                ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-400'
+                : 'bg-gradient-to-br from-amber-100 to-amber-50 border-amber-400'
+            }`}>
+              <div className="flex items-center gap-3 mb-6">
+                <Crown className={`w-8 h-8 transition-colors duration-300 ${
+                  darkMode
+                    ? 'text-gray-700'
+                    : 'text-amber-700'
+                }`} />
+                <h2 className={`text-3xl font-bold transition-colors duration-300 ${
+                  darkMode
+                    ? 'text-gray-800'
+                    : 'text-amber-800'
+                }`}>Captain's Board</h2>
+              </div>
               <Leaderboard classroomId={classroomId} />
             </div>
           )}
 
           {!activeTab && (
-            <div className="bg-white p-12 rounded-lg shadow text-center">
-              <div className="max-w-md mx-auto">
-                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">Welcome to {classroomDetails?.name}</h3>
-                <p className="text-gray-500 mb-6">
-                  Select a tab above to start exploring the classroom content.
+            <div className={`p-12 rounded-2xl shadow-2xl border-4 text-center transition-colors duration-300 ${
+              darkMode
+                ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-400'
+                : 'bg-gradient-to-br from-amber-100 to-amber-50 border-amber-400'
+            }`}>
+              <div className="max-w-lg mx-auto">
+                <div className="text-8xl mb-6">🏴‍☠️</div>
+                <h3 className={`text-3xl font-bold mb-4 transition-colors duration-300 ${
+                  darkMode
+                    ? 'text-gray-800'
+                    : 'text-amber-800'
+                }`}>Welcome Aboard the {classroomDetails?.name}!</h3>
+                <p className={`text-lg mb-8 transition-colors duration-300 ${
+                  darkMode
+                    ? 'text-gray-700'
+                    : 'text-amber-700'
+                }`}>
+                  Ready for your pirate adventure? Choose your quest below to begin exploring the treasure-filled waters!
                 </p>
                 <div className="grid grid-cols-1 gap-4">
                   <button
                     onClick={() => handleTabChange("lessons")}
-                    className="flex items-center justify-center gap-2 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                    className="flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
-                    <BookOpen className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium text-blue-700">View Lessons</span>
+                    <MapPin className="w-6 h-6 text-white" />
+                    <span className="font-bold text-white text-lg">Explore Treasure Maps</span>
                   </button>
                   <button
                     onClick={() => handleTabChange("activities")}
-                    className="flex items-center justify-center gap-2 p-4 bg-violet-50 hover:bg-green-100 rounded-lg transition-colors"
+                    className="flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
-                    <BookOpen className="w-5 h-5 text-violet-600" />
-                    <span className="font-medium text-violet-700">View Activities</span>
+                    <Sword className="w-6 h-6 text-white" />
+                    <span className="font-bold text-white text-lg">Begin Adventures</span>
                   </button>
                   <button
                     onClick={() => handleTabChange("leaderboard")}
-                    className="flex items-center justify-center gap-2 p-4 bg-pink-50 hover:bg-pink-100 rounded-lg transition-colors"
+                    className="flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
-                    <BookOpen className="w-5 h-5 text-pink-600" />
-                    <span className="font-medium text-pink-700">View Leaderboard</span>
+                    <Crown className="w-6 h-6 text-white" />
+                    <span className="font-bold text-white text-lg">Check Captain's Board</span>
                   </button>
                 </div>
               </div>
@@ -1026,6 +1552,7 @@ const StudentClassroomPage = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };
