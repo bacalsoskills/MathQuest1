@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from '
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { FaPlay, FaPause, FaCog, FaRedo, FaTable, FaVolumeUp, FaVolumeMute, FaStar } from 'react-icons/fa';
+import { FaPlay, FaPause, FaCog, FaRedo, FaTable, FaVolumeUp, FaVolumeMute, FaStar, FaCompass, FaSkullCrossbones, FaShip, FaAnchor, FaMap, FaScroll, FaCoins, FaFeatherAlt, FaUsers, FaCrown, FaCheck, FaHeart } from 'react-icons/fa';
 import { BsFullscreen } from "react-icons/bs";
 import gameService from "../../services/gameService";
 import LevelProgressionModal from "./LevelProgressionModal";
@@ -10,6 +10,7 @@ import Modal from '../../ui/modal';
 import { Button } from '../../ui/button';
 import { Header } from '../../ui/heading';
 import logger from '../../services/logger';
+import { useTheme } from '../../context/ThemeContext';
 
 // Groq API configuration with rate limiting
 const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
@@ -50,6 +51,7 @@ function getMinFallTime(level) {
 
 const FallingGame = ({ game, onGameComplete }) => {
   const { currentUser, token } = useAuth();
+  const { darkMode } = useTheme();
   const [problems, setProblems] = useState([]);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -1198,6 +1200,28 @@ const FallingGame = ({ game, onGameComplete }) => {
         p.id === currentProblem.id ? { ...p, status: 'correct', isSolved: true } : p
       ));
       
+      // Increment problems solved this level
+      setProblemsSolvedThisLevel(prev => {
+        const newCount = prev + 1;
+        
+        // Check if level is complete (10 problems solved)
+        if (newCount >= targetProblemsPerLevel) {
+          logger.info('Level completed - 10 problems solved', { 
+            currentLevel, 
+            problemsSolved: newCount 
+          });
+          
+          // Show congratulations modal
+          setShowCongratulationsModal(true);
+          setActiveProblems([]); // Clear all active problems
+          
+          return 0; // Reset for next level
+        }
+        
+        return newCount;
+      });
+      solvedProblemsRef.current.add(currentProblem.id);
+      
       // Show "Good Job!" announcement
       toast.success(`✅ Good Job! +${10 * currentLevel} points!`, { 
         duration: 1500,
@@ -1253,26 +1277,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       }, 300);
     }
     
-    // Always increment questions answered
-    setQuestionsAnswered(prev => {
-      const newCount = prev + 1;
-      
-      // Check if level is complete (10 questions answered)
-      if (newCount >= 10) {
-        logger.info('Level completed - 10 questions answered', { 
-          currentLevel, 
-          questionsAnswered: newCount 
-        });
-        
-        // Show congratulations modal
-        setShowCongratulationsModal(true);
-        setActiveProblems([]); // Clear all active problems
-        
-        return 0; // Reset for next level
-      }
-      
-      return newCount;
-    });
+    // Note: Level completion is now handled in the problemsSolvedThisLevel increment above
     
     setUserAnswer('');
   };
@@ -1295,26 +1300,7 @@ const FallingGame = ({ game, onGameComplete }) => {
     // Mark as missed and remove from active problems
     setActiveProblems(prev => prev.filter(p => p.id !== problemId));
     
-    // Always increment questions answered (even if missed)
-    setQuestionsAnswered(prev => {
-      const newCount = prev + 1;
-      
-      // Check if level is complete (10 questions answered)
-      if (newCount >= 10) {
-        logger.info('Level completed - 10 questions answered (including missed)', { 
-          currentLevel, 
-          questionsAnswered: newCount 
-        });
-        
-        // Show congratulations modal
-        setShowCongratulationsModal(true);
-        setActiveProblems([]); // Clear all active problems
-        
-        return 0; // Reset for next level
-      }
-      
-      return newCount;
-    });
+    // Note: Level completion is now handled by problemsSolvedThisLevel, not questionsAnswered
     
     // Show missed question feedback
     toast(`⏰ Question missed! -1 life`, { 
@@ -1691,8 +1677,27 @@ const FallingGame = ({ game, onGameComplete }) => {
   }
 
   return (
-    <div className="px-2 sm:px-4 md:px-6 game-container max-w-7xl mx-auto">
-      <div className="w-full">
+    <div 
+      className="px-2 sm:px-4 md:px-6 game-container max-w-7xl mx-auto min-h-screen"
+      style={{
+        backgroundImage: darkMode
+          ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
+          : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="w-full relative">
+      {/* Pirate-themed background elements */}
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
+        <div className="absolute top-20 left-10 text-8xl">⚓</div>
+        <div className="absolute top-40 right-20 text-6xl">🗺️</div>
+        <div className="absolute bottom-40 left-20 text-7xl">🏴‍☠️</div>
+        <div className="absolute bottom-20 right-10 text-8xl">⚔️</div>
+        <div className="absolute top-1/2 left-1/4 text-5xl">🏴</div>
+        <div className="absolute top-1/3 right-1/3 text-6xl">⚓</div>
+        <div className="absolute bottom-1/3 left-1/2 text-5xl">🗺️</div>
+      </div>
       <audio ref={audioRef} src="/game-bg-music.mp3" loop autoPlay style={{ display: 'none' }} />
       
       {/* Progress Modal - render at top level */}
@@ -1707,21 +1712,32 @@ const FallingGame = ({ game, onGameComplete }) => {
         />
       )}
       
-      <div className={`w-full mx-auto flex flex-col items-center justify-center md:flex-grow`}>
+      <div className={`w-full mx-auto flex flex-col items-center justify-center md:flex-grow relative z-10`}>
         {!gameStarted && !gameOver && countdown === null && (
-          <div className="text-center my-8 p-8  md:mt-36 rounded-2xl shadow-xl dark:bg-transparent sm:p-6 lg:p-8 flex flex-col min-h-[200px] sm:min-h-[260px] relative border border-white/10 ">
-            <Header type="h1" fontSize="5xl"  weight="semibold" className="text-yellow-500 py-3 ">
-              {game?.name || 'Falling Math Game'}
-            </Header>
-            <p className="dark:text-gray-300 text-gray-900 mb-3">{game?.instructions || 'Solve the math problems before they fall off the screen!'}</p>
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex justify-center gap-2">
+          <div className={`text-center my-8 p-8 md:mt-36 rounded-2xl shadow-2xl border-2 backdrop-blur-sm sm:p-6 lg:p-8 flex flex-col min-h-[200px] sm:min-h-[260px] relative transition-colors duration-300 ${
+            darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+          }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-2xl'} />
+              <Header type="h1" fontSize="5xl" weight="semibold" className={(darkMode ? 'text-yellow-200' : 'text-blue-800') + ' py-3 tracking-wide'}>
+                {game?.name || 'Pirate Math Adventure'}
+              </Header>
+              <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-2xl'} />
+            </div>
+            <p className={`mb-6 text-lg ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+              {game?.instructions || 'Ahoy! Solve the treasure problems before they fall off the ship!'}
+            </p>
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex justify-center gap-2 flex-wrap">
                 <Button
                   onClick={toggleFullscreen}
                   variant="link"
                   size="sm"
+                  className={`transition-colors duration-300 ${
+                    darkMode ? 'text-yellow-300 hover:text-yellow-200' : 'text-yellow-700 hover:text-yellow-800'
+                  }`}
                 >
-                  {/* <BsFullscreen className="mr-2" /> */}
+                  <BsFullscreen className="mr-2" />
                   {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
                 </Button>
                 <Button
@@ -1732,26 +1748,39 @@ const FallingGame = ({ game, onGameComplete }) => {
                   }}
                   variant="link"
                   size="sm"
+                  className={`transition-colors duration-300 ${
+                    darkMode ? 'text-yellow-300 hover:text-yellow-200' : 'text-yellow-700 hover:text-yellow-800'
+                  }`}
                 >
-                  View Leaderboard
+                  <FaCrown className="mr-2" />
+                  Captain's Board
                 </Button>
                 <Button
                   onClick={handleShowLevelSelector}
                   variant="link"
                   size="sm"
+                  className={`transition-colors duration-300 ${
+                    darkMode ? 'text-yellow-300 hover:text-yellow-200' : 'text-yellow-700 hover:text-yellow-800'
+                  }`}
                 >
-                  View Level
+                  <FaMap className="mr-2" />
+                  Select Level
                 </Button>
               </div>
-              <div className="">
+              <div className="w-full max-w-xs">
                 <Button
                   onClick={startGame}
                   variant="default"
                   size="sm"
                   rounded="full"
-                  className="w-full"
+                  className={`w-full transition-all duration-300 hover:scale-105 ${
+                    darkMode 
+                      ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                      : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                  }`}
                 >
-                  Start Game
+                  <FaShip className="mr-2" />
+                  Begin Adventure
                 </Button>
               </div>
             </div>
@@ -1759,33 +1788,42 @@ const FallingGame = ({ game, onGameComplete }) => {
         )}
         
         {countdown !== null && (
-          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center z-50">
             <div className="text-center">
-              <h2 className="text-6xl font-bold text-white mb-4">Starting in</h2>
-              <div className="text-8xl font-bold text-yellow-400 animate-pulse">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <FaCompass className="text-yellow-400 text-4xl" />
+                <h2 className="text-4xl sm:text-6xl font-bold text-yellow-300">Preparing Your Ship</h2>
+                <FaSkullCrossbones className="text-yellow-400 text-4xl" />
+              </div>
+              <div className="text-6xl sm:text-8xl font-bold text-yellow-400 animate-pulse mb-4">
                 {countdown}
               </div>
+              <p className="text-xl text-yellow-200">Setting sail in...</p>
             </div>
           </div>
         )}
         
         {showLevelTransition && (
-          <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 flex items-center justify-center z-50 p-4">
             <div className="text-center animate-bounce w-full max-w-md sm:max-w-lg">
-              <div className="text-4xl sm:text-6xl md:text-8xl mb-4 sm:mb-6">🎉</div>
-              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-3 sm:mb-4">Level Up!</h2>
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <FaCompass className="text-yellow-300 text-4xl" />
+                <div className="text-4xl sm:text-6xl md:text-8xl">🏴‍☠️</div>
+                <FaSkullCrossbones className="text-yellow-300 text-4xl" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-3 sm:mb-4">Level Up, Captain!</h2>
               <div className="text-xl sm:text-2xl md:text-4xl font-bold text-yellow-300 mb-2">
-                Table of {currentLevel} → Table of {currentLevel + 1}
+                Treasure Map {currentLevel} → Treasure Map {currentLevel + 1}
               </div>
               <div className="text-base sm:text-lg md:text-2xl text-white opacity-90 mb-4">
-                Get ready for new challenges!
+                New treasures await your discovery!
               </div>
               
               {/* Total Progress in Level Transition - Responsive */}
               <div className="inline-flex flex-col sm:flex-row items-center bg-white bg-opacity-20 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg w-full sm:w-auto">
                 <div className="flex items-center mb-2 sm:mb-0">
-                  <span className="text-lg sm:text-xl md:text-2xl font-bold mr-2 sm:mr-3">🏆</span>
-                  <span className="text-sm sm:text-base md:text-xl font-bold">Total Progress: {currentLevel + 1}/{MAX_LEVEL} Levels</span>
+                  <FaCrown className="text-yellow-300 text-lg sm:text-xl md:text-2xl mr-2 sm:mr-3" />
+                  <span className="text-sm sm:text-base md:text-xl font-bold">Treasure Maps Discovered: {currentLevel + 1}/{MAX_LEVEL}</span>
                 </div>
                 <div className="w-16 sm:w-20 md:w-24 bg-white bg-opacity-20 rounded-full h-2 sm:h-3 sm:ml-4">
                   <div 
@@ -1800,33 +1838,45 @@ const FallingGame = ({ game, onGameComplete }) => {
         
         {/* Congratulations Modal */}
         {showCongratulationsModal && (
-          <div className="fixed inset-0 bg-gradient-to-br from-green-600 via-blue-600 to-purple-600 flex items-center justify-center z-50 p-4">
-            <div className="text-center animate-bounce w-full max-w-md sm:max-w-lg bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
-              <div className="text-4xl sm:text-6xl mb-4">🎉</div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-                Congratulations!
-              </h2>
-              <div className="text-lg sm:text-xl font-bold text-blue-600 mb-2">
-                You completed Table of {currentLevel}!
+          <div className="fixed inset-0 bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 flex items-center justify-center z-50 p-4">
+            <div className={`text-center animate-bounce w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl p-6 sm:p-8 border-2 transition-colors duration-300 ${
+              darkMode ? 'bg-[#0b1022]/95 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+            }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <FaCompass className="text-yellow-400 text-3xl" />
+                <div className="text-4xl sm:text-6xl">🏴‍☠️</div>
+                <FaSkullCrossbones className="text-yellow-400 text-3xl" />
               </div>
-              <div className="text-sm sm:text-base text-gray-600 mb-6">
-                You solved all 10 problems correctly! 🏆
+              <h2 className={`text-2xl sm:text-3xl md:text-4xl font-bold mb-4 transition-colors duration-300 ${
+                darkMode ? 'text-yellow-200' : 'text-blue-800'
+              }`}>
+                Well Done, Captain!
+              </h2>
+              <div className={`text-lg sm:text-xl font-bold mb-2 transition-colors duration-300 ${
+                darkMode ? 'text-yellow-300' : 'text-yellow-700'
+              }`}>
+                You conquered Treasure Map {currentLevel}!
+              </div>
+              <div className={`text-sm sm:text-base mb-6 transition-colors duration-300 ${
+                darkMode ? 'text-yellow-400' : 'text-yellow-600'
+              }`}>
+                You solved all 10 treasure problems correctly! ⚔️
               </div>
               
               <div className="space-y-3 sm:space-y-4">
                 <button
                   onClick={handleContinueToNextLevel}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg text-base sm:text-lg font-bold hover:from-green-600 hover:to-blue-600 transition-all duration-300 flex items-center justify-center"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-base sm:text-lg font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 flex items-center justify-center"
                 >
-                  <span className="mr-2">➡️</span>
-                  Continue to Table of {currentLevel + 1}
+                  <FaShip className="mr-2" />
+                  Continue to Treasure Map {currentLevel + 1}
                 </button>
                 <button
                   onClick={handleExitAfterLevel}
-                  className="w-full px-6 py-3 bg-gray-500 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-gray-600 transition-colors flex items-center justify-center"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg text-base sm:text-lg font-bold hover:from-gray-600 hover:to-gray-700 transition-colors flex items-center justify-center"
                 >
-                  <span className="mr-2">🏠</span>
-                  Exit Game
+                  <FaAnchor className="mr-2" />
+                  Return to Port
                 </button>
               </div>
             </div>
@@ -1834,11 +1884,15 @@ const FallingGame = ({ game, onGameComplete }) => {
         )}
         
         {isRestoringGame && (
-          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center z-50">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
-              <h2 className="text-2xl font-bold text-white mb-2">Loading...</h2>
-              <p className="text-lg text-gray-300">Getting back from the previous game</p>
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <FaCompass className="text-yellow-400 text-3xl" />
+                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-400 mx-auto"></div>
+                <FaSkullCrossbones className="text-yellow-400 text-3xl" />
+              </div>
+              <h2 className="text-2xl font-bold text-yellow-300 mb-2">Restoring Your Adventure...</h2>
+              <p className="text-lg text-yellow-200">Getting back to your treasure hunt</p>
             </div>
           </div>
         )}
@@ -1849,26 +1903,30 @@ const FallingGame = ({ game, onGameComplete }) => {
             <div className="w-full xl:w-3/4">
               {/* Level Indicator - Responsive */}
               <div className="mb-3 sm:mb-4 text-center px-2">
-                <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg w-full sm:w-auto">
+                <div className={`inline-flex flex-col sm:flex-row items-center px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg w-full sm:w-auto border-2 transition-colors duration-300 ${
+                  darkMode ? 'bg-gradient-to-r from-amber-600 to-orange-600 border-yellow-700/40' : 'bg-gradient-to-r from-amber-600 to-orange-600 border-yellow-300'
+                }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                   <div className="flex items-center mb-1 sm:mb-0">
-                    <span className="text-lg sm:text-2xl font-bold mr-2">🎯</span>
-                    <span className="text-lg sm:text-xl font-bold">Table of {currentLevel}</span>
+                    <FaMap className="text-yellow-300 text-lg sm:text-2xl mr-2" />
+                    <span className="text-lg sm:text-xl font-bold text-white">Treasure Map {currentLevel}</span>
                   </div>
-                  <span className="text-xs sm:text-sm bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full sm:ml-4">
-                    {questionsAnswered}/10 Questions Answered
+                  <span className="text-xs sm:text-sm bg-white bg-opacity-20 px-2 sm:px-3 py-1 rounded-full sm:ml-4 text-white">
+                    {problemsSolvedThisLevel}/10 Treasures Found
                   </span>
                 </div>
                 
                 {/* Total Progress Indicator - Responsive */}
                 <div className="mt-2">
-                  <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-green-500 to-teal-500 text-white px-3 sm:px-4 py-2 rounded-full shadow-lg w-full sm:w-auto">
+                  <div className={`inline-flex flex-col sm:flex-row items-center px-3 sm:px-4 py-2 rounded-full shadow-lg w-full sm:w-auto border-2 transition-colors duration-300 ${
+                    darkMode ? 'bg-gradient-to-r from-green-500 to-teal-500 border-green-700/40' : 'bg-gradient-to-r from-green-500 to-teal-500 border-green-300'
+                  }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(34, 197, 94, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                     <div className="flex items-center mb-1 sm:mb-0">
-                      <span className="text-sm sm:text-lg font-bold mr-2">🏆</span>
-                      <span className="text-xs sm:text-sm font-bold">Total Progress: {currentLevel}/{MAX_LEVEL} Levels</span>
+                      <FaCrown className="text-yellow-300 text-sm sm:text-lg mr-2" />
+                      <span className="text-xs sm:text-sm font-bold text-white">Maps Discovered: {currentLevel}/{MAX_LEVEL}</span>
                     </div>
                     <div className="w-16 sm:w-20 bg-white bg-opacity-20 rounded-full h-2 sm:ml-3">
                       <div 
-                        className="bg-white h-2 rounded-full transition-all duration-500"
+                        className="bg-yellow-300 h-2 rounded-full transition-all duration-500"
                         style={{ width: `${(currentLevel / MAX_LEVEL) * 100}%` }}
                       ></div>
                     </div>
@@ -1879,10 +1937,12 @@ const FallingGame = ({ game, onGameComplete }) => {
               {/* Problem Generation Indicator - Responsive */}
               {isGeneratingProblems && (
                 <div className="mb-3 sm:mb-4 text-center px-2">
-                  <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-green-500 to-blue-500 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg animate-pulse w-full sm:w-auto">
+                  <div className={`inline-flex flex-col sm:flex-row items-center px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg animate-pulse w-full sm:w-auto border-2 transition-colors duration-300 ${
+                    darkMode ? 'bg-gradient-to-r from-green-500 to-blue-500 border-green-700/40' : 'bg-gradient-to-r from-green-500 to-blue-500 border-green-300'
+                  }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(34, 197, 94, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                     <div className="flex items-center mb-1 sm:mb-0">
-                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-t-2 border-b-2 border-white mr-2 sm:mr-3"></div>
-                      <span className="text-sm sm:text-lg font-bold">Generating New Problems for Level {currentLevel}...</span>
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-t-2 border-b-2 border-yellow-300 mr-2 sm:mr-3"></div>
+                      <span className="text-sm sm:text-lg font-bold text-white">Charting New Treasures for Map {currentLevel}...</span>
                     </div>
                   </div>
                 </div>
@@ -1890,11 +1950,14 @@ const FallingGame = ({ game, onGameComplete }) => {
               
               <div
                 ref={gameAreaRef}
-                className="relative w-full h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] md:h-[calc(100vh-280px)] lg:h-[calc(100vh-260px)] bg-gray-50 shadow-lg rounded-lg mb-4 overflow-hidden"
+                className={`relative w-full h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] md:h-[calc(100vh-280px)] lg:h-[calc(100vh-260px)] shadow-2xl rounded-2xl mb-4 overflow-hidden border-2 transition-colors duration-300 ${
+                  darkMode ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-yellow-700/40' : 'bg-gradient-to-br from-amber-100 to-amber-50 border-yellow-300'
+                }`}
+                style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}
               >
                 {activeProblems.map(problem => {
-                  let bgColor = "from-pink-500 to-purple-600";
-                  let borderColor = "border-pink-300";
+                  let bgColor = "from-amber-500 to-orange-600";
+                  let borderColor = "border-amber-300";
                   
                   // Visual feedback based on status and sequence
                   if (problem.status === 'correct') {
@@ -1904,8 +1967,8 @@ const FallingGame = ({ game, onGameComplete }) => {
                     bgColor = "from-red-500 to-red-600";
                     borderColor = "border-red-300";
                   } else if (problem.status === 'warning') {
-                    bgColor = "from-orange-500 to-orange-600";
-                    borderColor = "border-orange-300";
+                    bgColor = "from-yellow-500 to-yellow-600";
+                    borderColor = "border-yellow-300";
                   } else if (problem.sequenceIndex === currentSequenceIndex) {
                     // Highlight current sequence problem
                     bgColor = "from-blue-500 to-blue-600";
@@ -1938,66 +2001,109 @@ const FallingGame = ({ game, onGameComplete }) => {
                   type="text"
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
-                  className="flex-1 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 bg-white text-gray-900 border-2 border-blue-400 rounded-md sm:rounded-l-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-500 text-sm sm:text-lg"
+                  className={`flex-1 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-md sm:rounded-l-md sm:rounded-r-none focus:outline-none focus:ring-2 text-sm sm:text-lg transition-colors duration-300 ${
+                    darkMode 
+                      ? 'bg-[#0b1022]/50 text-yellow-200 border-yellow-700/40 focus:ring-yellow-500 placeholder-yellow-400' 
+                      : 'bg-[#f5ecd2]/50 text-yellow-800 border-yellow-300 focus:ring-yellow-500 placeholder-yellow-600'
+                  }`}
                   placeholder={getPlaceholderText()}
                   autoFocus
                   disabled={isPaused || gameOver}
                 />
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 h-10 sm:h-14 text-white bg-gradient-to-b from-[#18C8FF] via-[#4B8CFF] to-[#6D6DFF] hover:opacity-70 dark:text-white dark:bg-gradient-to-b dark:from-[#18C8FF] dark:via-[#4B8CFF] dark:to-[#6D6DFF] dark:hover:opacity-70 rounded-md sm:rounded-l-none sm:rounded-r-md text-sm sm:text-base font-medium"
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 h-10 sm:h-14 text-white rounded-md sm:rounded-l-none sm:rounded-r-md text-sm sm:text-base font-medium transition-all duration-300 hover:scale-105 ${
+                    darkMode 
+                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400' 
+                      : 'bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500'
+                  }`}
                   disabled={isPaused || gameOver || !userAnswer.trim()}
                 >
-                  Submit
+                  <FaCheck className="inline mr-2" />
+                  Claim Treasure
                 </button>
               </form>
             </div>
 
             {/* Game Controls - Responsive */}
             <div className="w-full xl:w-1/4">
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 shadow-lg h-fit">
-                <Header type="h3" variant="default" fontSize="xl" className="mb-4 sm:mb-6 text-primary text-center">Game Controls</Header>
+              <div className={`rounded-2xl p-3 sm:p-4 shadow-2xl border-2 backdrop-blur-sm h-fit transition-colors duration-300 ${
+                darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+              }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
+                <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
+                  <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-600') + ' text-lg'} />
+                  <Header type="h3" variant="default" fontSize="xl" className={`transition-colors duration-300 ${
+                    darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                  }`}>Captain's Log</Header>
+                  <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-600') + ' text-lg'} />
+                </div>
                 
                 {/* Stats Grid - Responsive */}
                 <div className="grid grid-cols-3 xl:grid-cols-1 gap-2 sm:gap-4 mb-4">
                 {/* Level Info */}
-                  <div className="p-2 sm:p-3 bg-gray-200 rounded-lg">
+                  <div className={`p-2 sm:p-3 rounded-lg border-2 transition-colors duration-300 ${
+                    darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+                  }`}>
                   <div className="text-center">
-                      <div className="text-xs sm:text-sm text-gray-800">Level</div>
+                      <div className={`text-xs sm:text-sm flex items-center justify-center transition-colors duration-300 ${
+                        darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                      }`}>
+                        <FaMap className="mr-1 text-xs sm:text-sm" /> Map
+                    </div>
                       <div className="text-lg sm:text-2xl font-bold text-yellow-500">{currentLevel}</div>
                   </div>
                 </div>
 
                 {/* Score */}
-                  <div className="p-2 sm:p-3 bg-gray-200 rounded-lg">
+                  <div className={`p-2 sm:p-3 rounded-lg border-2 transition-colors duration-300 ${
+                    darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+                  }`}>
                   <div className="text-center">
-                      <div className="text-xs sm:text-sm text-gray-800 flex items-center justify-center">
-                        <FaStar className="mr-1 text-yellow-500 text-xs sm:text-sm" /> Score
+                      <div className={`text-xs sm:text-sm flex items-center justify-center transition-colors duration-300 ${
+                        darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                      }`}>
+                        <FaCoins className="mr-1 text-xs sm:text-sm" /> Treasure
                     </div>
                       <div className="text-lg sm:text-2xl font-bold text-yellow-500">{score}</div>
                   </div>
                 </div>
 
                 {/* Lives */}
-                  <div className="p-2 sm:p-3 bg-gray-200 rounded-lg">
+                  <div className={`p-2 sm:p-3 rounded-lg border-2 transition-colors duration-300 ${
+                    darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+                  }`}>
                   <div className="text-center">
-                      <div className="text-xs sm:text-sm text-gray-800">Lives</div>
+                      <div className={`text-xs sm:text-sm flex items-center justify-center transition-colors duration-300 ${
+                        darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                      }`}>
+                        <FaHeart className="mr-1 text-xs sm:text-sm" /> Health
+                    </div>
                       <div className="text-lg sm:text-2xl text-red-500">{'❤️'.repeat(lives) || '💔'}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Progress - Hidden on mobile, shown on larger screens */}
-                <div className="hidden xl:block mb-4 p-3 bg-gray-200 rounded-lg">
+                <div className={`hidden xl:block mb-4 p-3 rounded-lg border-2 transition-colors duration-300 ${
+                  darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+                }`}>
                   <div className="text-center">
-                    <div className="text-sm text-gray-800 mb-2">Progress</div>
-                    <div className="w-full h-3 bg-gray-600 rounded-full overflow-hidden border border-gray-500">
+                    <div className={`text-sm mb-2 flex items-center justify-center transition-colors duration-300 ${
+                      darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                    }`}>
+                      <FaScroll className="mr-1" /> Progress
+                    </div>
+                    <div className={`w-full h-3 rounded-full overflow-hidden border-2 transition-colors duration-300 ${
+                      darkMode ? 'bg-gray-600 border-gray-500' : 'bg-gray-300 border-gray-400'
+                    }`}>
                       <div 
-                        className="h-full bg-green-500 transition-all duration-300 ease-in-out"
+                        className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300 ease-in-out"
                         style={{ width: `${Math.min(100, (problemsSolvedThisLevel / targetProblemsPerLevel) * 100)}%` }}
                       ></div>
                     </div>
-                    <div className="text-sm font-bold mt-1">{problemsSolvedThisLevel}/{targetProblemsPerLevel}</div>
+                    <div className={`text-sm font-bold mt-1 transition-colors duration-300 ${
+                      darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                    }`}>{problemsSolvedThisLevel}/{targetProblemsPerLevel}</div>
                   </div>
                 </div>
 
@@ -2005,27 +2111,44 @@ const FallingGame = ({ game, onGameComplete }) => {
                 <div className="grid grid-cols-2 xl:grid-cols-1 gap-2 xl:space-y-2 xl:space-y-0">
                   <button
                     onClick={handleShowLevelSelector}
-                    className="w-full px-2 sm:px-3 py-2 bg-blue-400 text-white rounded hover:bg-blue-600 text-xs sm:text-sm font-medium"
+                    className={`w-full px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 ${
+                      darkMode 
+                        ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                        : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                    }`}
                   >
-                    <span className="hidden sm:inline">Change Level</span>
-                    <span className="sm:hidden">Level</span>
+                    <FaMap className="inline mr-1 sm:mr-2" size={12} />
+                    <span className="hidden sm:inline">Change Map</span>
+                    <span className="sm:hidden">Map</span>
                   </button>
                   <button 
                     onClick={toggleSettingsModal} 
-                    className="w-full px-2 sm:px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs sm:text-sm font-medium flex items-center justify-center"
+                    className={`w-full px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-all duration-300 hover:scale-105 ${
+                      darkMode 
+                        ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                        : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                    }`}
                   >
                     <FaCog className="mr-1 sm:mr-2" size={12} />
                     <span className="hidden sm:inline">Settings</span>
                   </button>
                   <button 
                     onClick={togglePause} 
-                    className="w-full px-2 sm:px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs sm:text-sm font-medium flex items-center justify-center"
+                    className={`w-full px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-all duration-300 hover:scale-105 ${
+                      darkMode 
+                        ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                        : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                    }`}
                   >
                     {isPaused ? <><FaPlay className="mr-1 sm:mr-2" size={12}/> <span className="hidden sm:inline">Resume</span><span className="sm:hidden">Play</span></> : <><FaPause className="mr-1 sm:mr-2" size={12}/> <span className="hidden sm:inline">Pause</span><span className="sm:hidden">Stop</span></>}
                   </button>
                   <button
                     onClick={toggleFullscreen}
-                    className="w-full px-2 sm:px-3 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 text-xs sm:text-sm font-medium flex items-center justify-center"
+                    className={`w-full px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-all duration-300 hover:scale-105 ${
+                      darkMode 
+                        ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                        : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                    }`}
                   >
                     <BsFullscreen className="mr-1 sm:mr-2" size={12} />
                     <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
@@ -2036,30 +2159,34 @@ const FallingGame = ({ game, onGameComplete }) => {
                       logger.info('Manual level skip triggered by user');
                       
                       // Show "Good Job!" announcement for manual skip
-                      toast.success(`🎉 Good Job! Level ${currentLevel} Complete! (Manual Skip) 🎉`, { 
+                      toast.success(`🏴‍☠️ Well Done, Captain! Map ${currentLevel} Complete! (Manual Skip) 🏴‍☠️`, { 
                         duration: 3000,
                         style: {
-                          background: '#8B5CF6',
+                          background: 'linear-gradient(135deg, #F59E0B, #D97706)',
                           color: '#FFFFFF',
                           fontSize: '16px',
                           fontWeight: 'bold',
                           padding: '16px 24px',
                           borderRadius: '12px',
-                          boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
                         },
                         iconTheme: {
                           primary: '#FFFFFF',
-                          secondary: '#8B5CF6',
+                          secondary: '#F59E0B',
                         }
                       });
                       
                       levelUp();
                     }}
-                    className="w-full px-2 sm:px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-xs sm:text-sm font-medium flex items-center justify-center col-span-2 xl:col-span-1"
-                    title="Skip to next level (emergency use)"
+                    className={`w-full px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center col-span-2 xl:col-span-1 transition-all duration-300 hover:scale-105 ${
+                      darkMode 
+                        ? 'bg-orange-500 hover:bg-orange-400 text-[#0b1022]' 
+                        : 'bg-orange-600 hover:bg-orange-500 text-white'
+                    }`}
+                    title="Skip to next map (emergency use)"
                   >
-                    <FaRedo className="mr-1 sm:mr-2" size={12} />
-                    <span className="hidden sm:inline">Skip Level</span>
+                    <FaShip className="mr-1 sm:mr-2" size={12} />
+                    <span className="hidden sm:inline">Skip Map</span>
                     <span className="sm:hidden">Skip</span>
                   </button>
                 </div>
@@ -2069,19 +2196,33 @@ const FallingGame = ({ game, onGameComplete }) => {
         )}
         
         {gameOver && (
-          <div className="text-center md:mt-36 my-8 p-8 w-full max-w-md mx-auto rounded-2xl shadow-xl dark:bg-transparent sm:p-6 lg:p-8 flex flex-col relative border border-white/10 ">
-            <Header type="h1" fontSize="5xl"  weight="semibold" className="text-red-600 py-3 ">
-              Game Over!
-            </Header>
-            <p className="dark:text-gray-300 text-gray-900 mb-3">Your final score: <span className="font-bold text-yellow-500">{score}</span></p>
+          <div className={`text-center md:mt-36 my-8 p-8 w-full max-w-md mx-auto rounded-2xl shadow-2xl border-2 backdrop-blur-sm sm:p-6 lg:p-8 flex flex-col relative transition-colors duration-300 ${
+            darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+          }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <FaSkullCrossbones className="text-red-500 text-2xl" />
+              <Header type="h1" fontSize="5xl" weight="semibold" className="text-red-600 py-3 tracking-wide">
+                Shipwrecked!
+              </Header>
+              <FaSkullCrossbones className="text-red-500 text-2xl" />
+            </div>
+            <p className={`mb-6 text-lg ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+              Your final treasure: <span className="font-bold text-yellow-500">{score}</span> coins
+            </p>
             <div className="flex items-center justify-center gap-3">
               <Button
                 onClick={startGame}
                 variant="default"
                 size="sm"
                 rounded="full"
+                className={`transition-all duration-300 hover:scale-105 ${
+                  darkMode 
+                    ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                    : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                }`}
               >
-                Play Again
+                <FaShip className="mr-2" />
+                Set Sail Again
               </Button>
               <Button
                 onClick={() => { 
@@ -2093,39 +2234,53 @@ const FallingGame = ({ game, onGameComplete }) => {
                 variant="cancel"
                 size="sm"
                 rounded="full"
+                className="transition-all duration-300 hover:scale-105"
               >
-                Back to Games
+                <FaAnchor className="mr-2" />
+                Return to Port
               </Button>
             </div>
           </div>
         )}
 
         {isPaused && gameStarted && !gameOver && (
-          <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-30 p-4">
-            <div className="bg-gray-50 p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg rounded-lg shadow-xl text-center">
-              <Header type="h2" variant="default" fontSize="xl" className="mb-3 sm:mb-4 text-primary text-center">Game Paused</Header>
+          <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex flex-col items-center justify-center z-30 p-4">
+            <div className={`p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg rounded-2xl shadow-2xl text-center border-2 transition-colors duration-300 ${
+              darkMode ? 'bg-[#0b1022]/95 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+            }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <FaCompass className="text-yellow-400 text-2xl" />
+                <Header type="h2" variant="default" fontSize="xl" className={`transition-colors duration-300 ${
+                  darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                }`}>Adventure Paused</Header>
+                <FaSkullCrossbones className="text-yellow-400 text-2xl" />
+              </div>
               
               {/* Level Indicator in Pause Screen - Responsive */}
               <div className="mb-4 sm:mb-6 space-y-2">
-                <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-full shadow-lg w-full sm:w-auto">
+                <div className={`inline-flex flex-col sm:flex-row items-center px-3 sm:px-4 py-2 rounded-full shadow-lg w-full sm:w-auto border-2 transition-colors duration-300 ${
+                  darkMode ? 'bg-gradient-to-r from-amber-600 to-orange-600 border-yellow-700/40' : 'bg-gradient-to-r from-amber-600 to-orange-600 border-yellow-300'
+                }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                   <div className="flex items-center mb-1 sm:mb-0">
-                    <span className="text-base sm:text-lg font-bold mr-2">🎯</span>
-                    <span className="text-base sm:text-lg font-bold">Table of {currentLevel}</span>
+                    <FaMap className="text-yellow-300 text-base sm:text-lg mr-2" />
+                    <span className="text-base sm:text-lg font-bold text-white">Treasure Map {currentLevel}</span>
                   </div>
-                  <span className="text-xs sm:text-sm bg-white bg-opacity-20 px-2 py-1 rounded-full sm:ml-3">
-                    {questionsAnswered}/10
+                  <span className="text-xs sm:text-sm bg-white bg-opacity-20 px-2 py-1 rounded-full sm:ml-3 text-white">
+                    {problemsSolvedThisLevel}/10
                   </span>
                 </div>
                 
                 {/* Total Progress in Pause Screen - Responsive */}
-                <div className="inline-flex flex-col sm:flex-row items-center bg-gradient-to-r from-green-500 to-teal-500 text-white px-2 sm:px-3 py-1 rounded-full shadow-lg w-full sm:w-auto">
+                <div className={`inline-flex flex-col sm:flex-row items-center px-2 sm:px-3 py-1 rounded-full shadow-lg w-full sm:w-auto border-2 transition-colors duration-300 ${
+                  darkMode ? 'bg-gradient-to-r from-green-500 to-teal-500 border-green-700/40' : 'bg-gradient-to-r from-green-500 to-teal-500 border-green-300'
+                }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(34, 197, 94, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                   <div className="flex items-center mb-1 sm:mb-0">
-                    <span className="text-xs sm:text-sm font-bold mr-2">🏆</span>
-                    <span className="text-xs font-bold">Total: {currentLevel}/{MAX_LEVEL}</span>
+                    <FaCrown className="text-yellow-300 text-xs sm:text-sm mr-2" />
+                    <span className="text-xs font-bold text-white">Total: {currentLevel}/{MAX_LEVEL}</span>
                   </div>
                   <div className="w-10 sm:w-12 bg-white bg-opacity-20 rounded-full h-1 sm:ml-2">
                     <div 
-                      className="bg-white h-1 rounded-full transition-all duration-500"
+                      className="bg-yellow-300 h-1 rounded-full transition-all duration-500"
                       style={{ width: `${(currentLevel / MAX_LEVEL) * 100}%` }}
                     ></div>
                   </div>
@@ -2134,31 +2289,44 @@ const FallingGame = ({ game, onGameComplete }) => {
               <div className="space-y-3 sm:space-y-4">
                  <button
                   onClick={togglePause}
-                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-blue-400 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-blue-500 transition-colors flex items-center justify-center"
+                  className={`w-full px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold transition-all duration-300 hover:scale-105 flex items-center justify-center ${
+                    darkMode 
+                      ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                      : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                  }`}
                 >
-                  <FaPlay className="mr-2 text-sm sm:text-base"/> Resume
+                  <FaPlay className="mr-2 text-sm sm:text-base"/> Resume Adventure
                 </button>
                 <button
                   onClick={toggleSettingsModal}
-                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-blue-600 transition-colors flex items-center justify-center"
+                  className={`w-full px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold transition-all duration-300 hover:scale-105 flex items-center justify-center ${
+                    darkMode 
+                      ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                      : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                  }`}
                 >
-                  <FaCog className="mr-2 text-sm sm:text-base"/> Settings
+                  <FaCog className="mr-2 text-sm sm:text-base"/> Ship Settings
                 </button>
                 <button
                   onClick={() => setShowRestartConfirmModal(true)}
-                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center"
+                  className={`w-full px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-bold transition-all duration-300 hover:scale-105 flex items-center justify-center ${
+                    darkMode 
+                      ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                      : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                  }`}
                 >
-                  <FaRedo className="mr-2 text-sm sm:text-base"/> Restart
+                  <FaRedo className="mr-2 text-sm sm:text-base"/> Restart Journey
                 </button>
                 <button
                   onClick={() => {
                     logger.debug('[FallingGame] Exit Game button clicked - showing confirmation modal');
                     setShowExitConfirmModal(true);
                   }}
-                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-red-500 text-white rounded-lg text-base sm:text-lg font-bold hover:bg-red-600 transition-colors flex items-center justify-center"
+                  className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg text-base sm:text-lg font-bold transition-all duration-300 hover:scale-105 flex items-center justify-center"
                   data-testid="exit-button"
                 >
-                  Exit Game
+                  <FaAnchor className="mr-2 text-sm sm:text-base" />
+                  Return to Port
                 </button>
                
               </div>
@@ -2170,18 +2338,28 @@ const FallingGame = ({ game, onGameComplete }) => {
           <Modal
             isOpen={showSettingsModal}
             onClose={toggleSettingsModal}
-            title="Settings"
+            title="Ship Settings"
             maxWidth="max-w-md"
           >
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-md">
-                <span className="text-lg dark:text-gray-50 text-gray-900">Background Music</span>
-                <button onClick={toggleMusic} className="p-2 rounded-full hover:bg-gray-500 transition-colors">
+              <div className={`flex items-center justify-between p-3 rounded-lg border-2 transition-colors duration-300 ${
+                darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+              }`}>
+                <span className={`text-lg transition-colors duration-300 ${
+                  darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                }`}>Ship's Music</span>
+                <button onClick={toggleMusic} className={`p-2 rounded-full transition-colors ${
+                  darkMode ? 'hover:bg-yellow-700/30' : 'hover:bg-yellow-200'
+                }`}>
                   {musicEnabled ? <FaVolumeUp size={24} className="text-green-400"/> : <FaVolumeMute size={24} className="text-red-400"/>}
                 </button>
               </div>
-              <div className="flex items-center p-3  rounded-md">
-                <span className="text-lg mr-4 dark:text-gray-50 text-gray-900">Volume</span>
+              <div className={`flex items-center p-3 rounded-lg border-2 transition-colors duration-300 ${
+                darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+              }`}>
+                <span className={`text-lg mr-4 transition-colors duration-300 ${
+                  darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                }`}>Volume</span>
                 <input
                   type="range"
                   min="0"
@@ -2196,8 +2374,12 @@ const FallingGame = ({ game, onGameComplete }) => {
               </div>
 
               {isMultiplicationOrDivision && (
-                <div className="p-3 bg-gray-600 rounded-md">
-                  <label htmlFor="tableSelect" className="block text-lg mb-2">Problem Table Focus:</label>
+                <div className={`p-3 rounded-lg border-2 transition-colors duration-300 ${
+                  darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+                }`}>
+                  <label htmlFor="tableSelect" className={`block text-lg mb-2 transition-colors duration-300 ${
+                    darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                  }`}>Treasure Map Focus:</label>
                   <select 
                     id="tableSelect"
                     value={selectedTableForProblems}
@@ -2207,11 +2389,15 @@ const FallingGame = ({ game, onGameComplete }) => {
                           generateProblems();
                       }
                     }}
-                    className="w-full p-2 bg-gray-500 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full p-2 rounded-md focus:outline-none focus:ring-2 transition-colors duration-300 ${
+                      darkMode 
+                        ? 'bg-[#0b1022]/50 text-yellow-200 border-yellow-700/40 focus:ring-yellow-500' 
+                        : 'bg-[#f5ecd2]/50 text-yellow-800 border-yellow-300 focus:ring-yellow-500'
+                    }`}
                   >
-                    <option value="random">Random</option>
+                    <option value="random">Random Treasures</option>
                     {Array.from({ length: 11 }, (_, i) => i + 2).map(num => (
-                      <option key={num} value={num}>{`${num}${game.topic.includes('multiply') ? '×' : '÷'}`}</option>
+                      <option key={num} value={num}>{`Map ${num}${game.topic.includes('multiply') ? '×' : '÷'}`}</option>
                     ))}
                   </select>
                 </div>
@@ -2220,9 +2406,13 @@ const FallingGame = ({ game, onGameComplete }) => {
               {isMultiplicationOrDivision && (
                   <button
                       onClick={() => { toggleTableModal(); setShowSettingsModal(false);}}
-                      className="w-full px-4 py-2 bg-purple-500 text-white rounded-md text-lg hover:bg-purple-600 transition-colors flex items-center justify-center"
+                      className={`w-full px-4 py-2 rounded-md text-lg transition-all duration-300 hover:scale-105 flex items-center justify-center ${
+                        darkMode 
+                          ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                          : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                      }`}
                   >
-                      <FaTable className="mr-2"/> Show Multiplication Reference
+                      <FaTable className="mr-2"/> Show Treasure Reference
                   </button>
               )}
             </div>
@@ -2236,12 +2426,16 @@ const FallingGame = ({ game, onGameComplete }) => {
           <Modal
             isOpen={showLevelSelector}
             onClose={() => setShowLevelSelector(false)}
-            title="Select Level"
+            title="Select Treasure Map"
             maxWidth="max-w-lg"
           >
             {loadingUnlockedLevels ? (
               <div className="flex justify-center items-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <div className="flex items-center gap-3">
+                  <FaCompass className="text-yellow-400 text-2xl" />
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+                  <FaSkullCrossbones className="text-yellow-400 text-2xl" />
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-4 mb-6">
@@ -2250,15 +2444,22 @@ const FallingGame = ({ game, onGameComplete }) => {
                     key={level}
                     onClick={() => handleLevelSelect(level)}
                     disabled={level > unlockedLevels}
-                    className={`p-4 rounded-lg text-center transition-colors ${
+                    className={`p-4 rounded-lg text-center transition-all duration-300 hover:scale-105 border-2 ${
                       level <= unlockedLevels
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        ? (darkMode 
+                            ? 'bg-yellow-500 text-[#0b1022] hover:bg-yellow-400 border-yellow-700/40' 
+                            : 'bg-yellow-600 text-white hover:bg-yellow-500 border-yellow-300')
+                        : (darkMode 
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-700/40' 
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300')
                     }`}
                   >
-                    Level {level}
-                    {level <= unlockedLevels && <span className="block text-xs mt-1">Unlocked</span>}
-                    {level > unlockedLevels && <span className="block text-xs mt-1">Locked</span>}
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <FaMap className="text-sm" />
+                      <span className="font-bold">Map {level}</span>
+                    </div>
+                    {level <= unlockedLevels && <span className="block text-xs mt-1">⚓ Unlocked</span>}
+                    {level > unlockedLevels && <span className="block text-xs mt-1">🔒 Locked</span>}
                   </button>
                 ))}
               </div>
@@ -2269,17 +2470,21 @@ const FallingGame = ({ game, onGameComplete }) => {
         <Modal
           isOpen={showExitConfirmModal}
           onClose={handleStayOnPage}
-          title="Leave Game?"
+          title="Abandon Ship?"
         >
-          <p className="dark:text-gray-50 text-gray-700 mb-4">
-            Your game progress is automatically saved, so you can continue later. Are you sure you want to leave the game now?
+          <p className={`mb-4 transition-colors duration-300 ${
+            darkMode ? 'text-yellow-300' : 'text-yellow-700'
+          }`}>
+            Your treasure hunt progress is automatically saved, so you can continue your adventure later. Are you sure you want to return to port now?
           </p>
           <div className="mt-6 flex justify-end gap-4">
-            <Button variant="cancel" rounded="full" onClick={handleExitGameConfirm}>
-              Leave Game
+            <Button variant="cancel" rounded="full" onClick={handleExitGameConfirm} className="transition-all duration-300 hover:scale-105">
+              <FaAnchor className="mr-2" />
+              Return to Port
             </Button>
-            <Button variant="default" rounded="full" onClick={handleStayOnPage}>
-              Stay on Game
+            <Button variant="default" rounded="full" onClick={handleStayOnPage} className="transition-all duration-300 hover:scale-105">
+              <FaShip className="mr-2" />
+              Continue Adventure
             </Button>
           </div>
         </Modal>
@@ -2287,17 +2492,20 @@ const FallingGame = ({ game, onGameComplete }) => {
         <Modal
           isOpen={showRestartConfirmModal}
           onClose={() => setShowRestartConfirmModal(false)}
-          title="Restart Game?"
+          title="Restart Adventure?"
         >
-          <p className="dark:text-gray-50 text-gray-700 mb-4">
-            Restarting the game will clear your progress. Are you sure you want to restart?
+          <p className={`mb-4 transition-colors duration-300 ${
+            darkMode ? 'text-yellow-300' : 'text-yellow-700'
+          }`}>
+            Restarting your adventure will clear your treasure progress. Are you sure you want to start a new journey?
           </p>
           <div className="mt-6 flex justify-end gap-4">
-            <Button variant="cancel" rounded="full" onClick={() => setShowRestartConfirmModal(false)}>
+            <Button variant="cancel" rounded="full" onClick={() => setShowRestartConfirmModal(false)} className="transition-all duration-300 hover:scale-105">
               Cancel
             </Button>
-            <Button variant="default" rounded="full" onClick={handleRestartConfirm}>
-              Restart
+            <Button variant="default" rounded="full" onClick={handleRestartConfirm} className="transition-all duration-300 hover:scale-105">
+              <FaShip className="mr-2" />
+              Start New Journey
             </Button>
           </div>
         </Modal>

@@ -162,7 +162,11 @@ const Navbar = () => {
       <>
         {/* Mobile Sticky Navbar for non-authenticated users */}
         {isMobile && (
-          <nav className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-primary/80 border-b border-gray-200 dark:border-gray-700 md:hidden shadow-lg">
+          <nav className={`fixed top-0 left-0 right-0 z-30 border-b md:hidden shadow-lg transition-colors duration-300 ${
+            darkMode 
+              ? 'bg-[#0b1022] border-yellow-700/40' 
+              : 'bg-[#f5ecd2] border-yellow-300'
+          }`}>
             <div className="flex items-center justify-between px-4 py-3">
               {/* Logo on the left */}
               <Link to="/" className="flex items-center">
@@ -187,7 +191,11 @@ const Navbar = () => {
         )}
 
         {/* Desktop navbar for non-authenticated users */}
-        <nav className="bg-transparent py-5 absolute w-full z-10 md:block hidden">
+        <nav className={`py-5 absolute w-full z-10 md:block hidden transition-colors duration-300 ${
+          darkMode 
+            ? 'bg-[#0b1022]/90 backdrop-blur-sm' 
+            : 'bg-[#f5ecd2]/90 backdrop-blur-sm'
+        }`}>
           <div className="max-w-[1280px] container mx-auto px-4">
             <div className="flex justify-between items-center h-28 ">
               <div className="flex space-x-4">
@@ -304,22 +312,32 @@ const Navbar = () => {
       )}
       
       {/* Mobile sidebar */}
-      <aside className={`fixed top-0 left-0 h-full z-50 transition-transform duration-300 ease-in-out ${
+      <aside className={`fixed top-0 left-0 h-full z-50 transition-all duration-300 ease-in-out ${
         isMobile 
           ? `w-80 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
           : `${sidebarOpen ? 'w-80' : 'w-28 px-2'}`
-      } bg-[#070926] dark:bg-[#070926] text-white flex flex-col justify-between shadow-lg`}>
+      } flex flex-col justify-between shadow-lg ${
+        darkMode 
+          ? 'bg-[#0b1022] text-yellow-200' 
+          : 'bg-[#f5ecd2] text-yellow-800'
+      }`}>
         {/* Top: Logo and App Name + Toggle */}
         <div>
           <div className={`flex items-center gap-3 mb-5 ${sidebarOpen ? 'px-6' : 'px-0'} pt-6 pb-2 ${sidebarOpen ? '' : 'justify-center'}`}>
             {sidebarOpen && (
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                darkMode ? 'bg-yellow-500' : 'bg-yellow-600'
+              }`}>
                 <img src="/images/new-logo.png" alt="MathQuest Logo" className="w-16 h-16 object-contain" />
               </div>
             )}
-            {sidebarOpen && <span className="font-semibold text-lg tracking-wide">MathQuest</span>}
+            {sidebarOpen && <span className={`font-semibold text-lg tracking-wide ${
+              darkMode ? 'text-yellow-200' : 'text-yellow-800'
+            }`}>MathQuest</span>}
             <button
-              className={`flex items-center justify-center ${sidebarOpen ? 'ml-auto' : ''} text-white focus:outline-none h-12 w-12 rounded-lg transition-colors duration-150 ${!sidebarOpen ? 'mx-auto' : ''}`}
+              className={`flex items-center justify-center ${sidebarOpen ? 'ml-auto' : ''} focus:outline-none h-12 w-12 rounded-lg transition-colors duration-150 ${!sidebarOpen ? 'mx-auto' : ''} ${
+                darkMode ? 'text-yellow-200 hover:text-yellow-100' : 'text-yellow-800 hover:text-yellow-700'
+              }`}
               style={{ minWidth: '48px', minHeight: '48px' }}
               onClick={handleSidebarToggle}
               aria-label="Toggle Sidebar"
@@ -345,8 +363,8 @@ const Navbar = () => {
                   onClick={handleMobileLinkClick}
                   className={`flex items-center ${sidebarOpen ? 'px-6 py-3' : 'justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
                     isActive(link.path)
-                      ? 'bg-white text-[#070926]' 
-                      : 'text-white hover:bg-[#101233]'
+                      ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
+                      : (darkMode ? 'text-yellow-200 hover:bg-[#0f1428]' : 'text-yellow-800 hover:bg-[#fbf4de]')
                   }`}
                   style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
                 >
@@ -367,8 +385,8 @@ const Navbar = () => {
                         onClick={handleMobileLinkClick}
                         className={`block px-6 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
                           location.pathname === subLink.path || location.pathname.startsWith(subLink.path + '/')
-                            ? 'text-white' 
-                            : 'text-gray-300 hover:bg-[#101233]'
+                            ? (darkMode ? 'text-yellow-200' : 'text-yellow-800')
+                            : (darkMode ? 'text-yellow-300 hover:bg-[#0f1428]' : 'text-yellow-700 hover:bg-[#fbf4de]')
                         }`}
                         style={{ minHeight: '40px' }}
                       >
@@ -387,8 +405,8 @@ const Navbar = () => {
                 onClick={handleMobileLinkClick}
                 className={`flex items-center ${sidebarOpen ? 'px-4 py-3' : 'mr-4 justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
                   (isStudent() && isActive('/student/join-classroom')) || (isTeacher() && isActive('/teacher/add-classroom'))
-                    ? 'bg-white text-[#070926]'
-                    : 'text-white hover:bg-[#101233]'
+                    ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
+                    : (darkMode ? 'text-yellow-200 hover:bg-[#0f1428]' : 'text-yellow-800 hover:bg-[#fbf4de]')
                 }`}
                 style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
               >
@@ -405,8 +423,8 @@ const Navbar = () => {
                 onClick={handleMobileLinkClick}
                 className={`flex items-center ${sidebarOpen ? 'px-4 py-3' : 'mr-4 justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
                   isActive(isTeacher() ? '/teacher/help' : '/student/help')
-                    ? 'bg-white text-[#070926]' 
-                    : 'text-white hover:bg-[#101233]'
+                    ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
+                    : (darkMode ? 'text-yellow-200 hover:bg-[#0f1428]' : 'text-yellow-800 hover:bg-[#fbf4de]')
                 }`}
                 style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
               >
@@ -422,16 +440,26 @@ const Navbar = () => {
         <div className={`px-3 pb-6 pt-2 ${sidebarOpen ? '' : 'px-0'}`}>
           {/* Dark/Light Mode Toggle */}
           {isInitialized && (
-            <div className={`flex items-center justify-center mb-4 bg-[#101233] rounded-lg p-1 ${sidebarOpen ? '' : 'justify-center'}`}>
+            <div className={`flex items-center justify-center mb-4 rounded-lg p-1 ${sidebarOpen ? '' : 'justify-center'} ${
+              darkMode ? 'bg-[#0f1428]' : 'bg-[#fbf4de]'
+            }`}>
               <button
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${darkMode ? 'bg-blue-800 text-white' : 'text-gray-400'}`}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${
+                  darkMode 
+                    ? 'bg-yellow-500 text-[#0b1022]' 
+                    : 'text-yellow-700'
+                }`}
                 onClick={() => setDarkMode(true)}
               >
                 <FaMoon className="mr-2" />
                 {sidebarOpen && 'Dark'}
               </button>
               <button
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${!darkMode ? 'bg-blue-800 text-white' : 'text-gray-400'}`}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${
+                  !darkMode 
+                    ? 'bg-yellow-500 text-[#0b1022]' 
+                    : 'text-yellow-700'
+                }`}
                 onClick={() => setDarkMode(false)}
               >
                 <FaSun className="mr-2" />
@@ -440,13 +468,17 @@ const Navbar = () => {
             </div>
           )}
           {/* User Profile & Logout */}
-          <div className={`flex items-center ${sidebarOpen ? 'gap-3 bg-[#101233] rounded-xl p-3' : 'justify-center'} relative`}>
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#070926] text-lg font-semibold overflow-hidden">
+          <div className={`flex items-center ${sidebarOpen ? 'gap-3 rounded-xl p-3' : 'justify-center'} relative ${
+            darkMode ? 'bg-[#0f1428]' : 'bg-[#fbf4de]'
+          }`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-semibold overflow-hidden ${
+              darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white'
+            }`}>
               {profileImageSrc ? (
                 <img
                   src={profileImageSrc}
                   alt="Profile"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-full"
                   onLoad={handleImageLoad}
                   onError={handleImageError}
                 />
@@ -456,12 +488,18 @@ const Navbar = () => {
             </div>
             {sidebarOpen && (
               <div className="flex flex-col flex-1">
-                <span className="font-semibold text-white text-sm">{`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.username}</span>
-                <span className="text-xs text-gray-400">{isAdmin() ? 'Admin' : isTeacher() ? 'Teacher' : 'Student'}</span>
+                <span className={`font-semibold text-sm ${
+                  darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                }`}>{`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.username}</span>
+                <span className={`text-xs ${
+                  darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                }`}>{isAdmin() ? 'Admin' : isTeacher() ? 'Teacher' : 'Student'}</span>
               </div>
             )}
             <button
-              className={`ml-2 text-white hover:text-red-500 transition-colors duration-150 ${sidebarOpen ? '' : ''}`}
+              className={`ml-2 transition-colors duration-150 ${
+                darkMode ? 'text-yellow-200 hover:text-red-400' : 'text-yellow-800 hover:text-red-600'
+              }`}
               onClick={handleLogout}
               title="Logout"
             >
@@ -477,7 +515,11 @@ const Navbar = () => {
     <>
       {/* Mobile Sticky Navbar */}
       {isMobile && (
-        <nav className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-primary/80 border-b border-gray-200 dark:border-gray-700 md:hidden shadow-lg">
+        <nav className={`fixed top-0 left-0 right-0 z-30 border-b md:hidden shadow-lg transition-colors duration-300 ${
+          darkMode 
+            ? 'bg-[#0b1022] border-yellow-700/40' 
+            : 'bg-[#f5ecd2] border-yellow-300'
+        }`}>
           <div className="flex items-center justify-between px-4 py-3">
             {/* Logo on the left */}
             <Link to="/" className="flex items-center">
@@ -490,7 +532,11 @@ const Navbar = () => {
             
             {/* Menu button on the right */}
             <button
-              className="p-3 rounded-lg  text-primary dark:text-white  hover:text-primary/70 dark:hover:text-white/70 transition-colors shadow-md"
+              className={`p-3 rounded-lg transition-colors shadow-md ${
+                darkMode 
+                  ? 'text-yellow-200 hover:text-yellow-100' 
+                  : 'text-yellow-800 hover:text-yellow-700'
+              }`}
               onClick={() => setSidebarOpen(true)}
               aria-label="Open Menu"
             >

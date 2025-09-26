@@ -9,7 +9,7 @@ import { Label } from "../ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import AuthService from '../services/authService';
-import { FaRegEyeSlash, FaRegEye, FaSkullCrossbones, FaCompass, FaAnchor, FaShip, FaSun, FaMoon } from "react-icons/fa";
+import { FaRegEyeSlash, FaRegEye, FaSkullCrossbones, FaCompass, FaAnchor, FaShip } from "react-icons/fa";
 import { useTheme } from '../context/ThemeContext';
 
 const ProfilePage = () => {
@@ -49,7 +49,7 @@ const ProfilePage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const fileInputRef = useRef(null);
-  const { darkMode, setDarkMode, isInitialized } = useTheme();
+  const { darkMode } = useTheme();
 
   const getInitials = (firstName, lastName) => {
     const firstInitial = firstName ? firstName[0] : '';
@@ -360,9 +360,9 @@ const ProfilePage = () => {
            style={{
              backgroundImage: darkMode
                ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
-               : "url('/images/game-images/map.png')",
-             backgroundSize: darkMode ? 'cover' : 'cover',
-             backgroundRepeat: 'repeat',
+            : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
            }}
       >
       <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-primary"></div>
@@ -376,9 +376,9 @@ const ProfilePage = () => {
            style={{
              backgroundImage: darkMode
                ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
-               : "url('/images/game-images/map.png')",
-             backgroundSize: darkMode ? 'cover' : 'cover',
-             backgroundRepeat: 'repeat',
+            : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
            }}
       >
         <div className="text-base sm:text-lg md:text-xl font-semibold text-red-600">{error || "Could not load profile."}</div>
@@ -392,29 +392,18 @@ const ProfilePage = () => {
       style={{
         backgroundImage: darkMode
           ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
-          : "url('/images/game-images/map.png')",
-        backgroundSize: darkMode ? 'cover' : 'cover',
-        backgroundRepeat: 'repeat',
+            : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
       }}
     >
       <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3 mb-4">
         <div className="flex items-center gap-2 sm:gap-3">
           <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-lg sm:text-xl'} />
           <Header type="h1" fontSize="5xl" weight="bold" className={(darkMode ? 'text-yellow-300' : 'text-primary') + ' mb-1 text-3xl sm:text-4xl lg:text-5xl'}> {pageTitle} </Header>
           <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-lg sm:text-xl'} />
         </div>
-        {isInitialized && (
-          <Button
-            variant="outlineWhite"
-            size="sm"
-            onClick={() => setDarkMode(!darkMode)}
-            className="!rounded-full flex items-center gap-2 w-full sm:w-auto"
-          >
-            {darkMode ? <FaSun className="text-yellow-300" /> : <FaMoon className="text-blue-700" />}
-            {darkMode ? 'Light Mode' : 'Dark Mode'}
-          </Button>
-        )}
       </div>
       <div className="h-[2px] w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 mb-4 sm:mb-6 md:mb-8 opacity-80"></div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import lessonService from "../../services/lessonService";
 import { CheckCircle, BookOpen, Lock } from "lucide-react";
 
@@ -11,6 +12,7 @@ const LessonSidebar = ({
   unlockedLessons = new Set(),
 }) => {
   const { user } = useAuth();
+  const { darkMode } = useTheme();
   const [completionStatuses, setCompletionStatuses] = useState({});
   const [stats, setStats] = useState({});
 
@@ -155,7 +157,7 @@ const LessonSidebar = ({
 
   return (
     <div className="flex flex-col h-full">
-      <h3 className="text-lg font-semibold mb-4 text-white">Lessons</h3>
+      <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Lessons</h3>
       <div className="space-y-2 overflow-y-auto">
         {lessons.map((lesson, index) => {
           const isUnlocked =
@@ -171,9 +173,13 @@ const LessonSidebar = ({
               className={`w-full text-left p-3 rounded-lg transition-colors flex items-center justify-between
                 ${
                   isCurrent
-                    ? "bg-blue-100 text-gray-800"
+                    ? darkMode 
+                      ? "bg-blue-600 text-white" 
+                      : "bg-blue-100 text-gray-800"
                     : isUnlocked
-                    ? "hover:bg-gray-100"
+                    ? darkMode
+                      ? "hover:bg-gray-700 text-gray-200"
+                      : "hover:bg-gray-100 text-gray-900"
                     : "opacity-50 cursor-not-allowed"
                 }`}
               disabled={!isUnlocked}

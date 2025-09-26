@@ -287,9 +287,9 @@ const properties = [
       },
       { 
         type: "challenge", 
-        content: "Mental math: What's easier to calculate - (2×5)×3 or 2×(5×3)? Why?",
-        answer: "2×15",
-        explanation: "2×(5×3) = 2×15 = 30 is easier than (2×5)×3 = 10×3 = 30"
+        content: "Mental math: calculate (12 × 8) × 15  ?",
+        answer: "1440",
+        explanation: "12 × 8) × 15 First, 12 × 8 = 96 Then, 96 × 15 = 1,440 12 × (8 × 15) First, 8 × 15 = 120 Then, 12 × 120 = 1,440"
       }
     ],
     badge: "Associative Adventurer!",
@@ -737,16 +737,6 @@ const handleComplete = (idx) => {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
-                  {!backendAvailable && (
-                    <div className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full shadow-sm transition-colors duration-300 ${
-                      darkMode 
-                        ? 'text-orange-300 bg-orange-900/30 border border-orange-700/50' 
-                        : 'text-orange-700 bg-orange-100 border border-orange-200'
-                    }`}>
-                      <span className="text-lg">⚠️</span>
-                      <span className="font-medium">Offline Mode</span>
-                    </div>
-                  )}
                   {saving && (
                     <div className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full shadow-sm transition-colors duration-300 ${
                       darkMode 

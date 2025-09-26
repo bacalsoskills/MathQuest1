@@ -27,7 +27,8 @@ import { CiSearch } from "react-icons/ci";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import Modal from "../../ui/modal";
-import { FaSkullCrossbones, FaCompass, FaUsers, FaCoins, FaAnchor, FaMap, FaShip, FaScroll, FaFeatherAlt } from "react-icons/fa";
+import { FaSkullCrossbones, FaCompass, FaUsers, FaCoins, FaAnchor, FaMap, FaShip, FaScroll, FaFeatherAlt, FaMapMarkedAlt, FaUserPlus, FaTrash, FaEye } from "react-icons/fa";
+import { useTheme } from '../../context/ThemeContext';
 
 const TeacherClassroomPage = () => {
   const { classroomId, lessonId: initialLessonId } = useParams();
@@ -57,6 +58,8 @@ const TeacherClassroomPage = () => {
   const [statsError, setStatsError] = useState(null);
   const [lastFetchedLessonId, setLastFetchedLessonId] = useState(null);
   const [quizDataMap, setQuizDataMap] = useState({});
+  
+  const { darkMode } = useTheme();
 
   // Students tab state
   const [classroomStudents, setClassroomStudents] = useState([]);
@@ -608,8 +611,20 @@ const TeacherClassroomPage = () => {
 
   if (loading && !error) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div 
+        className="flex justify-center items-center h-screen"
+        style={{
+          backgroundImage: darkMode
+            ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
+            : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
+          <p className={(darkMode ? 'text-yellow-300' : 'text-yellow-800') + ' text-lg font-semibold'}>Hoisting the sails...</p>
+        </div>
       </div>
     );
   }
@@ -623,114 +638,118 @@ const TeacherClassroomPage = () => {
   }
 
   return (
-    <div className="relative px-4 sm:px-6 lg:px-8 pt-16 md:pt-0 lg:py-8 transition-colors duration-300 ">
-      {/* Pirate background layers */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        {/* Light mode parchment map */}
-        <div
-          className="absolute inset-0 opacity-70 dark:opacity-0"
-          style={{
-            backgroundImage: "url('/images/game-images/map.png')",
-            backgroundRepeat: 'repeat',
-            backgroundSize: '600px 600px'
-          }}
-        />
-        {/* Dark mode deep sea */}
-        <div
-          className="absolute inset-0 opacity-0 dark:opacity-70"
-          style={{
-            backgroundImage: "linear-gradient(180deg, rgba(1,10,20,0.9), rgba(1,10,20,0.95)), url('/images/game-images/underwater.png')",
-            backgroundRepeat: 'repeat',
-            backgroundSize: '700px 700px'
-          }}
-        />
-        {/* Subtle vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgba(0,0,0,0.25))]" />
-      </div>
+    <div 
+      className="relative px-4 sm:px-6 lg:px-8 pt-16 md:pt-0 lg:py-8 min-h-screen"
+      style={{
+        backgroundImage: darkMode
+          ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
+          : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
 
       <div className="max-w-6xl mx-auto">
-        <div className="classroom-header relative flex flex-col md:flex-row md:space-x-8 h-full md:h-auto">
-          {/* Theme toggle removed to sync with Navbar's global theme */}
-          {/* Left - Image */}
-          <div className="w-full md:w-1/3 h-full">
-            <div className="h-full bg-[#e9dcc0] dark:bg-[#0f172a] border-2 border-amber-700/70 dark:border-yellow-500/40 rounded-tl-3xl rounded-bl-3xl overflow-hidden shadow-lg shadow-amber-900/20 dark:shadow-yellow-600/10 mb-5 md:mb-0">
-              {classroomDetails.image ? (
-                <img
-                  src={`data:image/jpeg;base64,${classroomDetails.image}`}
-                  alt={classroomDetails.name}
-                  className="w-full h-[280px] object-cover"
-                />
-              ) : (
-                <div className="w-full h-[280px] flex items-center justify-center bg-gradient-to-br from-amber-100 to-amber-200 dark:from-slate-800 dark:to-slate-900">
-                  <span className="text-2xl text-blue-600 dark:text-yellow-400 font-semibold tracking-wide">
-                    {classroomDetails.shortCode}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right - Details */}
-          <div className="w-full md:w-2/3 flex flex-col md:pl-4 md:pr-6 py-5 h-full">
-            <div className="flex flex-col md:flex-row justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-bold text-blue-700 dark:text-yellow-400 mb-1">
-                  <FaSkullCrossbones className="opacity-70" />
-                  {classroomDetails.shortCode}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Header type="h1" fontSize="3xl" weight="bold" className="dark:text-yellow-50 text-gray-900">
-                    {classroomDetails.name}
-                  </Header>
-                  <button 
-                    onClick={handleOpenEditClassroomModal}
-                    className="text-blue-700 hover:text-blue-900 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors"
-                    title="Edit classroom details"
-                  >
-                    <MdEdit className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Teacher */}
-              <div className="mt-2 md:mt-0">
-                <div className="flex items-center gap-2 text-sm font-medium dark:text-gray-50 text-gray-800">
-                  <FaShip className="text-blue-600 dark:text-yellow-400" />
-                  Teacher:{' '}
-                  {classroomDetails.teacher?.firstName && classroomDetails.teacher?.lastName
-                    ? `${classroomDetails.teacher.firstName} ${classroomDetails.teacher.lastName}`
-                    : classroomDetails.teacher?.name || 'N/A'}
-                </div>
+        {/* Ship Header with pirate theme */}
+        <div className={`rounded-2xl shadow-2xl p-6 border-2 backdrop-blur-sm mb-6 ${
+          darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+        }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Ship Image */}
+            <div className="w-full md:w-1/3">
+              <div className={`rounded-2xl overflow-hidden border-2 shadow-lg ${
+                darkMode ? 'border-yellow-700/40' : 'border-yellow-300'
+              }`}>
+                {classroomDetails.image ? (
+                  <img
+                    src={`data:image/jpeg;base64,${classroomDetails.image}`}
+                    alt={classroomDetails.name}
+                    className="w-full h-[280px] object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-[280px] flex flex-col items-center justify-center bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-500 relative">
+                    <FaShip className="text-white text-6xl mb-4" />
+                    <span className="text-2xl text-white font-bold tracking-wide">
+                      {classroomDetails.shortCode}
+                    </span>
+                    {/* Nautical corner pins */}
+                    <div className="absolute top-2 right-2 text-white/70 text-lg">⚓</div>
+                    <div className="absolute bottom-2 left-2 text-white/70 text-lg">🧭</div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Description */}
-            <div className="mt-3">
-              <p className="text-gray-800 dark:text-gray-200">{classroomDetails.description}</p>
-            </div>
+            {/* Ship Details */}
+            <div className="w-full md:w-2/3 flex flex-col">
+              <div className="flex flex-col md:flex-row justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <FaAnchor className={(darkMode ? 'text-yellow-400' : 'text-yellow-600') + ' text-sm'} />
+                    <span className={`text-sm font-semibold uppercase tracking-wide ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                      Ship Code: {classroomDetails.shortCode}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Header type="h1" fontSize="3xl" weight="bold" className={`${darkMode ? 'text-yellow-200' : 'text-gray-900'}`}>
+                      {classroomDetails.name}
+                    </Header>
+                    <button 
+                      onClick={handleOpenEditClassroomModal}
+                      className={`transition-colors ${darkMode ? 'text-yellow-400 hover:text-yellow-300' : 'text-yellow-600 hover:text-yellow-700'}`}
+                      title="Edit ship details"
+                    >
+                      <MdEdit className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
 
-            {/* Stats */}
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200 shadow-sm dark:bg-slate-800/60 dark:border-yellow-500/30">
-                <div className="flex items-center justify-center gap-2">
-                  <FaMap className="text-amber-700 dark:text-yellow-400" />
-                  <div className="text-2xl font-extrabold text-amber-900 dark:text-yellow-300">{lessons.length}</div>
+                {/* Captain */}
+                <div className="mt-2 md:mt-0">
+                  <div className={`flex items-center gap-2 text-sm font-medium ${darkMode ? 'text-yellow-200' : 'text-gray-800'}`}>
+                    <FaShip className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                    Captain:{' '}
+                    {classroomDetails.teacher?.firstName && classroomDetails.teacher?.lastName
+                      ? `${classroomDetails.teacher.firstName} ${classroomDetails.teacher.lastName}`
+                      : classroomDetails.teacher?.name || 'N/A'}
+                  </div>
                 </div>
-                <div className="mt-1 text-xs tracking-wide text-amber-700/80 dark:text-yellow-200/90 text-center">Lessons</div>
               </div>
-              <div className="px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200 shadow-sm dark:bg-slate-800/60 dark:border-yellow-500/30">
-                <div className="flex items-center justify-center gap-2">
-                  <FaCompass className="text-amber-700 dark:text-yellow-400" />
-                  <div className="text-2xl font-extrabold text-amber-900 dark:text-yellow-300">{activities.length}</div>
-                </div>
-                <div className="mt-1 text-xs tracking-wide text-amber-700/80 dark:text-yellow-200/90 text-center">Quests</div>
+
+              {/* Description */}
+              <div className="mt-3">
+                <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{classroomDetails.description}</p>
               </div>
-              <div className="px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200 shadow-sm dark:bg-slate-800/60 dark:border-yellow-500/30">
-                <div className="flex items-center justify-center gap-2">
-                  <FaUsers className="text-amber-700 dark:text-yellow-400" />
-                  <div className="text-2xl font-extrabold text-amber-900 dark:text-yellow-300">{totalStudents}</div>
+
+              {/* Ship Stats */}
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className={`px-4 py-3 rounded-xl border-2 shadow-sm ${
+                  darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+                }`}>
+                  <div className="flex items-center justify-center gap-2">
+                    <FaScroll className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                    <div className={`text-2xl font-extrabold ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>{lessons.length}</div>
+                  </div>
+                  <div className={`mt-1 text-xs tracking-wide text-center ${darkMode ? 'text-yellow-200/90' : 'text-yellow-700/80'}`}>Scrolls</div>
                 </div>
-                <div className="mt-1 text-xs tracking-wide text-amber-700/80 dark:text-yellow-200/90 text-center">Crew</div>
+                <div className={`px-4 py-3 rounded-xl border-2 shadow-sm ${
+                  darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+                }`}>
+                  <div className="flex items-center justify-center gap-2">
+                    <FaFeatherAlt className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                    <div className={`text-2xl font-extrabold ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>{activities.length}</div>
+                  </div>
+                  <div className={`mt-1 text-xs tracking-wide text-center ${darkMode ? 'text-yellow-200/90' : 'text-yellow-700/80'}`}>Quests</div>
+                </div>
+                <div className={`px-4 py-3 rounded-xl border-2 shadow-sm ${
+                  darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'
+                }`}>
+                  <div className="flex items-center justify-center gap-2">
+                    <FaUsers className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                    <div className={`text-2xl font-extrabold ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>{totalStudents}</div>
+                  </div>
+                  <div className={`mt-1 text-xs tracking-wide text-center ${darkMode ? 'text-yellow-200/90' : 'text-yellow-700/80'}`}>Crew</div>
+                </div>
               </div>
             </div>
           </div>
@@ -740,63 +759,71 @@ const TeacherClassroomPage = () => {
 
         {/* Tab Contents */}
         <div className="mt-6 tab-content-section">
-          {/* Quick Action Bar - Pirate themed */}
+          {/* Captain's Navigation - Pirate themed */}
           <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3 sticky top-16 md:static z-10">
             <button
               onClick={() => handleTabChange("lessons")}
-              title="Lessons (Scrolls)"
-              aria-label="Go to Lessons"
-              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md bg-amber-50/80 dark:bg-slate-800/60 ${
-                activeTab === 'lessons' ? 'border-amber-400 ring-2 ring-amber-300' : 'border-amber-200 dark:border-yellow-500/30'
+              title="Scrolls (Lessons)"
+              aria-label="Go to Scrolls"
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 ${
+                darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+              } ${
+                activeTab === 'lessons' ? (darkMode ? 'ring-2 ring-yellow-500/50' : 'ring-2 ring-yellow-400') : ''
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="text-amber-700 dark:text-yellow-300"><FaScroll /></span>
-                <span className="text-sm font-semibold text-amber-900 dark:text-yellow-100">Lessons</span>
+                <FaScroll className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                <span className={`text-sm font-semibold ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Scrolls</span>
               </div>
-              <span className="text-amber-400">→</span>
+              <span className={darkMode ? 'text-yellow-400' : 'text-yellow-600'}>→</span>
             </button>
             <button
               onClick={() => handleTabChange("activities")}
               title="Quests (Treasure & Games)"
               aria-label="Go to Quests"
-              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md bg-amber-50/80 dark:bg-slate-800/60 ${
-                activeTab === 'activities' ? 'border-amber-400 ring-2 ring-amber-300' : 'border-amber-200 dark:border-yellow-500/30'
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 ${
+                darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+              } ${
+                activeTab === 'activities' ? (darkMode ? 'ring-2 ring-yellow-500/50' : 'ring-2 ring-yellow-400') : ''
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="text-amber-700 dark:text-yellow-300"><FaFeatherAlt /></span>
-                <span className="text-sm font-semibold text-amber-900 dark:text-yellow-100">Quests</span>
+                <FaFeatherAlt className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                <span className={`text-sm font-semibold ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Quests</span>
               </div>
-              <span className="text-amber-400">→</span>
+              <span className={darkMode ? 'text-yellow-400' : 'text-yellow-600'}>→</span>
             </button>
             <button
               onClick={() => handleTabChange("class-record")}
-              title="Class Record (Coins & Compass)"
-              aria-label="Go to Class Record"
-              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md bg-amber-50/80 dark:bg-slate-800/60 ${
-                activeTab === 'class-record' ? 'border-amber-400 ring-2 ring-amber-300' : 'border-amber-200 dark:border-yellow-500/30'
+              title="Treasure Log (Coins & Compass)"
+              aria-label="Go to Treasure Log"
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 ${
+                darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+              } ${
+                activeTab === 'class-record' ? (darkMode ? 'ring-2 ring-yellow-500/50' : 'ring-2 ring-yellow-400') : ''
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="text-amber-700 dark:text-yellow-300"><FaCoins /></span>
-                <span className="text-sm font-semibold text-amber-900 dark:text-yellow-100">Class Record</span>
+                <FaCoins className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                <span className={`text-sm font-semibold ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Treasure Log</span>
               </div>
-              <span className="text-amber-400">→</span>
+              <span className={darkMode ? 'text-yellow-400' : 'text-yellow-600'}>→</span>
             </button>
             <button
               onClick={() => handleTabChange("students")}
-              title="Crew (Roster)"
+              title="Crew Roster"
               aria-label="Go to Crew"
-              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md bg-amber-50/80 dark:bg-slate-800/60 ${
-                activeTab === 'students' ? 'border-amber-400 ring-2 ring-amber-300' : 'border-amber-200 dark:border-yellow-500/30'
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 ${
+                darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+              } ${
+                activeTab === 'students' ? (darkMode ? 'ring-2 ring-yellow-500/50' : 'ring-2 ring-yellow-400') : ''
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="text-amber-700 dark:text-yellow-300"><FaUsers /></span>
-                <span className="text-sm font-semibold text-amber-900 dark:text-yellow-100">Crew</span>
+                <FaUsers className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                <span className={`text-sm font-semibold ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Crew</span>
               </div>
-              <span className="text-amber-400">→</span>
+              <span className={darkMode ? 'text-yellow-400' : 'text-yellow-600'}>→</span>
             </button>
           </div>
           <div className="flex justify-end my-5 gap-2">
@@ -806,19 +833,27 @@ const TeacherClassroomPage = () => {
                   onClick={handleOpenAddQuizModal}
                    title="Add Quiz"
                    aria-label="Add Quiz"
-                   className="text-amber-800 dark:text-yellow-300 font-semibold flex items-center gap-2 h-10 order-1 sm:order-2 hover:brightness-110 hover:underline"
+                   className={`font-semibold flex items-center gap-2 h-10 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
+                     darkMode 
+                       ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                       : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                   }`}
                 >
-                  <AiOutlinePlusCircle className="w-5 h-5" />
+                  <FaCoins className="w-4 h-4" />
                   Add Quiz
                 </button>
                 <button
                   onClick={handleOpenAddActivityModal}
                  title="Add Game Activity"
                  aria-label="Add Game Activity"
-                 className="text-amber-800 dark:text-yellow-300 font-semibold flex items-center gap-2 h-10 order-1 sm:order-2 hover:brightness-110 hover:underline"
+                 className={`font-semibold flex items-center gap-2 h-10 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
+                   darkMode 
+                     ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                     : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                 }`}
                 >
-                  <AiOutlinePlusCircle className="w-5 h-5" />
-                  Add Game
+                  <FaFeatherAlt className="w-4 h-4" />
+                  Add Quest
                 </button>
               </>
             )}
@@ -827,10 +862,14 @@ const TeacherClassroomPage = () => {
                 onClick={handleOpenAddModal}
                 title="Add Lesson"
                 aria-label="Add Lesson"
-                className="text-amber-800 dark:text-yellow-300 font-semibold flex items-center gap-2 h-10 order-1 sm:order-2 hover:brightness-110 hover:underline"
+                className={`font-semibold flex items-center gap-2 h-10 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
+                  darkMode 
+                    ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                    : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                }`}
               >
-                <AiOutlinePlusCircle className="w-5 h-5" />
-                Add Lesson
+                <FaScroll className="w-4 h-4" />
+                Add Scroll
               </button>
             )}
             {activeTab === "students" && (
@@ -838,10 +877,14 @@ const TeacherClassroomPage = () => {
                 onClick={() => setIsAddStudentModalOpen(true)}
                 title="Add Student"
                 aria-label="Add Student"
-                className="text-amber-800 dark:text-yellow-300 font-semibold flex items-center gap-2 h-10 order-1 sm:order-2 hover:brightness-110 hover:underline"
+                className={`font-semibold flex items-center gap-2 h-10 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
+                  darkMode 
+                    ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                    : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                }`}
               >
-                <AiOutlinePlusCircle className="w-5 h-5" />
-                Add Student
+                <FaUserPlus className="w-4 h-4" />
+                Recruit Crew
               </button>
             )}
           </div>
@@ -849,7 +892,9 @@ const TeacherClassroomPage = () => {
           {activeTab === "lessons" && (
             <div className="flex flex-col md:flex-row gap-6">
               
-              <div className="w-full md:w-1/3 rounded-tl-3xl rounded-bl-3xl overflow-hidden p-5 bg-[rgba(255,255,255,0.7)] dark:bg-slate-900/60 border-2 border-amber-700/50 dark:border-yellow-500/30" style={{ backgroundImage: "url('/images/game-images/treasure.png')", backgroundRepeat: 'no-repeat', backgroundPosition: 'right bottom', backgroundSize: '120px' }}>
+              <div className={`w-full md:w-1/3 rounded-2xl overflow-hidden p-5 border-2 shadow-lg ${
+                darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+              }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                 <LessonSidebar
                   lessons={lessons}
                   currentLessonId={currentLessonId}
@@ -858,61 +903,80 @@ const TeacherClassroomPage = () => {
               </div>
 
      
-              <div className="w-full md:w-2/3 rounded-lg shadow h-[70vh] sm:h-[75vh] md:h-[calc(85vh)] min-h-[420px] flex flex-col relative bg-amber-50/80 dark:bg-slate-800/70 border border-amber-200 dark:border-yellow-500/20">
+              <div className={`w-full md:w-2/3 rounded-2xl shadow-2xl h-[70vh] sm:h-[75vh] md:h-[calc(85vh)] min-h-[420px] flex flex-col relative border-2 backdrop-blur-sm ${
+                darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+              }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                 
                 {lessonLoading && (
-                  <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/70 flex items-center justify-center z-10">
+                  <div className={`absolute inset-0 flex items-center justify-center z-10 ${
+                    darkMode ? 'bg-[#0b1022]/90' : 'bg-[#f5ecd2]/90'
+                  }`}>
                     <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-                      <p className="text-gray-600 text-sm">Loading lesson...</p>
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yellow-500"></div>
+                      <p className={`text-sm ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>Hoisting the scroll...</p>
                     </div>
                   </div>
                 )}
                 
                 {!lessons || lessons.length === 0 ? (
-                  <main className="lesson-detail-placeholder p-6 bg-amber-50/80 dark:bg-slate-800/60 rounded-md min-h-[300px] flex items-center justify-center shadow flex-1 border border-amber-200 dark:border-yellow-500/20">
+                  <main className={`lesson-detail-placeholder p-6 rounded-2xl min-h-[300px] flex items-center justify-center shadow-2xl flex-1 border-2 backdrop-blur-sm ${
+                    darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+                  }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                     <div className="text-center">
+                      <FaScroll className={`mx-auto mb-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'} text-6xl`} />
                       <Header
                         type="h1"
                         weight="bold"
                         size="3xl"
-                        className="!text-4xl text-amber-900 dark:text-yellow-100 mb-4"
+                        className={`!text-4xl mb-4 ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}
                       >
-                        Add New Lesson
+                        Create Your First Scroll
                       </Header>
-                      <p className="text-gray-500 text-lg mb-4">This classroom currently has no lessons.</p>
+                      <p className={`text-lg mb-6 ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>This ship has no scrolls yet. Time to chart your course!</p>
                       <Button
                         variant="default"
                         size="sm"
                         rounded="full"
-                        className="flex items-center gap-2 h-10"
+                        className={`flex items-center gap-2 h-10 ${
+                          darkMode 
+                            ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                            : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                        }`}
                         onClick={handleOpenAddModal}
                       >
-                        Add Your First Lesson
+                        <FaScroll className="w-4 h-4" />
+                        Create First Scroll
                       </Button>
                     </div>
                   </main>
                 ) : loading && currentLessonId && !selectedLesson ? (
-                  <main className="lesson-detail-placeholder p-6 rounded-md min-h-[300px] flex items-center justify-center shadow flex-1 bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200/50 dark:border-yellow-500/20">
+                  <main className={`lesson-detail-placeholder p-6 rounded-2xl min-h-[300px] flex items-center justify-center shadow-2xl flex-1 border-2 backdrop-blur-sm ${
+                    darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+                  }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                     <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-                      <p className="text-gray-500 text-lg">Loading lesson details...</p>
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yellow-500"></div>
+                      <p className={`text-lg ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>Unrolling the scroll...</p>
                     </div>
                   </main>
                 ) : selectedLesson ? (
                   <div className="flex flex-col h-full">
                     {/* Fixed Title Section */}
-                    <div className="p-5 border-b border-amber-200 dark:border-yellow-500/30 bg-amber-100/60 dark:bg-slate-900/40">
+                    <div className={`p-5 border-b-2 backdrop-blur-sm ${
+                      darkMode ? 'border-yellow-700/40 bg-[#0f1428]/80' : 'border-yellow-300 bg-[#fbf4de]/80'
+                    }`}>
                       <div className="flex justify-between items-center">
-                        <Header
-                          type="h2"
-                          weight="bold"
-                          className="!text-4xl text-amber-900 dark:text-yellow-200 "
-                        >{selectedLesson.title}</Header>
+                        <div className="flex items-center gap-3">
+                          <FaScroll className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                          <Header
+                            type="h2"
+                            weight="bold"
+                            className={`!text-4xl ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}
+                          >{selectedLesson.title}</Header>
+                        </div>
                         <button 
                           onClick={handleOpenEditLessonModal}
-                          className="text-amber-800 hover:text-amber-900 dark:text-yellow-300 dark:hover:text-yellow-200 transition-colors p-1"
-                          title="Edit lesson details"
+                          className={`transition-colors p-1 ${darkMode ? 'text-yellow-400 hover:text-yellow-300' : 'text-yellow-600 hover:text-yellow-700'}`}
+                          title="Edit scroll details"
                         >
                           <MdEdit className="w-6 h-6" />
                         </button>
@@ -922,17 +986,19 @@ const TeacherClassroomPage = () => {
                     {/* Scrollable Content Section */}
                     <div className="flex-1 overflow-y-auto p-5">
                       {stats && (
-                        <div className="rounded-lg p-4 shadow-sm mb-6 border border-amber-200 dark:border-yellow-500/30 bg-amber-50/70 dark:bg-slate-900/40">
+                        <div className={`rounded-2xl p-4 shadow-sm mb-6 border-2 backdrop-blur-sm ${
+                          darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de]/80 border-yellow-300'
+                        }`}>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center gap-2" title={`Students who read the content`}>
-                                <BookOpen className="w-4 h-4 text-amber-700 dark:text-yellow-300" />
-                                <span className="text-amber-900 dark:text-yellow-100">{stats.studentsRead} / {stats.totalStudents} Read</span>
+                              <div className="flex items-center gap-2" title={`Crew members who read the scroll`}>
+                                <BookOpen className={`w-4 h-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+                                <span className={darkMode ? 'text-yellow-200' : 'text-yellow-800'}>{stats.studentsRead} / {stats.totalStudents} Read</span>
                               </div>
                               {selectedLesson.activities?.some(activity => activity?.type === 'QUIZ') && (
-                                <div className="flex items-center gap-2" title={`Students who completed the quiz`}>
-                                  <CheckCircle className="w-4 h-4 text-amber-700 dark:text-yellow-300" />
-                                  <span className="text-amber-900 dark:text-yellow-100">{stats.studentsCompletedQuiz} / {stats.totalStudents} Completed Quiz</span>
+                                <div className="flex items-center gap-2" title={`Crew members who completed the quest`}>
+                                  <CheckCircle className={`w-4 h-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+                                  <span className={darkMode ? 'text-yellow-200' : 'text-yellow-800'}>{stats.studentsCompletedQuiz} / {stats.totalStudents} Completed Quest</span>
                                 </div>
                               )}
                             </div>
@@ -953,54 +1019,61 @@ const TeacherClassroomPage = () => {
                             </div>
                           ))}
 
-                          {/* Quiz Section */}
+                          {/* Quest Section */}
                           {selectedLesson.activities?.filter(activity => activity?.type === 'QUIZ' && activity?.id)?.length > 0 && (
                             <div className="mt-8">
                               <div className="quiz-section">
-                                <Header type="h3" weight="semibold" className="mb-4 text-amber-900 dark:text-yellow-200">
-                                  Lesson Quiz
-                                </Header>
+                                <div className="flex items-center gap-2 mb-4">
+                                  <FaCoins className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                                  <Header type="h3" weight="semibold" className={`${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
+                                    Scroll Quest
+                                  </Header>
+                                </div>
                                 {selectedLesson.activities
                                   .filter(activity => activity?.type === 'QUIZ' && activity?.id)
                                   .map(activity => {
                                     const quizData = quizDataMap[activity.id];
                                     return (
-                                      <div key={activity.id} className="mb-6 p-4 rounded-lg shadow border border-amber-200 dark:border-yellow-500/30 bg-amber-50/70 dark:bg-slate-900/40">
-                                        <h4 className="text-lg font-semibold mb-2 text-amber-900 dark:text-yellow-200">{activity.title || quizData?.quizName || 'Quiz'}</h4>
-                                        <p className="text-amber-800/90 dark:text-yellow-100/90 mb-4">{activity.description || quizData?.description}</p>
+                                      <div key={activity.id} className={`mb-6 p-4 rounded-2xl shadow border-2 backdrop-blur-sm ${
+                                        darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de]/80 border-yellow-300'
+                                      }`}>
+                                        <h4 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>{activity.title || quizData?.quizName || 'Quest'}</h4>
+                                        <p className={`mb-4 ${darkMode ? 'text-yellow-300/90' : 'text-yellow-700/90'}`}>{activity.description || quizData?.description}</p>
                                         
-                                        {/* Quiz Details */}
+                                        {/* Quest Details */}
                                         <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                                           <div>
-                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Time Limit:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.timeLimitMinutes || 0} minutes</span>
+                                            <span className={`font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Time Limit:</span> <span className={darkMode ? 'text-yellow-300' : 'text-yellow-700'}>{quizData?.timeLimitMinutes || 0} minutes</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Quiz Type:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.quizType || 'Standard'}</span>
+                                            <span className={`font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Quest Type:</span> <span className={darkMode ? 'text-yellow-300' : 'text-yellow-700'}>{quizData?.quizType || 'Standard'}</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Passing Score:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.passingScore || 0}/{quizData?.overallScore || 0}</span>
+                                            <span className={`font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Passing Score:</span> <span className={darkMode ? 'text-yellow-300' : 'text-yellow-700'}>{quizData?.passingScore || 0}/{quizData?.overallScore || 0}</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Max Attempts:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.maxAttempts || '1'}</span>
+                                            <span className={`font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Max Attempts:</span> <span className={darkMode ? 'text-yellow-300' : 'text-yellow-700'}>{quizData?.maxAttempts || '1'}</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Available From:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.availableFrom ? new Date(quizData.availableFrom).toLocaleString() : 'Not set'}</span>
+                                            <span className={`font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Available From:</span> <span className={darkMode ? 'text-yellow-300' : 'text-yellow-700'}>{quizData?.availableFrom ? new Date(quizData.availableFrom).toLocaleString() : 'Not set'}</span>
                                           </div>
                                           <div>
-                                            <span className="font-medium text-amber-900 dark:text-yellow-200">Available To:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData?.availableTo ? new Date(quizData.availableTo).toLocaleString() : 'Not set'}</span>
+                                            <span className={`font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Available To:</span> <span className={darkMode ? 'text-yellow-300' : 'text-yellow-700'}>{quizData?.availableTo ? new Date(quizData.availableTo).toLocaleString() : 'Not set'}</span>
                                           </div>
                                           {quizData?.attempts && (
                                             <div>
-                                              <span className="font-medium text-amber-900 dark:text-yellow-200">Total Attempts:</span> <span className="text-amber-800 dark:text-yellow-100">{quizData.attempts.length || 0}</span>
+                                              <span className={`font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Total Attempts:</span> <span className={darkMode ? 'text-yellow-300' : 'text-yellow-700'}>{quizData.attempts.length || 0}</span>
                                             </div>
                                           )}
                                         </div>
                                         
-                                        {/* Quiz Status */}
-                                        <div className="mt-4 p-3 rounded border border-amber-200 dark:border-yellow-500/30 bg-amber-100/60 dark:bg-slate-900/40">
-                                          <p className="font-medium text-amber-900 dark:text-yellow-200">Quiz Status:</p>
-                                          <p className="text-amber-800 dark:text-yellow-100">
-                                            {stats?.studentsCompletedQuiz || 0} out of {stats?.totalStudents || 0} students have completed this quiz.
+                                        {/* Quest Status */}
+                                        <div className={`mt-4 p-3 rounded-2xl border-2 backdrop-blur-sm ${
+                                          darkMode ? 'bg-[#0f1428]/60 border-yellow-700/30' : 'bg-[#fbf4de]/60 border-yellow-300'
+                                        }`}>
+                                          <p className={`font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Quest Status:</p>
+                                          <p className={darkMode ? 'text-yellow-300' : 'text-yellow-700'}>
+                                            {stats?.studentsCompletedQuiz || 0} out of {stats?.totalStudents || 0} crew members have completed this quest.
                                           </p>
                                         </div>
                                       </div>
@@ -1012,7 +1085,8 @@ const TeacherClassroomPage = () => {
                         </div>
                       ) : (
                         <div className="text-center py-8">
-                          <p className="text-amber-800/90 dark:text-yellow-100/90">No content has been added to this lesson yet.</p>
+                          <FaScroll className={`mx-auto mb-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'} text-4xl`} />
+                          <p className={`${darkMode ? 'text-yellow-300/90' : 'text-yellow-700/90'}`}>No content has been added to this scroll yet.</p>
                         </div>
                       )}
                     </div>
@@ -1061,13 +1135,18 @@ const TeacherClassroomPage = () => {
                     )}
                   </div>
                 ) : lessons.length > 0 && !currentLessonId ? (
-                  <main className="lesson-detail-placeholder p-6 bg-amber-50/80 dark:bg-slate-800/60 rounded-md min-h-[300px] flex items-center justify-center shadow flex-1 border border-amber-200 dark:border-yellow-500/20">
-                    <p className="text-amber-800/90 dark:text-yellow-100/90 text-lg">Please select a lesson to view its details.</p>
+                  <main className={`lesson-detail-placeholder p-6 rounded-2xl min-h-[300px] flex items-center justify-center shadow-2xl flex-1 border-2 backdrop-blur-sm ${
+                    darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+                  }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
+                    <p className={`text-lg ${darkMode ? 'text-yellow-300/90' : 'text-yellow-700/90'}`}>Please select a scroll to view its details.</p>
                   </main>
                 ) : (
-                  <main className="lesson-detail-placeholder p-6 bg-amber-50/80 dark:bg-slate-800/60 rounded-md min-h-[300px] flex items-center justify-center shadow flex-1 border border-amber-200 dark:border-yellow-500/20">
+                  <main className={`lesson-detail-placeholder p-6 rounded-2xl min-h-[300px] flex items-center justify-center shadow-2xl flex-1 border-2 backdrop-blur-sm ${
+                    darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+                  }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
                     <div className="text-center">
-                      <p className="text-amber-800/90 dark:text-yellow-100/90 text-lg mb-4">This classroom currently has no lessons.</p>
+                      <FaScroll className={`mx-auto mb-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'} text-4xl`} />
+                      <p className={`text-lg mb-4 ${darkMode ? 'text-yellow-300/90' : 'text-yellow-700/90'}`}>This ship currently has no scrolls.</p>
                     </div>
                   </main>
                 )}
@@ -1076,17 +1155,19 @@ const TeacherClassroomPage = () => {
           )}
 
           {activeTab === "activities" && (
-            <div className="bg-amber-50/80 dark:bg-slate-900/50 p-6 rounded-lg shadow border border-amber-200 dark:border-yellow-500/20">
+            <div className={`p-6 rounded-2xl shadow-2xl border-2 backdrop-blur-sm ${
+              darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+            }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
               <div className="mb-8">
-                <div className="flex items-center gap-2 mb-3 text-amber-900 dark:text-yellow-200">
-                  <FaCoins />
-                  <span className="font-semibold">Quizzes</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <FaCoins className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                  <span className={`font-semibold ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Treasure Quests</span>
                 </div>
                 <QuizManager classroomId={classroomId} refreshTrigger={activityRefreshTrigger} />
               </div>
-              <div className="flex items-center gap-2 mb-3 text-amber-900 dark:text-yellow-200">
-                <FaAnchor />
-                <span className="font-semibold">Game Activities</span>
+              <div className="flex items-center gap-2 mb-3">
+                <FaFeatherAlt className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                <span className={`font-semibold ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Adventure Quests</span>
               </div>
               <ActivityManager 
                 classroomId={classroomId} 
@@ -1096,7 +1177,9 @@ const TeacherClassroomPage = () => {
           )}
 
           {activeTab === "class-record" && (
-            <div className="bg-amber-50/80 dark:bg-slate-900/50 p-6 rounded-lg shadow border border-amber-200 dark:border-yellow-500/20">
+            <div className={`p-6 rounded-2xl shadow-2xl border-2 backdrop-blur-sm ${
+              darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+            }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
               <ClassRecordManager 
                 classroomId={classroomId}
                 teacherId={user?.id}
@@ -1105,22 +1188,31 @@ const TeacherClassroomPage = () => {
           )}
 
           {activeTab === "students" && (
-            <div className="bg-amber-50/80 dark:bg-slate-900/50 p-6 rounded-lg shadow border border-amber-200 dark:border-yellow-500/20">
+            <div className={`p-6 rounded-2xl shadow-2xl border-2 backdrop-blur-sm ${
+              darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+            }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
               <div className="mb-6">
-                <Header type="h2" fontSize="2xl" weight="bold" className="text-amber-900 dark:text-yellow-200 mb-2">
-                  Crew Roster ({classroomStudents.length})
-                </Header>
-                <p className="text-amber-800/90 dark:text-yellow-100/90 mb-4">Manage students enrolled in this classroom</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <FaUsers className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                  <Header type="h2" fontSize="2xl" weight="bold" className={`${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
+                    Crew Roster ({classroomStudents.length})
+                  </Header>
+                </div>
+                <p className={`mb-4 ${darkMode ? 'text-yellow-300/90' : 'text-yellow-700/90'}`}>Manage crew members aboard this ship</p>
                 
-                {/* Search box for enrolled students */}
+                {/* Search box for crew members */}
               <div className="relative w-full md:max-w-md">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <CiSearch className="text-gray-400" />
+                    <FaMapMarkedAlt className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
                   </div>
                   <Input
                     type="text"
-                    placeholder="Search enrolled students..."
-                    className="pl-10 pr-3 py-2 border border-amber-300 bg-white/70 dark:bg-slate-800/50 dark:text-yellow-100 dark:border-yellow-500/30 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                    placeholder="Search crew members..."
+                    className={`pl-10 pr-3 py-2 border-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 sm:text-sm ${
+                      darkMode 
+                        ? 'bg-[#0f1428] text-gray-100 border-yellow-700/40 focus:ring-yellow-500/50 focus:border-yellow-500' 
+                        : 'bg-[#fbf4de] text-gray-900 border-yellow-300 focus:ring-yellow-500/50 focus:border-yellow-500'
+                    }`}
                     value={enrolledStudentsSearchTerm}
                     onChange={(e) => setEnrolledStudentsSearchTerm(e.target.value)}
                   />
@@ -1129,77 +1221,75 @@ const TeacherClassroomPage = () => {
 
               {loadingStudents ? (
                 <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yellow-500"></div>
+                    <p className={`text-sm ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>Gathering the crew...</p>
+                  </div>
                 </div>
               ) : classroomStudents.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-amber-800/90 dark:text-yellow-100/90 mb-4">No students enrolled in this classroom yet.</p>
+                  <FaUsers className={`mx-auto mb-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'} text-4xl`} />
+                  <p className={`mb-6 text-lg ${darkMode ? 'text-yellow-300/90' : 'text-yellow-700/90'}`}>No crew members aboard this ship yet.</p>
                   <Button
                     variant="default"
                     size="sm"
                     onClick={() => setIsAddStudentModalOpen(true)}
-                    className="flex items-center gap-2"
+                    className={`flex items-center gap-2 ${
+                      darkMode 
+                        ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                        : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                    }`}
                   >
-                    <AiOutlinePlusCircle className="w-4 h-4" />
-                    Add First Student
+                    <FaUserPlus className="w-4 h-4" />
+                    Recruit First Crew Member
                   </Button>
                 </div>
               ) : getFilteredEnrolledStudents().length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-amber-800/90 dark:text-yellow-100/90 mb-4">No students found matching '{enrolledStudentsSearchTerm}' <span className="underline text-amber-700 dark:text-yellow-300" onClick={() => setEnrolledStudentsSearchTerm('')}>clear search</span></p>
-                  {/* <Button
-                    variant="link"
-                    size="sm"
-                    onClick={() => setEnrolledStudentsSearchTerm('')}
-                    className="flex items-center gap-2"
-                  >
-                    Clear Search
-                  </Button> */}
+                  <FaMapMarkedAlt className={`mx-auto mb-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'} text-4xl`} />
+                  <p className={`mb-4 ${darkMode ? 'text-yellow-300/90' : 'text-yellow-700/90'}`}>No crew members found matching '{enrolledStudentsSearchTerm}' <span className={`underline ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} onClick={() => setEnrolledStudentsSearchTerm('')}>clear search</span></p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-amber-200 dark:divide-yellow-500/30">
-                    <thead className="bg-amber-100/60 dark:bg-slate-900/40">
+                    <thead className={`${darkMode ? 'bg-[#0f1428]/80' : 'bg-[#fbf4de]/80'}`}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 dark:text-yellow-200 uppercase tracking-wider">
-                          Student
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
+                          Crew Member
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 dark:text-yellow-200 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
                           Username
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 dark:text-yellow-200 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
                           Email
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 dark:text-yellow-200 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white/70 dark:bg-slate-900/40 divide-y divide-amber-100 dark:divide-yellow-500/20">
+                    <tbody className={`${darkMode ? 'bg-[#0b1022]/60' : 'bg-[#f5ecd2]/60'} divide-y divide-amber-100 dark:divide-yellow-500/20`}>
                       {getFilteredEnrolledStudents().map(student => (
-                        <tr key={student.id} className="hover:bg-amber-50/80 dark:hover:bg-slate-800/60">
+                        <tr key={student.id} className={`hover:${darkMode ? 'bg-[#0f1428]/80' : 'bg-[#fbf4de]/80'}`}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              {/* <Avatar className="h-10 w-10 mr-3">
-                                {renderStudentAvatar(student)}
-                              </Avatar> */}
                                <Avatar key={student.id} className="h-10 w-10 mr-3">
                                 {renderStudentAvatar(student)}
                               </Avatar>
                               <div>
-                                <div className="text-sm font-medium text-amber-900 dark:text-yellow-100">
+                                <div className={`text-sm font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
                                   {student.firstName} {student.lastName}
                                 </div>
-                                <div className="text-sm text-amber-700/80 dark:text-yellow-300/80">
+                                <div className={`text-sm ${darkMode ? 'text-yellow-300/80' : 'text-yellow-700/80'}`}>
                                   ID: {student.id}
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-amber-900 dark:text-yellow-100">
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
                             @{student.username}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-amber-900 dark:text-yellow-100">
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
                             {student.email}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1207,9 +1297,10 @@ const TeacherClassroomPage = () => {
                               variant="danger"
                               size="sm"
                               onClick={() => handleRemoveStudent(student.id)}
-                              className="text-red-700 hover:text-red-900"
+                              className="flex items-center gap-1 text-red-700 hover:text-red-900"
                             >
-                              Remove
+                              <FaTrash className="w-3 h-3" />
+                              Walk the Plank
                             </Button>
                           </td>
                         </tr>
@@ -1273,7 +1364,7 @@ const TeacherClassroomPage = () => {
           setStudentSearchResults([]);
           setError('');
         }}
-        title={`Add Student to ${classroomDetails?.name || 'Classroom'}`}
+        title={`Recruit Crew Member for ${classroomDetails?.name || 'Ship'}`}
         maxWidth="max-w-lg"
       >
         {error && isAddStudentModalOpen && (
@@ -1282,7 +1373,7 @@ const TeacherClassroomPage = () => {
         <div className="flex flex-col gap-4">
           <div>
             <Label htmlFor="studentSearch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Search Students
+              Search for New Crew Members
             </Label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1291,23 +1382,32 @@ const TeacherClassroomPage = () => {
               <Input
                 type="text"
                 id="studentSearch"
-                placeholder="Search by first name, last name, or username"
+                placeholder="Search by name or username..."
                 className="w-full pl-10 pr-3 py-2 border dark:text-gray-300 border-gray-300 dark:border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={studentSearchTerm}
                 onChange={(e) => setStudentSearchTerm(e.target.value)}
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Search by first name, last name, or username. Results will show students not already in this classroom.
+              Search by name or username. Results will show crew members not already aboard this ship.
             </p>
           </div>
           
           {searchingStudents ? (
-            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">Searching...</div>
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300 flex items-center justify-center gap-2">
+              <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-yellow-500"></div>
+              <span>Searching the seas...</span>
+            </div>
           ) : studentSearchTerm && studentSearchResults.length === 0 ? (
-            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">No students found matching '{studentSearchTerm}'</div>
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300 flex flex-col items-center gap-2">
+              <FaUsers className="text-2xl text-gray-400" />
+              <span>No crew members found matching '{studentSearchTerm}'</span>
+            </div>
           ) : !studentSearchTerm ? (
-            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300">Type to search for students</div>
+            <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-300 flex flex-col items-center gap-2">
+              <FaCompass className="text-2xl text-gray-400" />
+              <span>Type to search for new crew members</span>
+            </div>
           ) : (
             <div className="mt-2 max-h-60 overflow-y-auto">
               {studentSearchResults.map(student => (
@@ -1330,9 +1430,15 @@ const TeacherClassroomPage = () => {
                     </div>
                   </div>
                   {student.inClassroom ? (
-                    <span className="text-sm text-green-600 font-medium">Already in classroom</span>
+                    <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                      <FaAnchor className="w-3 h-3" />
+                      Already aboard
+                    </span>
                   ) : student.isAdding ? (
-                    <span className="text-sm text-blue-600 font-medium animate-pulse">Adding...</span>
+                    <span className="text-sm text-blue-600 font-medium animate-pulse flex items-center gap-1">
+                      <FaShip className="w-3 h-3" />
+                      Recruiting...
+                    </span>
                   ) : (
                     <div className="flex items-center">
                       <Button
@@ -1342,9 +1448,10 @@ const TeacherClassroomPage = () => {
                         }}
                         variant="default"
                         size="sm"
-                        className="text-sm"
+                        className="text-sm flex items-center gap-1"
                       >
-                        Add
+                        <FaUserPlus className="w-3 h-3" />
+                        Recruit
                       </Button>
                     </div>
                   )}

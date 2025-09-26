@@ -8,7 +8,8 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import AddQuizModal from './AddQuizModal';
 import Modal from "../../ui/modal";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaScroll, FaCoins, FaCompass, FaShip, FaAnchor, FaMap, FaFeatherAlt } from "react-icons/fa";
+import { useTheme } from "../../context/ThemeContext";
 import { toast } from 'react-hot-toast';
 
 // Quill editor modules and formats
@@ -32,6 +33,7 @@ const quillFormats = [
 ];
 
 const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
+  const { darkMode } = useTheme();
   const [lessonData, setLessonData] = useState({
     title: "",
     description: "",
@@ -354,8 +356,14 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
         onClick={handleSubmit}
         rounded="full"
         disabled={isSubmitting}
+        className={`transition-all duration-300 hover:scale-105 ${
+          darkMode 
+            ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+            : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+        }`}
       >
-        {isSubmitting ? "Saving..." : "Create Lesson"}
+        <FaScroll className="mr-2" />
+        {isSubmitting ? "Creating Scroll..." : "Create Scroll"}
       </Button>
     </>
   );
@@ -364,31 +372,37 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add New Lesson"
+      title="Create New Scroll"
       footer={modalFooter}
     >
-      <div className="border-b border-gray-300 dark:border-gray-600 flex-shrink-0">
+      <div className={`border-b flex-shrink-0 ${
+        darkMode ? 'border-yellow-700/40' : 'border-yellow-300'
+      }`}>
         <div className="flex justify-center">
-          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <div className={`flex space-x-1 rounded-lg p-1 ${
+            darkMode ? 'bg-[#0f1428]' : 'bg-[#fbf4de]'
+          }`}>
             <button
               onClick={() => handleTabChange(0)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 flex items-center gap-2 ${
                 activeTab === 0
-                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  ? (darkMode ? 'bg-yellow-500 text-[#0b1022] shadow-sm' : 'bg-yellow-600 text-white shadow-sm')
+                  : (darkMode ? 'text-yellow-300 hover:text-yellow-200' : 'text-yellow-700 hover:text-yellow-800')
               }`}
             >
-              Lesson Content
+              <FaScroll className="text-sm" />
+              Scroll Content
             </button>
             <button
               onClick={() => handleTabChange(1)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 flex items-center gap-2 ${
                 activeTab === 1
-                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  ? (darkMode ? 'bg-yellow-500 text-[#0b1022] shadow-sm' : 'bg-yellow-600 text-white shadow-sm')
+                  : (darkMode ? 'text-yellow-300 hover:text-yellow-200' : 'text-yellow-700 hover:text-yellow-800')
               }`}
             >
-              Add Quiz
+              <FaCoins className="text-sm" />
+              Add Quest
             </button>
           </div>
         </div>
@@ -397,21 +411,33 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
       <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden mt-5">
         <div className="overflow-y-auto flex-grow">
           {error && (
-            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-md">
-              {error}
+            <div className={`mb-4 p-3 rounded-md border-2 ${
+              darkMode ? 'bg-red-900/30 text-red-300 border-red-700/40' : 'bg-red-100 text-red-700 border-red-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                <FaAnchor className="text-sm" />
+                <span>{error}</span>
+              </div>
             </div>
           )}
 
           {activeTab === 0 && (
             <>
               <div className="mb-4">
-                <h6 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Lesson Details
-                </h6>
+                <div className="flex items-center gap-2 mb-4">
+                  <FaScroll className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                  <h6 className={`text-lg font-semibold ${
+                    darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                  }`}>
+                    Scroll Details
+                  </h6>
+                </div>
                 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Lesson Title *
+                  <label className={`block text-sm font-medium mb-2 ${
+                    darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                  }`}>
+                    Scroll Title *
                   </label>
                   <input
                     type="text"
@@ -419,19 +445,30 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                     value={lessonData.title}
                     onChange={handleLessonChange}
                     required
-                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
-                    placeholder="Enter lesson title"
+                    className={`w-full p-3 border-2 rounded-md transition-colors ${
+                      darkMode 
+                        ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200 focus:ring-yellow-500 focus:border-yellow-500' 
+                        : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800 focus:ring-yellow-500 focus:border-yellow-500'
+                    }`}
+                    placeholder="Enter scroll title"
                   />
                 </div>
               </div>
               
               <div className="mb-4">
-                <h6 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Lesson Content
-                </h6>
+                <div className="flex items-center gap-2 mb-4">
+                  <FaMap className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+                  <h6 className={`text-lg font-semibold ${
+                    darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                  }`}>
+                    Scroll Content
+                  </h6>
+                </div>
                 
                 <div className="mb-4">
-                  <div className="border border-gray-300 dark:border-gray-600 rounded-md">
+                  <div className={`border-2 rounded-md ${
+                    darkMode ? 'border-yellow-700/40' : 'border-yellow-300'
+                  }`}>
                     <ReactQuill 
                       theme="snow"
                       value={contentBlock.structuredContent} 
@@ -439,7 +476,7 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                       modules={quillModules}
                       formats={quillFormats}
                       style={{ height: '250px', marginBottom: '40px' }}
-                      className="dark:!text-gray-300"
+                      className={darkMode ? 'dark:!text-yellow-200' : '!text-yellow-800'}
                     />
                   </div>
                 </div>
@@ -455,10 +492,15 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                   id="has-quiz"
                   checked={hasQuiz}
                   onChange={(e) => setHasQuiz(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-2"
+                  className={`h-4 w-4 rounded mr-2 ${
+                    darkMode ? 'text-yellow-500 border-yellow-700/40' : 'text-yellow-600 border-yellow-300'
+                  }`}
                 />
-                <label htmlFor="has-quiz" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Add Quiz to this Lesson
+                <label htmlFor="has-quiz" className={`text-sm font-medium flex items-center gap-2 ${
+                  darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                }`}>
+                  <FaCoins className="text-sm" />
+                  Add Treasure Quest to this Scroll
                 </label>
               </div>
 
@@ -466,81 +508,113 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                 <div className="space-y-6 mt-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Quiz Title *
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                      }`}>
+                        Quest Title *
                       </label>
                       <input
                         type="text"
                         value={quizData.title}
                         onChange={(e) => setQuizData(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        className={`w-full p-2 border-2 rounded transition-colors ${
+                          darkMode 
+                            ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                            : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                        }`}
                         required={true}
-                        placeholder="Enter quiz title"
+                        placeholder="Enter quest title"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Quiz Type
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                      }`}>
+                        Quest Type
                       </label>
                       <select
                         value={quizData.quizType}
                         onChange={(e) => setQuizData(prev => ({ ...prev, quizType: e.target.value }))}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm"
+                        className={`w-full p-2 border-2 rounded text-sm transition-colors ${
+                          darkMode 
+                            ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                            : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                        }`}
                         required={true}
                       >
-                        <option value="PRACTICE_QUIZ">Practice Quiz</option>
-                        <option value="MAJOR_EXAMS">Major Exams</option>
-                        <option value="POP_QUIZ">Pop Quiz</option>
-                        <option value="DIAGNOSTIC_QUIZ">Diagnostic Quiz</option>
-                        <option value="ACTIVITY">Activity</option>
+                        <option value="PRACTICE_QUIZ">Practice Quest</option>
+                        <option value="MAJOR_EXAMS">Major Treasure Hunt</option>
+                        <option value="POP_QUIZ">Surprise Quest</option>
+                        <option value="DIAGNOSTIC_QUIZ">Navigation Test</option>
+                        <option value="ACTIVITY">Adventure Quest</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Overall Score
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                      }`}>
+                        Total Treasure Value
                       </label>
                       <input
                         type="number"
                         value={quizData.overallScore}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        className={`w-full p-2 border-2 rounded ${
+                          darkMode 
+                            ? 'border-yellow-700/40 bg-[#0f1428]/50 text-yellow-200' 
+                            : 'border-yellow-300 bg-[#fbf4de]/50 text-yellow-800'
+                        }`}
                         readOnly
                         disabled
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                      }`}>
                         Passing Score
                       </label>
                       <input
                         type="number"
                         value={quizData.passingScore}
                         onChange={(e) => setQuizData(prev => ({ ...prev, passingScore: e.target.value }))}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        className={`w-full p-2 border-2 rounded transition-colors ${
+                          darkMode 
+                            ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                            : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                        }`}
                         required
                         min="0"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Time Limit (minutes)
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                      }`}>
+                        Quest Time Limit (minutes)
                       </label>
                       <input
                         type="number"
                         value={quizData.timeLimitMinutes}
                         onChange={(e) => setQuizData(prev => ({ ...prev, timeLimitMinutes: e.target.value }))}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        className={`w-full p-2 border-2 rounded transition-colors ${
+                          darkMode 
+                            ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                            : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                        }`}
                         required
                         min="1"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Available From
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                      }`}>
+                        Quest Available From
                       </label>
                       <input
                         type="datetime-local"
@@ -549,14 +623,20 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                           ...prev, 
                           availableFrom: e.target.value + ':00'
                         }))}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        className={`w-full p-2 border-2 rounded transition-colors ${
+                          darkMode 
+                            ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                            : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                        }`}
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Available To
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                      }`}>
+                        Quest Available To
                       </label>
                       <input
                         type="datetime-local"
@@ -565,7 +645,11 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                           ...prev, 
                           availableTo: e.target.value + ':00'
                         }))}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        className={`w-full p-2 border-2 rounded transition-colors ${
+                          darkMode 
+                            ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                            : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                        }`}
                         required
                       />
                     </div>
@@ -580,17 +664,23 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                             repeatable: e.target.checked,
                             maxAttempts: e.target.checked ? 2 : 1
                           }))}
-                          className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-2"
+                          className={`h-4 w-4 rounded mr-2 ${
+                            darkMode ? 'text-yellow-500 border-yellow-700/40' : 'text-yellow-600 border-yellow-300'
+                          }`}
                           id="allow-multiple-attempts"
                         />
-                        <label htmlFor="allow-multiple-attempts" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Allow Multiple Attempts
+                        <label htmlFor="allow-multiple-attempts" className={`text-sm font-medium ${
+                          darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                        }`}>
+                          Allow Multiple Quest Attempts
                         </label>
                       </div>
                       {quizData.repeatable && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Max Attempts (per student)
+                          <label className={`block text-sm font-medium mb-2 ${
+                            darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                          }`}>
+                            Max Attempts (per crew member)
                           </label>
                           <input
                             type="number"
@@ -598,14 +688,22 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                             min="2"
                             max="5"
                             onChange={(e) => setQuizData(prev => ({ ...prev, maxAttempts: e.target.value }))}
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            className={`w-full p-2 border-2 rounded transition-colors ${
+                              darkMode 
+                                ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                                : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                            }`}
                             required={quizData.repeatable}
                           />
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must be between 2 and 5 attempts</p>
+                          <p className={`text-xs mt-1 ${
+                            darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                          }`}>Must be between 2 and 5 attempts</p>
                         </div>
                       )}
                       {!quizData.repeatable && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Single attempt only</p>
+                        <p className={`text-xs mt-1 ${
+                          darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                        }`}>Single attempt only</p>
                       )}
                     </div>
                   </div>
@@ -613,15 +711,22 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                   {/* Questions Section */}
                   <div className="space-y-6">
                     {quizData.questions.map((question, qIndex) => (
-                      <div key={qIndex} className="p-4 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-800">
+                      <div key={qIndex} className={`p-4 border-2 rounded transition-all duration-300 hover:scale-[1.01] ${
+                        darkMode ? 'border-yellow-700/40 bg-[#0b1022]/50' : 'border-yellow-300 bg-[#f5ecd2]/50'
+                      }`}>
                         <div className="flex justify-between items-center mb-3">
-                          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-300">
-                            Question {qIndex + 1}
+                          <label className={`block text-sm font-semibold flex items-center gap-2 ${
+                            darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                          }`}>
+                            <FaCompass className="text-sm" />
+                            Quest Challenge {qIndex + 1}
                           </label>
                           <div className="flex items-center gap-2">
                             <div className="flex items-center">
-                              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mr-2">
-                                Points:
+                              <label className={`text-xs font-medium mr-2 ${
+                                darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                              }`}>
+                                Treasure Value:
                               </label>
                               <input
                                 type="text"
@@ -639,7 +744,11 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                                   const value = parseInt(e.target.value) || 1;
                                   handleQuestionChange(qIndex, 'points', value);
                                 }}
-                                className="w-16 p-1 border border-gray-300 dark:border-gray-600 rounded text-center text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                className={`w-16 p-1 border-2 rounded text-center text-sm transition-colors ${
+                                  darkMode 
+                                    ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                                    : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                                }`}
                                 required
                               />
                             </div>
@@ -650,8 +759,10 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                                   const updatedQuestions = quizData.questions.filter((_, i) => i !== qIndex);
                                   setQuizData(prev => ({ ...prev, questions: updatedQuestions }));
                                 }}
-                                className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                                title="Remove question"
+                                className={`p-1 transition-colors ${
+                                  darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
+                                }`}
+                                title="Remove challenge"
                               >
                                 <FaTimes size={14} />
                               </button>
@@ -661,13 +772,19 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
 
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                              Question Type
+                            <label className={`block text-xs font-medium mb-1 ${
+                              darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                            }`}>
+                              Challenge Type
                             </label>
                             <select
                               value={question.questionType}
                               onChange={(e) => handleQuestionChange(qIndex, 'questionType', e.target.value)}
-                              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm"
+                              className={`w-full p-2 border-2 rounded text-sm transition-colors ${
+                                darkMode 
+                                  ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                                  : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                              }`}
                             >
                               {questionTypes.map((type) => (
                                 <option key={type.value} value={type.value}>
@@ -678,23 +795,31 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                           </div>
 
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                              Question Text
+                            <label className={`block text-xs font-medium mb-1 ${
+                              darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                            }`}>
+                              Challenge Text
                             </label>
                             <input
                               type="text"
                               value={question.question}
                               onChange={(e) => handleQuestionChange(qIndex, 'question', e.target.value)}
-                              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                              className={`w-full p-2 border-2 rounded text-sm transition-colors ${
+                                darkMode 
+                                  ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                                  : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                              }`}
                               required
-                              placeholder="Enter the question"
+                              placeholder="Enter the challenge"
                             />
                           </div>
 
                           {question.questionType === 'MULTIPLE_CHOICE' && (
                             <>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                Options (select correct answer)
+                              <label className={`block text-xs font-medium mb-1 ${
+                                darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                              }`}>
+                                Treasure Options (select correct answer)
                               </label>
                               {question.options.map((option, oIndex) => (
                                 <div key={oIndex} className="flex items-center space-x-2">
@@ -703,7 +828,9 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                                     name={`correct-${qIndex}`}
                                     checked={question.correctAnswers.includes(oIndex)}
                                     onChange={() => handleQuestionChange(qIndex, 'correctAnswers', oIndex)}
-                                    className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600"
+                                    className={`h-4 w-4 ${
+                                      darkMode ? 'text-yellow-500 border-yellow-700/40' : 'text-yellow-600 border-yellow-300'
+                                    }`}
                                     required={question.correctAnswers.length === 0}
                                   />
                                   <input
@@ -714,22 +841,30 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                                       newOptions[oIndex] = e.target.value;
                                       handleQuestionChange(qIndex, 'options', newOptions);
                                     }}
-                                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                                    placeholder={`Option ${oIndex + 1}`}
+                                    className={`flex-1 p-2 border-2 rounded text-sm transition-colors ${
+                                      darkMode 
+                                        ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                                        : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                                    }`}
+                                    placeholder={`Treasure Option ${oIndex + 1}`}
                                     required
                                   />
                                 </div>
                               ))}
                               {question.correctAnswers.length === 0 && (
-                                <p className="text-xs text-red-500 dark:text-red-400 mt-1">Please select a correct answer</p>
+                                <p className={`text-xs mt-1 ${
+                                  darkMode ? 'text-red-400' : 'text-red-600'
+                                }`}>Please select a correct answer</p>
                               )}
                             </>
                           )}
 
                           {question.questionType === 'CHECKBOX' && (
                             <>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                Options (select all correct answers)
+                              <label className={`block text-xs font-medium mb-1 ${
+                                darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                              }`}>
+                                Treasure Options (select all correct answers)
                               </label>
                               {question.options.map((option, oIndex) => (
                                 <div key={oIndex} className="flex items-center space-x-2">
@@ -737,7 +872,9 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                                     type="checkbox"
                                     checked={question.correctAnswers.includes(oIndex)}
                                     onChange={() => handleQuestionChange(qIndex, 'correctAnswers', oIndex)}
-                                    className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
+                                    className={`h-4 w-4 rounded ${
+                                      darkMode ? 'text-yellow-500 border-yellow-700/40' : 'text-yellow-600 border-yellow-300'
+                                    }`}
                                     required={question.correctAnswers.length === 0}
                                   />
                                   <input
@@ -748,33 +885,47 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                                       newOptions[oIndex] = e.target.value;
                                       handleQuestionChange(qIndex, 'options', newOptions);
                                     }}
-                                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                                    placeholder={`Option ${oIndex + 1}`}
+                                    className={`flex-1 p-2 border-2 rounded text-sm transition-colors ${
+                                      darkMode 
+                                        ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                                        : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                                    }`}
+                                    placeholder={`Treasure Option ${oIndex + 1}`}
                                     required
                                   />
                                 </div>
                               ))}
                               {question.correctAnswers.length === 0 && (
-                                <p className="text-xs text-red-500 dark:text-red-400 mt-1">Please select at least one correct answer</p>
+                                <p className={`text-xs mt-1 ${
+                                  darkMode ? 'text-red-400' : 'text-red-600'
+                                }`}>Please select at least one correct answer</p>
                               )}
                             </>
                           )}
                           
                           {question.questionType === 'IDENTIFICATION' && (
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                Correct Answer
+                              <label className={`block text-xs font-medium mb-1 ${
+                                darkMode ? 'text-yellow-300' : 'text-yellow-700'
+                              }`}>
+                                Correct Treasure Answer
                               </label>
                               <input
                                 type="text"
                                 value={Array.isArray(question.correctAnswers) ? (question.correctAnswers[0] || '') : ''}
                                 onChange={(e) => handleQuestionChange(qIndex, 'correctAnswers', e.target.value)}
-                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                className={`w-full p-2 border-2 rounded text-sm transition-colors ${
+                                  darkMode 
+                                    ? 'border-yellow-700/40 bg-[#0b1022]/50 text-yellow-200' 
+                                    : 'border-yellow-300 bg-[#f5ecd2]/50 text-yellow-800'
+                                }`}
                                 placeholder="Enter the exact correct answer"
                                 required
                               />
                               {(!question.correctAnswers[0] || question.correctAnswers[0].trim() === '') && (
-                                <p className="text-xs text-red-500 dark:text-red-400 mt-1">Please provide a correct answer</p>
+                                <p className={`text-xs mt-1 ${
+                                  darkMode ? 'text-red-400' : 'text-red-600'
+                                }`}>Please provide a correct answer</p>
                               )}
                             </div>
                           )}
@@ -788,8 +939,14 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                     onClick={handleAddQuestion}
                     variant="outlineWhite"
                     size="sm"
+                    className={`transition-all duration-300 hover:scale-105 ${
+                      darkMode 
+                        ? 'border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-[#0b1022]' 
+                        : 'border-yellow-600 text-yellow-700 hover:bg-yellow-600 hover:text-white'
+                    }`}
                   >
-                    Add Question
+                    <FaCompass className="mr-2" />
+                    Add Challenge
                   </Button>
                 </div>
               )}

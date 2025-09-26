@@ -1,8 +1,11 @@
 import React from "react";
 import { Header } from "../../ui/heading";
+import { useTheme } from "../../context/ThemeContext";
 import "../../styles/ContentBlockDisplay.css";
 
 const ContentBlockDisplay = ({ block }) => {
+  const { darkMode } = useTheme();
+  
   if (!block) {
     return null;
   }
@@ -11,7 +14,7 @@ const ContentBlockDisplay = ({ block }) => {
   if (!block.type && (block.structuredContent || block.content)) {
     return (
       <div
-        className="rich-text-content"
+        className={`rich-text-content ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}
         dangerouslySetInnerHTML={{
           __html: block.structuredContent || block.content,
         }}
@@ -22,31 +25,31 @@ const ContentBlockDisplay = ({ block }) => {
   const renderContent = () => {
     switch (block.type) {
       case "TEXT":
-        return <div dangerouslySetInnerHTML={{ __html: block.content }} />;
+        return <div className={`${darkMode ? 'text-gray-200' : 'text-gray-900'}`} dangerouslySetInnerHTML={{ __html: block.content }} />;
 
       case "HEADING1":
         return (
-          <Header type="h1" size="4xl" className="text-black">
+          <Header type="h1" size="4xl" className={darkMode ? 'text-gray-100' : 'text-gray-900'}>
             {block.content}
           </Header>
         );
 
       case "HEADING2":
         return (
-          <Header type="h2" size="3xl" className="text-black">
+          <Header type="h2" size="3xl" className={darkMode ? 'text-gray-100' : 'text-gray-900'}>
             {block.content}
           </Header>
         );
 
       case "HEADING3":
         return (
-          <Header type="h3" size="2xl" className="text-black">
+          <Header type="h3" size="2xl" className={darkMode ? 'text-gray-100' : 'text-gray-900'}>
             {block.content}
           </Header>
         );
 
       case "PARAGRAPH":
-        return <p className="text-black">{block.content}</p>;
+        return <p className={darkMode ? 'text-gray-200' : 'text-gray-900'}>{block.content}</p>;
 
       case "IMAGE":
         if (block.mediaUrl) {
@@ -59,7 +62,7 @@ const ContentBlockDisplay = ({ block }) => {
           );
         }
         return (
-          <p>
+          <p className={darkMode ? 'text-gray-200' : 'text-gray-900'}>
             <em>Image not available.</em>
           </p>
         );
@@ -92,7 +95,7 @@ const ContentBlockDisplay = ({ block }) => {
           );
         }
         return (
-          <p>
+          <p className={darkMode ? 'text-gray-200' : 'text-gray-900'}>
             <em>Video not available.</em>
           </p>
         );
@@ -100,13 +103,18 @@ const ContentBlockDisplay = ({ block }) => {
       case "LINK":
         if (block.url && block.content) {
           return (
-            <a href={block.url} target="_blank" rel="noopener noreferrer">
+            <a 
+              href={block.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}
+            >
               {block.content}
             </a>
           );
         }
         return (
-          <p>
+          <p className={darkMode ? 'text-gray-200' : 'text-gray-900'}>
             <em>Link information missing.</em>
           </p>
         );
@@ -126,7 +134,7 @@ const ContentBlockDisplay = ({ block }) => {
         if (block.structuredContent || block.content) {
           return (
             <div
-              className="rich-text-content"
+              className={`rich-text-content ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}
               dangerouslySetInnerHTML={{
                 __html: block.structuredContent || block.content,
               }}
@@ -135,8 +143,8 @@ const ContentBlockDisplay = ({ block }) => {
         }
         return (
           <div>
-            <p>Unsupported content type: {block.type}</p>
-            {block.content && <p>{block.content}</p>}
+            <p className={darkMode ? 'text-gray-200' : 'text-gray-900'}>Unsupported content type: {block.type}</p>
+            {block.content && <p className={darkMode ? 'text-gray-200' : 'text-gray-900'}>{block.content}</p>}
           </div>
         );
     }

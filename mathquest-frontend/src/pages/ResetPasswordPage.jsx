@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AuthService from '../services/authService';
 import { Button } from "../ui/button";
 import { Header } from "../ui/heading";
-import { FaRegEyeSlash, FaRegEye, FaSkullCrossbones, FaAnchor, FaCompass, FaSun, FaMoon } from "react-icons/fa";
+import { FaRegEyeSlash, FaRegEye, FaSkullCrossbones, FaAnchor, FaCompass } from "react-icons/fa";
 import { Input } from "../ui/input";
 import { MdKeyboardBackspace } from "react-icons/md";
 import { useTheme } from '../context/ThemeContext';
@@ -18,7 +18,7 @@ const ResetPasswordPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { darkMode, setDarkMode, isInitialized } = useTheme();
+  const { darkMode } = useTheme();
 
   // Get token from URL query parameters
   const token = new URLSearchParams(location.search).get('token');
@@ -78,9 +78,9 @@ const ResetPasswordPage = () => {
         style={{
           backgroundImage: darkMode
             ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
-            : "url('/images/game-images/map.png')",
-          backgroundSize: darkMode ? 'cover' : 'cover',
-          backgroundRepeat: 'repeat',
+            : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
         }}
       >
         <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl mx-auto flex flex-col items-center justify-center rounded-2xl shadow-2xl py-8 sm:py-10 px-5 sm:px-8 border border-white/10 dark:border-yellow-600/40 backdrop-blur-sm"
@@ -99,19 +99,6 @@ const ResetPasswordPage = () => {
             <p className={"text-center mb-6 " + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-sm sm:text-base'}>
                 The password reset link is invalid or has expired. Please request a new password reset.
               </p>
-            <div className="flex items-center justify-center gap-3 mb-6">
-              {isInitialized && (
-                <Button
-                  variant="outlineWhite"
-                  size="sm"
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="!rounded-full flex items-center gap-2"
-                >
-                  {darkMode ? <FaSun className="text-yellow-300" /> : <FaMoon className="text-blue-700" />}
-                  {darkMode ? 'Light Mode' : 'Dark Mode'}
-                </Button>
-              )}
-            </div>
             <div className="flex items-center justify-center">
               <Button
                 variant="default"
@@ -162,19 +149,6 @@ const ResetPasswordPage = () => {
             Enter a new secret code to unlock your treasure chest.
           </p>
 
-          <div className="flex items-center justify-center gap-3 mt-5">
-            {isInitialized && (
-              <Button
-                variant="outlineWhite"
-                size="sm"
-                onClick={() => setDarkMode(!darkMode)}
-                className="!rounded-full flex items-center gap-2"
-              >
-                {darkMode ? <FaSun className="text-yellow-300" /> : <FaMoon className="text-blue-700" />}
-                {darkMode ? 'Light Mode' : 'Dark Mode'}
-              </Button>
-            )}
-          </div>
 
           <form className="mt-8 space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (

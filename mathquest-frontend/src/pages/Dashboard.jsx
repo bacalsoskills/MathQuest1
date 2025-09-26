@@ -3,16 +3,23 @@ import { useAuth } from '../context/AuthContext';
 import { useClassroom } from '../context/ClassroomContext';
 import { Header as Heading } from '../ui/heading';
 import { Button } from '../ui/button';
-import { FaChartLine, FaChalkboardTeacher, FaTrophy, FaComments, FaCompass, FaSkullCrossbones, FaAnchor, FaSun, FaMoon, FaShip, FaMapMarkedAlt, FaTools, FaCode, FaDatabase } from 'react-icons/fa';
+import { FaChartLine, FaChalkboardTeacher, FaTrophy, FaComments, FaCompass, FaSkullCrossbones, FaAnchor, FaShip, FaMapMarkedAlt, FaTools, FaCode, FaDatabase } from 'react-icons/fa';
 import { IoCodeSharp } from "react-icons/io5";
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+
+// Import developer photos
+import michaelPhoto from '../assets/developers/Michael Ferdinand C. Bacalso.jpg';
+import angeloPhoto from '../assets/developers/Angelo B. Cajegas.jpg';
+import kristofferPhoto from '../assets/developers/Kristoffer Josh Tesaluna.jpg';
+import aaronPhoto from '../assets/developers/Aaron Cloyd Villarta.jpg';
+import emmanuelPhoto from '../assets/developers/Emmanuel A. Cagampang Jr.jpg';
 
 const Dashboard = () => {
   const { isAdmin, isTeacher, isStudent } = useAuth();
   const { userClassrooms, getClassroomById, loading } = useClassroom();
   const navigate = useNavigate();
-  const { darkMode, setDarkMode, isInitialized } = useTheme();
+  const { darkMode } = useTheme();
 
   // Get first classroom id for teacher/student
   const firstClassroom = userClassrooms && userClassrooms.length > 0 ? userClassrooms[0] : null;
@@ -78,13 +85,13 @@ const Dashboard = () => {
     ];
   }
 
-  // Developers list with photo URLs (place your images under public/images/developers/)
+  // Developers list with imported photos
   const developers = [
-    { name: 'Captain Ferdi', role: 'Frontend Developer', skills: ['React', 'UI'], icon: <FaCode />, photo: '/images/developers/ferdi.jpg' },
-    { name: 'Navigator Alex', role: 'Frontend Developer', skills: ['React', 'UX'], icon: <FaCode />, photo: '/images/developers/alex.jpg' },
-    { name: 'Coder Riley', role: 'Frontend Developer', skills: ['React', 'SPA'], icon: <FaCode />, photo: '/images/developers/riley.jpg' },
-    { name: 'Quartermaster Sam', role: 'Backend Developer', skills: ['API', 'Auth'], icon: <FaAnchor />, photo: '/images/developers/sam.jpg' },
-    { name: 'Data Morgan', role: 'Backend Developer', skills: ['DB', 'Analytics'], icon: <FaAnchor />, photo: '/images/developers/morgan.jpg' },
+    { name: 'Michael Ferdinand C. Bacalso', role: 'Frontend Developer', skills: ['React', 'UI'], icon: <FaCode />, photo: michaelPhoto },
+    { name: 'Angelo B. Cajegas', role: 'Frontend Developer', skills: ['React', 'UX'], icon: <FaCode />, photo: angeloPhoto },
+    { name: 'Kristoffer Josh Tesalunay', role: 'Frontend Developer', skills: ['React', 'SPA'], icon: <FaCode />, photo: kristofferPhoto },
+    { name: 'Aaron Cloyd Villarta', role: 'Backend Developer', skills: ['API', 'Auth'], icon: <FaAnchor />, photo: aaronPhoto },
+    { name: 'Emmanuel A. Cagampang Jr.', role: 'Backend Developer', skills: ['DB', 'Analytics'], icon: <FaAnchor />, photo: emmanuelPhoto },
   ];
 
   // Show loading state
@@ -102,31 +109,20 @@ const Dashboard = () => {
       style={{
         backgroundImage: darkMode
           ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
-          : "url('/images/game-images/map.png')",
+          : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
         backgroundSize: 'cover',
-        backgroundRepeat: 'repeat',
+        backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Header + Theme Toggle */}
-      <div className="max-w-6xl w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-6 sm:mt-8 mb-4">
+      {/* Header */}
+      <div className="max-w-6xl w-full flex flex-col sm:flex-row items-start sm:items-center justify-center gap-3 mt-6 sm:mt-8 mb-4">
         <div className="flex items-center gap-3">
           <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-xl sm:text-2xl'} />
-          <Heading type="h1" fontSize="4xl" weight="bold" className={(darkMode ? 'text-yellow-300' : 'text-primary') + ' tracking-wide'}>
+          <Heading type="h1" fontSize="4xl" weight="bold" className={(darkMode ? 'text-yellow-200' : 'text-blue-800') + ' tracking-wide'}>
             MathQuest Dashboard
           </Heading>
           <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-xl sm:text-2xl'} />
         </div>
-        {isInitialized && (
-          <Button
-            variant="outlineWhite"
-            size="sm"
-            onClick={() => setDarkMode(!darkMode)}
-            className="!rounded-full flex items-center gap-2 w-full sm:w-auto"
-          >
-            {darkMode ? <FaSun className="text-yellow-300" /> : <FaMoon className="text-blue-700" />}
-            {darkMode ? 'Light Mode' : 'Dark Mode'}
-          </Button>
-        )}
       </div>
 
       {/* Decorative divider */}
@@ -211,12 +207,21 @@ const Dashboard = () => {
                 {/* Pirate photo frame */}
                 <div className="flex items-center gap-3 mb-3">
                   <div className="relative">
-                    <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden ring-4 ${darkMode ? 'ring-yellow-700/60' : 'ring-yellow-300'} shadow-lg`}>
+                    <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden ring-4 ${darkMode ? 'ring-yellow-700/60' : 'ring-yellow-300'} shadow-lg flex items-center justify-center ${darkMode ? 'bg-yellow-800/30' : 'bg-yellow-200'}`}>
                       <img
                         src={dev.photo}
                         alt={dev.name}
                         className="w-full h-full object-cover"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList.add('bg-yellow-100'); }}
+                        onError={(e) => { 
+                          console.log('Image failed to load:', dev.photo);
+                          e.currentTarget.style.display = 'none'; 
+                          // Show fallback icon
+                          const fallback = document.createElement('div');
+                          fallback.className = 'w-full h-full flex items-center justify-center text-2xl text-yellow-600';
+                          fallback.innerHTML = '👤';
+                          e.currentTarget.parentElement?.appendChild(fallback);
+                        }}
+                        onLoad={() => console.log('Image loaded successfully:', dev.photo)}
                       />
                     </div>
                     <div className={`absolute -inset-1 rounded-full pointer-events-none ${darkMode ? 'ring-2 ring-yellow-800/50' : 'ring-2 ring-yellow-400/60'}`}></div>
