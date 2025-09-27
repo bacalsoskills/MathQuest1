@@ -361,6 +361,16 @@ const StudentClassroomPage = () => {
         })
         .catch(err => {
           console.error(`Error marking content as read:`, err);
+          // Even if the API call fails, update the local state to allow quiz access
+          setCompletionStatus(prev => ({ ...prev, contentRead: true }));
+          setHasScrolledToBottom(true);
+          
+          const hasQuiz = selectedLesson.activities?.some(activity => activity.type === 'QUIZ');
+          if (hasQuiz) {
+            setShowQuiz(true);
+          } else {
+            unlockNextLesson();
+          }
         });
     }
   };
@@ -378,6 +388,23 @@ const StudentClassroomPage = () => {
           }
         }
       }, 100);
+    }
+  }, [selectedLesson?.contentBlocks, completionStatus?.contentRead]);
+
+  // Add a more aggressive content read detection
+  useEffect(() => {
+    if (selectedLesson?.contentBlocks && !completionStatus?.contentRead) {
+      // Check if content is already read after a longer delay
+      setTimeout(() => {
+        const contentContainer = document.querySelector('.content-blocks');
+        if (contentContainer) {
+          const isContentSmall = contentContainer.scrollHeight <= contentContainer.clientHeight;
+          
+          if (isContentSmall) {
+            markContentAsRead();
+          }
+        }
+      }, 2000); // Longer delay to ensure content is fully rendered
     }
   }, [selectedLesson?.contentBlocks, completionStatus?.contentRead]);
 
@@ -690,16 +717,24 @@ const StudentClassroomPage = () => {
     return (
       <div className="mt-8">
         {!completionStatus?.contentRead && isStudent && (
-          <div className={`border-2 rounded-xl p-6 mb-6 flex items-center gap-3 shadow-lg transition-colors duration-300 ${
+          <div className={`border-2 rounded-xl p-6 mb-6 flex items-center justify-between gap-3 shadow-lg transition-colors duration-300 ${
             darkMode
               ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-yellow-400'
               : 'bg-gradient-to-r from-yellow-100 to-orange-100 border-yellow-400'
           }`}>
-            <div className="text-2xl">⚠️</div>
-            <AlertCircle className="w-6 h-6 text-yellow-700" />
-            <p className="text-yellow-800 font-medium text-lg">
-              Ahoy! Study the treasure map completely before attempting the quest!
-            </p>
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">⚠️</div>
+              <AlertCircle className="w-6 h-6 text-yellow-700" />
+              <p className="text-yellow-800 font-medium text-lg">
+                Ahoy! Study the treasure map completely before attempting the quest!
+              </p>
+            </div>
+            <button
+              onClick={markContentAsRead}
+              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+            >
+              Mark as Read
+            </button>
           </div>
         )}
         
@@ -1724,11 +1759,8 @@ const StudentClassroomPage = () => {
                   </h2>
                   <p className={`text-sm mt-1 transition-colors duration-300 ${
                     darkMode ? 'text-gray-300' : 'text-gray-600'
-                  }`}>Take on exciting challenges and games to test your skills!</p>
+                  }`}>Take on exciting games and challenges to test your skills! Complete lessons first to unlock quiz quests.</p>
                 </div>
-              </div>
-              <div className="mb-8">
-                <QuizManager classroomId={classroomId} isStudent={true}/>
               </div>
               <ClassroomGamesTab classroomId={classroomId} />
             </div>

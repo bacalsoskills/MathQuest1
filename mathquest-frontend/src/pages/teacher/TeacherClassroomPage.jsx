@@ -830,19 +830,6 @@ const TeacherClassroomPage = () => {
             {activeTab === "activities" && (
               <>
                 <button
-                  onClick={handleOpenAddQuizModal}
-                   title="Add Quiz"
-                   aria-label="Add Quiz"
-                   className={`font-semibold flex items-center gap-2 h-10 px-4 rounded-lg transition-all duration-300 hover:scale-105 ${
-                     darkMode 
-                       ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
-                       : 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                   }`}
-                >
-                  <FaCoins className="w-4 h-4" />
-                  Add Quiz
-                </button>
-                <button
                   onClick={handleOpenAddActivityModal}
                  title="Add Game Activity"
                  aria-label="Add Game Activity"

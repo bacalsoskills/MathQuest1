@@ -543,11 +543,11 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
                         }`}
                         required={true}
                       >
-                        <option value="PRACTICE_QUIZ">Practice Quest</option>
-                        <option value="MAJOR_EXAMS">Major Treasure Hunt</option>
-                        <option value="POP_QUIZ">Surprise Quest</option>
-                        <option value="DIAGNOSTIC_QUIZ">Navigation Test</option>
-                        <option value="ACTIVITY">Adventure Quest</option>
+                        <option value="PRACTICE_QUIZ">Practice Quiz</option>
+                        <option value="MAJOR_EXAMS">Major Exams</option>
+                        <option value="POP_QUIZ">Pop Quiz</option>
+                        <option value="DIAGNOSTIC_QUIZ">Diagnostic Quiz</option>
+                        <option value="ACTIVITY">Activity</option>
                       </select>
                     </div>
 
