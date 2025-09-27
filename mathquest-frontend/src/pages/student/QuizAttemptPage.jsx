@@ -398,7 +398,7 @@ const QuizAttemptPage = () => {
 
   const handleLeavePage = () => {
     if (nextLocation) {
-      navigate(nextLocation);
+      navigate(nextLocation, { state: { activeTab: 'lessons' } });
     }
     setShowExitConfirmModal(false);
     setNextLocation(null);
@@ -412,8 +412,8 @@ const QuizAttemptPage = () => {
   const handleLeaveQuizClick = (e) => {
     e.preventDefault();
     if (showResultModal) {
-      // If results are shown, allow direct navigation
-      navigate(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms');
+      // If results are shown, allow direct navigation to lessons tab
+      navigate(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms', { state: { activeTab: 'lessons' } });
     } else {
       // Show confirmation modal
       setNextLocation(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms');
@@ -757,7 +757,7 @@ const QuizAttemptPage = () => {
   const handleModalClose = () => {
     setShowResultModal(false);
     if(classroomId) {
-      navigate(`/student/classrooms/${classroomId}`);
+      navigate(`/student/classrooms/${classroomId}`, { state: { activeTab: 'lessons' } });
     } else {
       navigate('/student/classrooms');
     }

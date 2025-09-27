@@ -51,66 +51,34 @@ const StudentClassroomPage = () => {
     }
   };
 
-  // Function to find the last unlocked lesson
+  // Function to find the last unlocked lesson - Sequential progression
   const findLastUnlockedLesson = async () => {
     if (!lessons.length || !user?.id) return null;
 
     try {
-      // Check completion status for each lesson to determine which ones are unlocked
-      const unlockedLessonIds = [];
-      
+      // Find the first lesson that hasn't been completed
       for (let i = 0; i < lessons.length; i++) {
         const lesson = lessons[i];
-        let isUnlocked = false;
-
-        if (i === 0) {
-          // First lesson is always unlocked
-          isUnlocked = true;
+        const status = await lessonService.getLessonCompletionStatus(lesson.id, user.id);
+        
+        // Check if lesson has a quiz
+        const hasQuiz = lesson.activities?.some(activity => activity.type === 'QUIZ');
+        
+        if (hasQuiz) {
+          // For lessons with quiz, check if quiz is completed and passed
+          if (!status.quizCompleted || !status.quizPassed) {
+            return lesson.id;
+          }
         } else {
-          // Check if previous lesson is completed
-          const previousLesson = lessons[i - 1];
-          try {
-            const status = await lessonService.getLessonCompletionStatus(previousLesson.id, user.id);
-            const hasQuiz = previousLesson.activities?.some(activity => activity.type === 'QUIZ');
-            
-            if (!hasQuiz) {
-              isUnlocked = status.contentRead;
-            } else {
-              // Calculate quizPassed if not provided by backend
-              let quizPassed = status.quizPassed;
-              if (quizPassed === undefined || quizPassed === null) {
-                // For lessons with quizzes, both content must be read AND quiz must be passed
-                // We need to calculate if quiz was passed based on score
-                if (status.quizCompleted && status.quizScore !== undefined) {
-                  // Find the quiz activity and get passing score
-                  const quizActivity = previousLesson.activities?.find(activity => activity.type === 'QUIZ');
-                  if (quizActivity) {
-                    // We need to get the quiz details to check passing score
-                    // For now, assume it's passed if quiz is completed and we have a score
-                    // This is a fallback - ideally the backend should provide quizPassed
-                    quizPassed = status.quizScore >= 60; // Default passing score
-                  }
-                }
-              }
-              
-              // For lessons with quizzes, both content must be read AND quiz must be passed
-              isUnlocked = status.contentRead && status.quizCompleted && quizPassed;
-            }
-          } catch (err) {
-            console.error(`Error checking completion status for lesson ${previousLesson.id}:`, err);
-            isUnlocked = false;
+          // For lessons without quiz, check if content is read
+          if (!status.contentRead) {
+            return lesson.id;
           }
         }
-
-        if (isUnlocked) {
-          unlockedLessonIds.push(lesson.id);
-        }
       }
-
-      // Return the last unlocked lesson, or the first lesson if none are unlocked
-      return unlockedLessonIds.length > 0 
-        ? unlockedLessonIds[unlockedLessonIds.length - 1] 
-        : lessons[0]?.id || null;
+      
+      // If all lessons are completed, return the last lesson
+      return lessons[lessons.length - 1]?.id || null;
     } catch (err) {
       console.error('Error finding last unlocked lesson:', err);
       return lessons[0]?.id || null;
@@ -262,8 +230,10 @@ const StudentClassroomPage = () => {
             if (hasQuiz && !status.quizCompleted) {
               setShowQuiz(true);
             } else if (hasQuiz && status.quizCompleted && quizPassed) {
+              // Only unlock next lesson, don't auto-navigate
               unlockNextLesson();
             } else if (!hasQuiz) {
+              // For lessons without quiz, unlock next lesson but don't auto-navigate
               unlockNextLesson();
             }
             setHasScrolledToBottom(true);
@@ -309,7 +279,7 @@ const StudentClassroomPage = () => {
           const updatedStatus = { ...status, quizPassed };
           setCompletionStatus(updatedStatus);
           
-          // Only unlock next lesson if the quiz was passed
+          // Only unlock next lesson if the quiz was passed (no auto-navigation)
           if (quizPassed) {
             unlockNextLesson();
           }
@@ -356,8 +326,14 @@ const StudentClassroomPage = () => {
           if (hasQuiz) {
             setShowQuiz(true);
           } else {
+            // For lessons without quiz, unlock next lesson immediately after reading
             unlockNextLesson();
           }
+          
+          // Refresh the page to update lesson list and unlock status
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000); // 2 second delay to show the completion message
         })
         .catch(err => {
           console.error(`Error marking content as read:`, err);
@@ -369,46 +345,40 @@ const StudentClassroomPage = () => {
           if (hasQuiz) {
             setShowQuiz(true);
           } else {
+            // For lessons without quiz, unlock next lesson immediately after reading
             unlockNextLesson();
           }
+          
+          // Refresh the page to update lesson list and unlock status
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000); // 2 second delay to show the completion message
         });
     }
   };
 
-  // Add a new useEffect to check content size on mount and when content changes
-  useEffect(() => {
-    if (selectedLesson?.contentBlocks) {
-      setTimeout(() => {
-        const contentContainer = document.querySelector('.content-blocks');
-        if (contentContainer) {
-          const isContentSmall = contentContainer.scrollHeight <= contentContainer.clientHeight;
-          
-          if (isContentSmall && !completionStatus?.contentRead) {
-            markContentAsRead();
-          }
-        }
-      }, 100);
-    }
-  }, [selectedLesson?.contentBlocks, completionStatus?.contentRead]);
-
-  // Add a more aggressive content read detection
+  // Simplified content read detection - check if content is small enough to be fully visible
   useEffect(() => {
     if (selectedLesson?.contentBlocks && !completionStatus?.contentRead) {
-      // Check if content is already read after a longer delay
-      setTimeout(() => {
+      const checkContentSize = () => {
         const contentContainer = document.querySelector('.content-blocks');
         if (contentContainer) {
-          const isContentSmall = contentContainer.scrollHeight <= contentContainer.clientHeight;
+          const isContentSmall = contentContainer.scrollHeight <= contentContainer.clientHeight + 10; // Small buffer
           
           if (isContentSmall) {
             markContentAsRead();
           }
         }
-      }, 2000); // Longer delay to ensure content is fully rendered
+      };
+      
+      // Check after content is rendered
+      const timeoutId = setTimeout(checkContentSize, 500);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [selectedLesson?.contentBlocks, completionStatus?.contentRead]);
 
-  // Add a new useEffect to initialize unlocked lessons from completion status
+  // Add a new useEffect to initialize unlocked lessons - Sequential progression
   useEffect(() => {
     const initializeUnlockedLessons = async () => {
       if (!lessons.length || !user?.id) return;
@@ -416,59 +386,50 @@ const StudentClassroomPage = () => {
       try {
         const unlockedSet = new Set();
         
-        // First lesson is always unlocked
-        if (lessons.length > 0) {
-          unlockedSet.add(lessons[0].id);
-        }
-
-        // Check completion status for each lesson
+        // Find the first incomplete lesson
+        let foundIncomplete = false;
         for (let i = 0; i < lessons.length; i++) {
           const lesson = lessons[i];
-          try {
-            const status = await lessonService.getLessonCompletionStatus(lesson.id, user.id);
-            const hasQuiz = lesson.activities?.some(activity => activity.type === 'QUIZ');
-            
-            // Determine if this lesson is completed
-            let isCompleted = false;
-            if (!hasQuiz) {
-              isCompleted = status.contentRead;
-            } else {
-              // Calculate quizPassed if not provided by backend
-              let quizPassed = status.quizPassed;
-              if (quizPassed === undefined || quizPassed === null) {
-                // For lessons with quizzes, both content must be read AND quiz must be passed
-                // We need to calculate if quiz was passed based on score
-                if (status.quizCompleted && status.quizScore !== undefined) {
-                  // Find the quiz activity and get passing score
-                  const quizActivity = lesson.activities?.find(activity => activity.type === 'QUIZ');
-                  if (quizActivity) {
-                    // We need to get the quiz details to check passing score
-                    // For now, assume it's passed if quiz is completed and we have a score
-                    // This is a fallback - ideally the backend should provide quizPassed
-                    quizPassed = status.quizScore >= 60; // Default passing score
-                  }
-                }
-              }
-              
-              // For lessons with quizzes, both content must be read AND quiz must be passed
-              isCompleted = status.contentRead && status.quizCompleted && quizPassed;
-            }
-            
-            // If this lesson is completed, add it and the next one to unlocked lessons
-            if (isCompleted) {
-              unlockedSet.add(lesson.id); // Add the completed lesson
-              if (i < lessons.length - 1) {
-                unlockedSet.add(lessons[i + 1].id); // Add the next lesson
-              }
-            }
-          } catch (err) {
-            console.error(`Error checking completion status for lesson ${lesson.id}:`, err);
+          
+          // Always unlock the first lesson
+          if (i === 0) {
+            unlockedSet.add(lesson.id);
+            continue;
+          }
+          
+          // Check if previous lesson is completed
+          const prevLesson = lessons[i - 1];
+          const prevStatus = await lessonService.getLessonCompletionStatus(prevLesson.id, user.id);
+          
+          // Check if previous lesson has a quiz
+          const prevHasQuiz = prevLesson.activities?.some(activity => activity.type === 'QUIZ');
+          
+          let prevCompleted = false;
+          if (prevHasQuiz) {
+            // For lessons with quiz, check if quiz is completed and passed
+            prevCompleted = prevStatus.quizCompleted && prevStatus.quizPassed;
+          } else {
+            // For lessons without quiz, check if content is read
+            prevCompleted = prevStatus.contentRead;
+          }
+          
+          if (prevCompleted) {
+            unlockedSet.add(lesson.id);
+          } else {
+            // Stop unlocking once we find an incomplete lesson
+            break;
           }
         }
 
         setUnlockedLessons(unlockedSet);
       } catch (err) {
         console.error(`Error initializing unlocked lessons:`, err);
+        // Fallback: unlock only the first lesson
+        const unlockedSet = new Set();
+        if (lessons.length > 0) {
+          unlockedSet.add(lessons[0].id);
+        }
+        setUnlockedLessons(unlockedSet);
       }
     };
 
@@ -492,20 +453,17 @@ const StudentClassroomPage = () => {
   const unlockNextLesson = () => {
     const currentLessonIndex = lessons.findIndex(l => l.id === selectedLesson.id);
     
+    // Only unlock the next lesson if current lesson is completed
     if (currentLessonIndex < lessons.length - 1) {
       const nextLesson = lessons[currentLessonIndex + 1];
       
-      // Add both the current lesson and the next lesson to unlocked lessons
       setUnlockedLessons(prev => {
-        const newUnlocked = new Set([...prev, selectedLesson.id, nextLesson.id]);
+        const newUnlocked = new Set([...prev]);
+        newUnlocked.add(nextLesson.id);
         return newUnlocked;
       });
-    } else {
-      // Still add the current lesson to unlocked lessons if it's the last one
-      setUnlockedLessons(prev => {
-        const newUnlocked = new Set([...prev, selectedLesson.id]);
-        return newUnlocked;
-      });
+      
+      // No automatic navigation - let students choose when to move on
     }
   };
 
@@ -551,7 +509,7 @@ const StudentClassroomPage = () => {
           return newStatus;
         });
         
-        // Only unlock next lesson if the quiz was passed
+        // Only unlock next lesson if the quiz was passed (no auto-navigation)
         if (quizPassed) {
           unlockNextLesson();
         }
@@ -564,47 +522,6 @@ const StudentClassroomPage = () => {
       });
   };
 
-  // Add a new useEffect to check quiz completion status
-  useEffect(() => {
-    if (!selectedLesson?.id || !user?.id) return;
-
-    const checkQuizCompletion = async () => {
-      try {
-        const status = await lessonService.getLessonCompletionStatus(selectedLesson.id, user.id);
-        
-        if (status.quizCompleted && !completionStatus?.quizCompleted) {
-          // Calculate quizPassed if not provided by backend
-          let quizPassed = status.quizPassed;
-          if (quizPassed === undefined || quizPassed === null) {
-            // Calculate based on score and passing score
-            const quizActivity = selectedLesson.activities?.find(activity => activity.type === 'QUIZ');
-            if (quizActivity && quizAttempts[quizActivity.id]?.quiz && status.quizScore !== undefined) {
-              const quiz = quizAttempts[quizActivity.id].quiz;
-              quizPassed = status.quizScore >= quiz.passingScore;
-            }
-          }
-          
-          const updatedStatus = { ...status, quizPassed };
-          setCompletionStatus(updatedStatus);
-          
-          // Only unlock next lesson if the quiz was passed
-          if (quizPassed) {
-            unlockNextLesson();
-          }
-          
-          // Refresh the lesson list to show updated completion status
-          fetchLessons();
-        }
-      } catch (err) {
-        console.error(`Error checking quiz completion:`, err);
-      }
-    };
-
-    // Check every 2 seconds
-    const intervalId = setInterval(checkQuizCompletion, 2000);
-
-    return () => clearInterval(intervalId);
-  }, [selectedLesson?.id, user?.id, completionStatus?.quizCompleted, quizAttempts]);
 
   // Add a new useEffect to fetch quiz attempts
   useEffect(() => {
@@ -1610,7 +1527,7 @@ const StudentClassroomPage = () => {
                           ))}
 
                           {/* Enhanced Read Status - Treasure Discovered */}
-                          {completionStatus?.contentRead && (
+                          {completionStatus?.contentRead && !completionStatus?.quizCompleted && (
                             <div className="mt-8">
                               <div className={`flex items-center gap-3 rounded-2xl p-6 border-2 shadow-lg transition-colors duration-300 ${
                                 darkMode
@@ -1627,6 +1544,34 @@ const StudentClassroomPage = () => {
                                   }`}>You've successfully explored this learning content</p>
                                 </div>
                               </div>
+                              
+                              {/* Next Lesson Unlocked Notification for lessons without quizzes */}
+                              {(() => {
+                                const currentLessonIndex = lessons.findIndex(l => l.id === selectedLesson.id);
+                                const hasNextLesson = currentLessonIndex < lessons.length - 1;
+                                const hasQuiz = selectedLesson.activities?.some(activity => activity.type === 'QUIZ');
+                                
+                                if (hasNextLesson && !hasQuiz) {
+                                  return (
+                                    <div className={`mt-4 flex items-center gap-3 rounded-2xl p-6 border-2 shadow-lg transition-colors duration-300 ${
+                                      darkMode
+                                        ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-blue-700/50 text-blue-300'
+                                        : 'bg-gradient-to-r from-blue-100 to-indigo-100 border-blue-300 text-blue-800'
+                                    }`}>
+                                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                                        <FaCompass className="text-white text-xl" />
+                                      </div>
+                                      <div>
+                                        <span className="font-bold text-lg">Next Adventure Unlocked!</span>
+                                        <p className={`text-sm transition-colors duration-300 ${
+                                          darkMode ? 'text-blue-200' : 'text-blue-600'
+                                        }`}>You've completed this lesson! The next treasure map is now available in your collection.</p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           )}
 
@@ -1637,6 +1582,7 @@ const StudentClassroomPage = () => {
                           {completionStatus?.quizCompleted && (
                             <div className="mt-8">
                               {completionStatus?.quizPassed ? (
+                                <div>
                                   <div className={`flex items-center gap-3 rounded-2xl p-6 border-2 shadow-lg transition-colors duration-300 ${
                                     darkMode
                                       ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50 text-green-300'
@@ -1652,13 +1598,41 @@ const StudentClassroomPage = () => {
                                       }`}>Congratulations! You've successfully completed this adventure</p>
                                     </div>
                                   </div>
+                                  
+                                  {/* Next Lesson Unlocked Notification */}
+                                  {(() => {
+                                    const currentLessonIndex = lessons.findIndex(l => l.id === selectedLesson.id);
+                                    const hasNextLesson = currentLessonIndex < lessons.length - 1;
+                                    
+                                    if (hasNextLesson) {
+                                      return (
+                                        <div className={`mt-4 flex items-center gap-3 rounded-2xl p-6 border-2 shadow-lg transition-colors duration-300 ${
+                                          darkMode
+                                            ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-blue-700/50 text-blue-300'
+                                            : 'bg-gradient-to-r from-blue-100 to-indigo-100 border-blue-300 text-blue-800'
+                                        }`}>
+                                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                                            <FaCompass className="text-white text-xl" />
+                                          </div>
+                                          <div>
+                                            <span className="font-bold text-lg">Next Adventure Unlocked!</span>
+                                            <p className={`text-sm transition-colors duration-300 ${
+                                              darkMode ? 'text-blue-200' : 'text-blue-600'
+                                            }`}>Congratulations! You've passed the quest! The next treasure map is now available in your collection.</p>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                                  </div>
                               ) : (
                                 <div className={`flex items-center gap-3 rounded-2xl p-6 border-2 shadow-lg transition-colors duration-300 ${
                                   darkMode
                                     ? 'bg-gradient-to-r from-red-900/30 to-pink-900/30 border-red-700/50 text-red-300'
                                     : 'bg-gradient-to-r from-red-100 to-pink-100 border-red-300 text-red-800'
                                 }`}>
-                                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center shadow-lg">
                                     <AlertCircle className="text-white text-xl" />
                                   </div>
                                   <div>
