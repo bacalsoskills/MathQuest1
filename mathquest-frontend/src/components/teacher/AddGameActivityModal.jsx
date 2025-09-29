@@ -137,7 +137,7 @@ const AddGameActivityModal = ({ isOpen, onClose, classroomId, activityId, onActi
             onChange={handleChange}
             required
             className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
-            placeholder="e.g., Addition, Multiplication, Fractions"
+            placeholder="Addition or Multiplication"
           />
         </div>
 
@@ -151,8 +151,8 @@ const AddGameActivityModal = ({ isOpen, onClose, classroomId, activityId, onActi
             onChange={handleChange}
             className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
           >
-            <option value="FALLING_GAME">Falling Game</option>
-            <option value="MULTIPLE_CHOICE">Multiple Choice Game</option>
+            <option value="FALLING_GAME">Falling Game Multiplication</option>
+            <option value="MULTIPLE_CHOICE">Multiple Choice Game Addition</option>
           </select>
         </div>
       </form>
