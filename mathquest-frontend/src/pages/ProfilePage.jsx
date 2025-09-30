@@ -319,7 +319,8 @@ const ProfilePage = () => {
   // Add new function to handle email verification
   const handleEmailVerification = async (token) => {
     try {
-      const response = await fetch(`http://localhost:8080/auth/verify?token=${token}`, {
+      const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
+      const response = await fetch(`${API_URL}/auth/verify?token=${token}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

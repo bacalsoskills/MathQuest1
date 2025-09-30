@@ -1,9 +1,11 @@
 import axios from "axios";
 import logger from "./logger";
 
-// Use relative URLs with the proxy in package.json instead of absolute URL
+// Use environment variable for API URL, fallback to localhost for development
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
+
 const api = axios.create({
-  // No baseURL needed when using proxy in package.json
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },

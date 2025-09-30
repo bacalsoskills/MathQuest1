@@ -4,7 +4,6 @@ import com.mathquest.demo.DTO.Request.LoginRequest;
 import com.mathquest.demo.DTO.Request.SignupRequest;
 import com.mathquest.demo.DTO.Request.ForgotPasswordRequest;
 import com.mathquest.demo.DTO.Request.ResetPasswordRequest;
-import com.mathquest.demo.DTO.Response.JwtResponse;
 import com.mathquest.demo.DTO.Response.MessageResponse;
 import com.mathquest.demo.Service.AuthService;
 import com.mathquest.demo.Service.UserService;
@@ -15,9 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-
-@CrossOrigin(origins = "http://localhost:3000", maxAge = 3600)
+@CrossOrigin(originPatterns = {"http://localhost:3000", "https://*.onrender.com"}, maxAge = 3600)
 @RestController
 @RequestMapping("/auth")
 public class AuthController {

@@ -93,11 +93,11 @@ public class WebSecurityConfig {
 public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
-    // ✅ use patterns instead of fixed origins
+    // ✅ Allow both localhost and production frontend URL
     configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:3000",
-            "http://127.0.0.1:3000"
-            // add your prod domain: "https://your-frontend.com"
+            "http://127.0.0.1:3000",
+            "https://*.onrender.com"  // Allow any Render.com subdomain
     ));
 
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

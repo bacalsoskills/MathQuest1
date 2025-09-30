@@ -12,8 +12,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
 @Override
 public void addCorsMappings(CorsRegistry registry) {
     registry.addMapping("/**")
-            .allowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000") // ✅ supports local dev
-            //.allowedOriginPatterns("https://your-frontend-domain.com") // add production domain here
+            .allowedOriginPatterns(
+                "http://localhost:3000", 
+                "http://127.0.0.1:3000",
+                "https://*.onrender.com"  // Allow any Render.com subdomain
+            )
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin")
             .exposedHeaders("Content-Disposition", "Content-Type")
