@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/static/css/main.e98c5fe6.css",
+    "main.js": "/static/js/main.06628730.js",
+    "static/media/Kristoffer Josh Tesaluna.jpg": "/static/media/Kristoffer Josh Tesaluna.adbeb8694711829cb36b.jpg",
+    "static/media/Angelo B. Cajegas.jpg": "/static/media/Angelo B. Cajegas.56ae9a1a7a367207ac7d.jpg",
+    "static/media/Emmanuel A. Cagampang Jr.jpg": "/static/media/Emmanuel A. Cagampang Jr.c1996c0991124ffc2da4.jpg",
+    "static/media/Aaron Cloyd Villarta.jpg": "/static/media/Aaron Cloyd Villarta.677e654a13c0224b7ffc.jpg",
+    "index.html": "/index.html",
+    "main.e98c5fe6.css.map": "/static/css/main.e98c5fe6.css.map",
+    "main.06628730.js.map": "/static/js/main.06628730.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e98c5fe6.css",
+    "static/js/main.06628730.js"
+  ]
+}

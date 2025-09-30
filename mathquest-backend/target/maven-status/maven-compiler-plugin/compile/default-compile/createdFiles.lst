@@ -3,9 +3,11 @@ com\mathquest\demo\Model\User.class
 com\mathquest\demo\DTO\StudentPerformanceDTO.class
 com\mathquest\demo\Model\LeaderboardEntry$LeaderboardEntryListener.class
 com\mathquest\demo\Service\LeaderboardService.class
+com\mathquest\demo\Repository\MultiplicationLearningProgressRepository.class
 com\mathquest\demo\Model\Announcement$AnnouncementVisibility.class
 com\mathquest\demo\Service\ActivityService.class
 com\mathquest\demo\Service\QuizAttemptService.class
+com\mathquest\demo\DTO\MultiplicationPropertyCompletionDTO.class
 com\mathquest\demo\Repository\RoleRepository.class
 com\mathquest\demo\Model\Quiz.class
 com\mathquest\demo\Security\services\UserDetailsServiceImpl.class
@@ -33,6 +35,7 @@ com\mathquest\demo\DTO\ActivityDTO.class
 com\mathquest\demo\Model\LeaderboardEntry.class
 com\mathquest\demo\DTO\Request\ResetPasswordRequest.class
 com\mathquest\demo\DTO\GameScoreDTO.class
+com\mathquest\demo\Model\MultiplicationLearningProgress.class
 com\mathquest\demo\DTO\Request\UpdateFeedbackRequest.class
 com\mathquest\demo\Config\WebMvcConfig$1.class
 com\mathquest\demo\Repository\LeaderboardEntryRepository.class
@@ -41,6 +44,7 @@ com\mathquest\demo\Model\Announcement.class
 com\mathquest\demo\Controller\AnnouncementController.class
 com\mathquest\demo\Model\ActivityType.class
 com\mathquest\demo\DTO\Request\CreateLessonRequest.class
+com\mathquest\demo\Service\MultiplicationLearningService.class
 com\mathquest\demo\Security\jwt\JwtUtils.class
 com\mathquest\demo\Service\QuizService.class
 com\mathquest\demo\DTO\Request\SubmitActivityRequest.class
@@ -50,12 +54,14 @@ com\mathquest\demo\Security\jwt\AuthEntryPointJwt.class
 com\mathquest\demo\Model\ContentBlock.class
 com\mathquest\demo\DTO\Request\LoginRequest.class
 com\mathquest\demo\Repository\ActivityRepository.class
+com\mathquest\demo\DTO\SaveProgressRequest.class
 com\mathquest\demo\Service\ContentBlockServiceImpl.class
 com\mathquest\demo\Controller\AuthController.class
 com\mathquest\demo\DTO\Request\CreateActivityRequest.class
 com\mathquest\demo\Repository\QuizAttemptRepository.class
 com\mathquest\demo\Model\StudentPerformance.class
 com\mathquest\demo\DTO\QuizAttemptDTO.class
+com\mathquest\demo\Model\MultiplicationPropertyCompletion.class
 com\mathquest\demo\DTO\Request\ChangePasswordRequest.class
 com\mathquest\demo\Controller\QuizAttemptController.class
 com\mathquest\demo\DTO\LeaderboardEntryDTO.class
@@ -84,9 +90,11 @@ com\mathquest\demo\Service\EmailService.class
 com\mathquest\demo\Repository\GameScoreRepository.class
 com\mathquest\demo\DTO\ReportDTO.class
 com\mathquest\demo\Repository\LessonCompletionRepository.class
+com\mathquest\demo\Repository\MultiplicationPropertyCompletionRepository.class
 com\mathquest\demo\DTO\ErrorResponse.class
 com\mathquest\demo\Exception\UnauthorizedException.class
 com\mathquest\demo\Model\Feedback.class
+com\mathquest\demo\Model\MultiplicationQuizAttempt.class
 com\mathquest\demo\DTO\ClassroomDTO.class
 com\mathquest\demo\DTO\LessonCompletionDTO.class
 com\mathquest\demo\DTO\Request\ForgotPasswordRequest.class
@@ -104,7 +112,9 @@ com\mathquest\demo\DTO\ActivityCompletionDTO.class
 com\mathquest\demo\Security\jwt\AuthTokenFilter.class
 com\mathquest\demo\DTO\QuizDTO.class
 com\mathquest\demo\Service\Impl\GameServiceImpl.class
+com\mathquest\demo\DTO\MultiplicationLearningProgressDTO.class
 com\mathquest\demo\Model\GameType.class
+com\mathquest\demo\DTO\SaveQuizAttemptRequest.class
 com\mathquest\demo\Controller\AdminController.class
 com\mathquest\demo\DTO\Request\SignupRequest.class
 com\mathquest\demo\DTO\Response\JwtResponse.class
@@ -112,6 +122,7 @@ com\mathquest\demo\Service\StudentPerformanceService.class
 com\mathquest\demo\DTO\Request\CreateGameRequest.class
 com\mathquest\demo\Security\WebSecurityConfig.class
 com\mathquest\demo\Model\ActivityCompletion.class
+com\mathquest\demo\DTO\CompletePropertyRequest.class
 com\mathquest\demo\Model\ClassroomStudent.class
 com\mathquest\demo\Controller\FeedbackController.class
 com\mathquest\demo\Controller\LessonController.class
@@ -121,9 +132,13 @@ com\mathquest\demo\Service\ClassroomServiceImpl.class
 com\mathquest\demo\Controller\QuizController.class
 com\mathquest\demo\Model\ContentBlockType.class
 com\mathquest\demo\Service\LessonServiceImpl.class
+com\mathquest\demo\Service\MultiplicationLearningService$1.class
+com\mathquest\demo\DTO\MultiplicationQuizAttemptDTO.class
 com\mathquest\demo\Service\ContentBlockService.class
 com\mathquest\demo\DTO\JoinClassroomRequest.class
+com\mathquest\demo\Repository\MultiplicationQuizAttemptRepository.class
 com\mathquest\demo\Service\GameService.class
+com\mathquest\demo\Controller\MultiplicationLearningController.class
 com\mathquest\demo\DTO\ContentBlockDTO.class
 com\mathquest\demo\Config\DatabaseInitializer.class
 com\mathquest\demo\Model\Report.class
