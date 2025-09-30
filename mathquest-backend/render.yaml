@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: mathquest-backend
+    env: java
+    buildCommand: ./mvnw clean package -DskipTests
+    startCommand: java -jar target/demo-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: JAVA_VERSION
+        value: 17
