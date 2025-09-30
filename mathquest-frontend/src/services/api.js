@@ -1,8 +1,9 @@
 import axios from "axios";
 import logger from "./logger";
 
-// Use environment variable for API URL, fallback to localhost for development
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
+// Use environment variable for API URL, fallback to deployed backend for production
+const API_URL = process.env.REACT_APP_API_URL || 
+  (window.location.hostname === 'localhost' ? "http://localhost:8080" : "https://your-backend-url.onrender.com");
 
 const api = axios.create({
   baseURL: API_URL,

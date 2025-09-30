@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserService from '../services/userService';
+import api from '../services/api';
 import { Button } from "../ui/button"
 import { Header } from "../ui/heading"
 import { Input } from "../ui/input"
@@ -319,30 +320,18 @@ const ProfilePage = () => {
   // Add new function to handle email verification
   const handleEmailVerification = async (token) => {
     try {
-      const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
-      const response = await fetch(`${API_URL}/auth/verify?token=${token}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await api.get(`/auth/verify?token=${token}`);
+      
+      // Log out the user after successful verification
+      await logout();
+      navigate('/login', { 
+        state: { 
+          message: 'Email verified successfully! Please log in with your new email address.' 
+        }
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Log out the user after successful verification
-        await logout();
-        navigate('/login', { 
-          state: { 
-            message: 'Email verified successfully! Please log in with your new email address.' 
-          }
-        });
-      } else {
-        setError(data.message || 'Failed to verify email');
-      }
     } catch (err) {
       console.error("Email verification error:", err);
-      setError('Failed to verify email. Please try again.');
+      setError(err.message || 'Failed to verify email. Please try again.');
     }
   };
 
