@@ -1,126 +1,140 @@
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\UserRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\LessonCompletionRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\RoleRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\AdminFeedbackController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\LessonCompletionDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\ClassroomController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Classroom.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Config\DatabaseInitializer.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\UserController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\JoinClassroomRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ReportRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\AnnouncementController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\ClassroomServiceImpl.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ClassroomStudentRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\AuthService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\LoginRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\Impl\GameServiceImpl.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\GameScore.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\ChangePasswordRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Security\services\UserDetailsImpl.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\CreateFeedbackRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\GameScoreDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\CreateActivityRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\UserServiceImpl.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Lesson.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Role.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\ActivitySummaryDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\ContentBlock.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\ErrorResponse.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Security\jwt\AuthEntryPointJwt.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\StudentPerformanceRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\QuizService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Security\WebSecurityConfig.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\ReportDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\SubmitActivityRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\LessonDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\ContentBlockServiceImpl.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Activity.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\StudentPerformanceService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DemoApplication.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Security\services\UserDetailsServiceImpl.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\ClassroomDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\ActivityService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\SubmitGameScoreRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\StudentPerformance.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\GameService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\ClassroomService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\UpdateProfileRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Security\jwt\JwtUtils.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\LeaderboardService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\LessonService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\AuthController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Config\WebMvcConfig.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\GameRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\ReportService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\FeedbackService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Config\MultipartConfig.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\ERole.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\ActivityController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\QuizAttemptController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\LeaderboardEntryDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\QuizAttemptDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ActivityRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Response\JwtResponse.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\GameType.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\LessonServiceImpl.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Exception\UnauthorizedException.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\LessonCompletion.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\ActivityCompletion.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\CreateUserRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\QuizRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\GameService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\AnnouncementRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\QuizController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\StudentPerformanceDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\UserSummaryDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\GameController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\SignupRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\ResetPasswordRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Response\MessageResponse.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\ContentBlockController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\CreateContentBlockRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\QuizAttempt.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\EmailService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Exception\GlobalExceptionHandler.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\ReportController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\ContentBlockDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\QuizDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\ContentBlockType.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\QuizAttemptRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\ContentBlockService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\AdminController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Feedback.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\ActivityDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\User.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ActivityCompletionRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Report.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ClassroomRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\QuizAttemptService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Game.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Quiz.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\FeedbackController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\ActivityType.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\LeaderboardEntryRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\UserService.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\UpdateFeedbackRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\QuizType.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Security\jwt\AuthTokenFilter.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\ClassroomStudent.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\CreateLessonRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\FeedbackRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\CreateClassroomRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\GameDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\ActivityCompletionDTO.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\Announcement.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\LessonRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\CreateGameRequest.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Model\LeaderboardEntry.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Exception\ErrorResponse.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\GameScoreRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Controller\LessonController.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Service\Impl\ActivityServiceImpl.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Exception\ResourceNotFoundException.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Repository\ContentBlockRepository.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\Config\RequestLoggingConfig.java
-D:\Freelance\MathQuest\demo\demo\src\main\java\com\mathquest\demo\DTO\Request\ForgotPasswordRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\SaveQuizAttemptRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Config\MultipartConfig.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\ClassroomController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\LessonRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\ClassroomStudent.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Lesson.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\ActivityCompletion.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\LeaderboardService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\UserController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\ClassroomService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\CreateFeedbackRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\ClassroomDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Quiz.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\CreateUserRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Security\jwt\JwtUtils.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\FeedbackRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Game.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\ActivitySummaryDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\MultiplicationQuizAttemptRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\AdminController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\ContentBlockController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\ActivityRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\ReportRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\ClassroomStudentRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\ResetPasswordRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Feedback.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\ContentBlockType.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\EmailService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\GameScore.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\QuizAttempt.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Security\jwt\AuthEntryPointJwt.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\CreateLessonRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\LessonCompletionRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\UserServiceImpl.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\MultiplicationPropertyCompletion.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\CompletePropertyRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\LeaderboardEntry.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\UserSummaryDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\ReportService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\SignupRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\ERole.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\GameController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\CreateClassroomRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Response\MessageResponse.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\ActivityCompletionDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\ActivityType.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\RoleRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\MultiplicationPropertyCompletionDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\LeaderboardEntryDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\UserRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\LessonService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\GameService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\ActivityService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\MultiplicationLearningService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\ChangePasswordRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\MultiplicationQuizAttempt.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\QuizRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\QuizAttemptService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\User.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\MultiplicationQuizAttemptDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\MultiplicationLearningProgressDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\QuizType.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\AdminFeedbackController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\SaveProgressRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Classroom.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Role.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\CreateContentBlockRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\UserService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\FeedbackService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\LeaderboardEntryRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\AuthController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\ContentBlock.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\JoinClassroomRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\ErrorResponse.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\MultiplicationLearningProgress.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\LessonServiceImpl.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\SubmitActivityRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\GameDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\StudentPerformanceService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\UpdateFeedbackRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Security\jwt\AuthTokenFilter.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Report.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\ContentBlockRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Security\services\UserDetailsImpl.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Config\RequestLoggingConfig.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\LessonCompletion.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\LessonCompletionDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Announcement.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\Impl\ActivityServiceImpl.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Config\DatabaseInitializer.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\LoginRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\MultiplicationLearningController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\ActivityDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Config\WebMvcConfig.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Exception\ResourceNotFoundException.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\MultiplicationLearningProgressRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\StudentPerformanceRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\ActivityController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\LessonController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Security\WebSecurityConfig.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\SubmitGameScoreRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\ContentBlockDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\ReportDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\ForgotPasswordRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\ClassroomRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\ContentBlockServiceImpl.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\GameType.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\QuizService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Response\JwtResponse.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\AnnouncementRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\GameRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\GameScoreDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\MultiplicationPropertyCompletionRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\Impl\GameServiceImpl.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Exception\ErrorResponse.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\FeedbackController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\QuizAttemptController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\ClassroomServiceImpl.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\ContentBlockService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Exception\GlobalExceptionHandler.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Exception\UnauthorizedException.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\LessonDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\ReportController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\CreateGameRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\QuizAttemptRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\AnnouncementController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\QuizDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\CreateActivityRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\StudentPerformanceDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\AuthService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\Activity.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Model\StudentPerformance.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DemoApplication.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\QuizAttemptDTO.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Service\GameService.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Controller\QuizController.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\DTO\Request\UpdateProfileRequest.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\GameScoreRepository.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Security\services\UserDetailsServiceImpl.java
+C:\Users\ferdi\OneDrive\Desktop\Documents\capstone original\MathQuest1\mathquest-backend\src\main\java\com\mathquest\demo\Repository\ActivityCompletionRepository.java
