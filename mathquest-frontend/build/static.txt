@@ -1,0 +1,3 @@
+# This file helps identify if the static files are being served correctly
+# It should be accessible at https://mathquest1-2.onrender.com/static.txt
+MathQuest Static Files Test - If you can see this, static files are working!

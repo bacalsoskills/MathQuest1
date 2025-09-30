@@ -45,7 +45,7 @@ public class EmailService {
     }
 
     public void sendVerificationEmail(String to, String token) {
-        String verificationLink = baseUrl + "/auth/verify?token=" + token;
+        String verificationLink = baseUrl + "/#/auth/verify?token=" + token;
 
         if (developmentMode || client == null) {
             // In development mode, just log the verification link
@@ -88,7 +88,7 @@ public class EmailService {
     public void sendPasswordResetEmail(String to, String token) {
         String subject = "Reset Your Password";
         // Format the reset link to work with the frontend route
-        String resetLink = baseUrl + "/reset-password?token=" + token;
+        String resetLink = baseUrl + "/#/reset-password?token=" + token;
         String content = String.format(
                 "Hello,\n\n" +
                         "You have requested to reset your password. Click the link below to set a new password:\n\n" +
@@ -139,7 +139,7 @@ public class EmailService {
     }
 
     public void sendEmailUpdateVerification(String to, String token) {
-        String verificationLink = baseUrl + "/users/verify-email?token=" + token;
+        String verificationLink = baseUrl + "/#/users/verify-email?token=" + token;
         String subject = "Verify Your Email Update";
         String content = "Please click on the link below to verify your email update:\n\n" + verificationLink +
                 "\n\nThis link will expire in 24 hours.";
