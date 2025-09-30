@@ -29,10 +29,12 @@ const VerificationPage = () => {
       setMessage('Verifying your email...');
 
       try {
-        // Add a small delay to ensure backend is ready
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('Attempting to verify token:', token);
+        console.log('API URL:', process.env.REACT_APP_API_URL || 'using default');
         
         const response = await AuthService.verifyEmail(token);
+        console.log('Verification response:', response);
+        
         setMessage(response.message || 'Email verified successfully!');
        
         setTimeout(() => {
@@ -40,14 +42,17 @@ const VerificationPage = () => {
         }, 2000);
       } catch (err) {
         console.error('Verification error:', err);
-        setError(err.response?.data?.message || err.message || 'Failed to verify email. The link might be invalid or expired.');
+        console.error('Error details:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status,
+          statusText: err.response?.statusText
+        });
         
-        // If there was an error, retry once after a delay
-        if (!err.retried) {
-          setTimeout(() => {
-            verify({ retried: true });
-          }, 1000);
-        }
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to verify email. The link might be invalid or expired.';
+        setError(errorMessage);
+        
+        // Don't retry automatically - let user try again manually
       } finally {
         setLoading(false);
       }
@@ -71,6 +76,11 @@ const VerificationPage = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Email Verification
           </h2>
+          {token && (
+            <div className="text-xs text-gray-500 mb-4">
+              Token: {token.substring(0, 10)}... (Debug info)
+            </div>
+          )}
           {loading && (
             <div className="flex justify-center items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
@@ -81,6 +91,12 @@ const VerificationPage = () => {
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
               <strong className="font-bold">Error!</strong>
               <span className="block sm:inline"> {error}</span>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              >
+                Try Again
+              </button>
             </div>
           )}
           {!loading && !error && message && (

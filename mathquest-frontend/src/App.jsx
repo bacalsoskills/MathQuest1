@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import MainLayout from './layouts/MainLayout';
@@ -458,8 +458,18 @@ function App() {
                   {/* Reports Routes */}
                   <Route path="/classroom/:classroomId/reports" element={<ReportsPage />} />
                   
-                  {/* Fallback route */}
-                  <Route path="*" element={<Navigate to="/" />} />
+                  {/* Fallback route - handle any unmatched routes */}
+                  <Route path="*" element={
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                      <div className="text-center">
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Page Not Found</h1>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">The page you're looking for doesn't exist.</p>
+                        <Link to="/" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                          Go back to home
+                        </Link>
+                      </div>
+                    </div>
+                  } />
                 </Routes>
               </div>
               </Router>
