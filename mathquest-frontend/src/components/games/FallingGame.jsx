@@ -33,20 +33,22 @@ const MAX_LIVES = 5;
 const TOTAL_PROBLEMS = 50;
 
 // Add these constants at the top with other constants
-const BASE_FALL_TIME = 20000; // 20 seconds for level 1
-const FALL_TIME_DECREASE_PER_LEVEL = 3000; // 3 seconds faster each level (gentler curve)
+const BASE_FALL_TIME = 25000; // 25 seconds for level 1 (slower, easier)
+const FALL_TIME_DECREASE_PER_LEVEL = 1500; // 1.5 seconds faster per level (gentler ramp)
 const BASE_ACTIVE_PROBLEMS = 2; // Start with 2 problems at level 1
-const MAX_ACTIVE_PROBLEMS = 4;  // Maximum 4 problems at highest level
+const MAX_ACTIVE_PROBLEMS = 3;  // Cap simultaneous problems to 3 for readability
 const MIN_VERTICAL_GAP = 30; // Minimum vertical gap between items (in percentage)
 const MIN_HORIZONTAL_GAP = 20; // Minimum horizontal gap between items (in percentage)
 const SPAWN_DELAY = 1000; // Delay between spawning new items (in milliseconds)
+const POINTS_PER_CORRECT = 10; // Fixed points per correct answer
 
 // Update getMinFallTime to never go below 4s and use a gentler curve
 function getMinFallTime(level) {
-  if (level >= 9) return 4000; // 4s for level 9-10
-  if (level >= 7) return 5000; // 5s for level 7-8
-  if (level >= 4) return 6000; // 6s for level 4-6
-  return 7000; // 7s for level 1-3
+  // Ensure even at the highest levels, items remain readable and answerable
+  if (level >= 9) return 7000; // 7s for level 9-10
+  if (level >= 7) return 8000; // 8s for level 7-8
+  if (level >= 4) return 10000; // 10s for level 4-6
+  return 12000; // 12s for level 1-3
 }
 
 const FallingGame = ({ game, onGameComplete }) => {
@@ -69,7 +71,6 @@ const FallingGame = ({ game, onGameComplete }) => {
   const [currentSequenceIndex, setCurrentSequenceIndex] = useState(0); // Add sequence tracking
   const [deductedProblems, setDeductedProblems] = useState(new Set()); // Track problems that have caused life deduction
   const [lastDeductionTime, setLastDeductionTime] = useState(0); // Track last deduction time
-  const [showLevelTransition, setShowLevelTransition] = useState(false); // Show level transition animation
   const [isGeneratingProblems, setIsGeneratingProblems] = useState(false); // Show when generating new problems
   const [showCongratulationsModal, setShowCongratulationsModal] = useState(false); // Show congratulations modal
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Track current question (0-9)
@@ -108,6 +109,7 @@ const FallingGame = ({ game, onGameComplete }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isRestoringGame, setIsRestoringGame] = useState(false);
   const [showRestartConfirmModal, setShowRestartConfirmModal] = useState(false);
+  const [completedAllLevels, setCompletedAllLevels] = useState(false);
 
   // Add state for unlocked levels
   const [unlockedLevels, setUnlockedLevels] = useState(1);
@@ -484,7 +486,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         return;
       }
       
-      // Generate multiplication table problems for current level (synchronous)
+      // Generate multiplication table problems for current level (synchronous and fast)
       logger.info(`Generating multiplication table problems for Level ${currentLevel} (Table of ${currentLevel})`);
       const multiplicationProblems = generateMultiplicationTableProblems(currentLevel);
       
@@ -494,7 +496,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         timestamp: Date.now()
       });
       
-      // Set problems immediately
+      // Set problems immediately - no delay
       setProblems(multiplicationProblems);
       logger.info(`Generated ${multiplicationProblems.length} problems for Table of ${currentLevel}`);
       
@@ -541,7 +543,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       });
       setProblems(newProblems);
     } finally {
-      // Clear generating state
+      // Clear generating state immediately
       setIsGeneratingProblems(false);
       apiState.isGenerating = false;
     }
@@ -583,6 +585,70 @@ const FallingGame = ({ game, onGameComplete }) => {
         positions.push({ x, y });
       }
     }
+    return positions;
+  }
+
+  // Compute spawn positions that avoid overlapping BOTH within the batch
+  // and with the currently active items already on screen
+  function getNonOverlappingPositionsWithActive(activeItems, count, minXGap, minYGap) {
+    const positions = [];
+    const existing = activeItems.map(item => ({ x: item.x, y: item.y }));
+    let attempts = 0;
+    const maxAttempts = 200;
+
+    // Prefer fixed lanes similar to getNonOverlappingPositions for stability
+    const fixedXSets = {
+      1: [50],
+      2: [30, 70],
+      3: [20, 50, 80],
+      4: [15, 40, 65, 85]
+    };
+    const candidateXs = fixedXSets[count] ? fixedXSets[count].slice().sort(() => Math.random() - 0.5) : null;
+
+    while (positions.length < count && attempts < maxAttempts) {
+      // Start slightly above the visible area; stagger vertically within safe gap
+      const y = -20 - (positions.length * minYGap);
+      let x;
+      if (candidateXs) {
+        x = candidateXs[Math.min(positions.length, candidateXs.length - 1)];
+      } else {
+        x = Math.random() * 80 + 10;
+      }
+
+      // If this x conflicts with existing or already picked positions, try to nudge
+      let nudgeAttempts = 0;
+      const maxNudges = 20;
+      let valid = false;
+      while (!valid && nudgeAttempts < maxNudges) {
+        const conflictsExisting = existing.some(pos => Math.abs(pos.x - x) < minXGap && Math.abs(pos.y - y) < minYGap);
+        const conflictsBatch = positions.some(pos => Math.abs(pos.x - x) < minXGap && Math.abs(pos.y - y) < minYGap);
+        if (!conflictsExisting && !conflictsBatch) {
+          valid = true;
+          break;
+        }
+        // Nudge left/right alternately
+        const direction = nudgeAttempts % 2 === 0 ? 1 : -1;
+        x = Math.min(90, Math.max(10, x + direction * (minXGap / 2)));
+        nudgeAttempts++;
+      }
+
+      if (valid) {
+        positions.push({ x, y });
+      }
+      attempts++;
+      // Fallback: if we still can't find enough unique positions, widen gaps slightly
+      if (attempts % 40 === 0) {
+        minXGap = Math.max(minXGap - 2, 10);
+      }
+    }
+
+    // If not enough positions could be found, fill remaining using the basic method (best effort)
+    if (positions.length < count) {
+      const remaining = count - positions.length;
+      const backfill = getNonOverlappingPositions(remaining, minXGap, minYGap);
+      positions.push(...backfill);
+    }
+
     return positions;
   }
 
@@ -687,6 +753,7 @@ const FallingGame = ({ game, onGameComplete }) => {
         }
       });
       
+      setCompletedAllLevels(true);
       setGameOver(true);
       submitScore();
       return;
@@ -868,8 +935,8 @@ const FallingGame = ({ game, onGameComplete }) => {
           // If problems are available, spawn them
           if (currentLevelProblems.length > 0) {
               const needed = maxActiveProblems - prevActive.length;
-            // Use improved non-overlapping batch placement
-            const positions = getNonOverlappingPositions(needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
+            // Use improved non-overlapping placement against existing active items
+            const positions = getNonOverlappingPositionsWithActive(prevActive, needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
             const toAdd = currentLevelProblems.slice(0, needed).map((p, idx) => {
               return {
                 ...p,
@@ -905,7 +972,7 @@ const FallingGame = ({ game, onGameComplete }) => {
               
               if (allLevelProblems.length > 0) {
                 const needed = maxActiveProblems - prevActive.length;
-                const positions = getNonOverlappingPositions(needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
+                const positions = getNonOverlappingPositionsWithActive(prevActive, needed, MIN_HORIZONTAL_GAP, MIN_VERTICAL_GAP);
                 const toAdd = allLevelProblems.slice(0, needed).map((p, idx) => {
                   return {
                     ...p,
@@ -1195,7 +1262,7 @@ const FallingGame = ({ game, onGameComplete }) => {
     
     if (isCorrect) {
       // Correct answer
-      setScore(prev => prev + (10 * currentLevel));
+      setScore(prev => prev + POINTS_PER_CORRECT);
       setActiveProblems(prev => prev.map(p => 
         p.id === currentProblem.id ? { ...p, status: 'correct', isSolved: true } : p
       ));
@@ -1223,7 +1290,7 @@ const FallingGame = ({ game, onGameComplete }) => {
       solvedProblemsRef.current.add(currentProblem.id);
       
       // Show "Good Job!" announcement
-      toast.success(`✅ Good Job! +${10 * currentLevel} points!`, { 
+      toast.success(`✅ Good Job! +${POINTS_PER_CORRECT} points!`, { 
         duration: 1500,
         style: {
           background: '#10B981',
@@ -1631,7 +1698,26 @@ const FallingGame = ({ game, onGameComplete }) => {
   // Handle congratulations modal - continue to next level
   const handleContinueToNextLevel = () => {
     setShowCongratulationsModal(false);
-    const newLevel = currentLevel + 1;
+    // If we've reached the final level, finish the game instead of advancing
+    if (currentLevel >= MAX_LEVEL) {
+      toast.success(`🏆 AMAZING! You completed all ${MAX_LEVEL} levels! 🏆`, { 
+        duration: 4000,
+        style: {
+          background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+          color: '#000000',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          padding: '16px 24px',
+          borderRadius: '12px',
+          boxShadow: '0 6px 18px rgba(255, 215, 0, 0.35)'
+        }
+      });
+      setCompletedAllLevels(true);
+      setGameOver(true);
+      submitScore();
+      return;
+    }
+    const newLevel = Math.min(currentLevel + 1, MAX_LEVEL);
     
     // Reset counters for new level immediately
     setQuestionsAnswered(0);
@@ -1649,18 +1735,42 @@ const FallingGame = ({ game, onGameComplete }) => {
     // Set new level immediately
     setCurrentLevel(newLevel);
     
-    // Show brief level transition animation (reduced from 2s to 1s)
-    setShowLevelTransition(true);
-    
-    // Hide transition after shorter animation
-    setTimeout(() => {
-      setShowLevelTransition(false);
-    }, 1000);
-    
-    toast.success(`Starting Table of ${newLevel}...`, { duration: 1500 });
+    // Start countdown from 30 to 1
+    setCountdown(30);
     
     // Generate problems immediately without waiting
     generateProblems();
+    
+    // Countdown timer
+    let count = 30;
+    const countdownInterval = setInterval(() => {
+      count--;
+      setCountdown(count);
+      if (count <= 0) {
+        clearInterval(countdownInterval);
+        setCountdown(null);
+        setGameStarted(true);
+        lastSpawnTimeRef.current = performance.now();
+        
+        // Show immediate notification when level starts
+        toast.success(`🏴‍☠️ Level ${newLevel} Started! 🏴‍☠️`, { 
+          duration: 2000,
+          style: {
+            background: 'linear-gradient(135deg, #10B981, #059669)',
+            color: '#FFFFFF',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            padding: '16px 24px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+          },
+          iconTheme: {
+            primary: '#FFFFFF',
+            secondary: '#10B981',
+          }
+        });
+      }
+    }, 1000);
   };
 
   // Handle congratulations modal - exit game
@@ -1792,54 +1902,55 @@ const FallingGame = ({ game, onGameComplete }) => {
             <div className="text-center">
               <div className="flex items-center justify-center gap-3 mb-6">
                 <FaCompass className="text-yellow-400 text-4xl" />
-                <h2 className="text-4xl sm:text-6xl font-bold text-yellow-300">Preparing Your Ship</h2>
+                <h2 className="text-4xl sm:text-6xl font-bold text-yellow-300">
+                  {currentLevel > 1 ? `Level ${currentLevel} Starting` : 'Preparing Your Ship'}
+                </h2>
                 <FaSkullCrossbones className="text-yellow-400 text-4xl" />
               </div>
               <div className="text-6xl sm:text-8xl font-bold text-yellow-400 animate-pulse mb-4">
                 {countdown}
               </div>
-              <p className="text-xl text-yellow-200">Setting sail in...</p>
+              <p className="text-xl text-yellow-200">
+                {currentLevel > 1 ? `Starting Treasure Map ${currentLevel} in...` : 'Setting sail in...'}
+              </p>
+              
+              {/* Show level progress during countdown */}
+              {currentLevel > 1 && (
+                <div className="mt-6 inline-flex flex-col sm:flex-row items-center bg-white bg-opacity-20 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg">
+                  <div className="flex items-center mb-2 sm:mb-0">
+                    <FaCrown className="text-yellow-300 text-lg sm:text-xl mr-2 sm:mr-3" />
+                    <span className="text-sm sm:text-base font-bold">Maps Discovered: {currentLevel}/{MAX_LEVEL}</span>
+                  </div>
+                  <div className="w-16 sm:w-20 bg-white bg-opacity-20 rounded-full h-2 sm:ml-3">
+                    <div 
+                      className="bg-yellow-300 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${(currentLevel / MAX_LEVEL) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show countdown info for first level */}
+              {currentLevel === 1 && countdown === 30 && (
+                <div className="mt-6 inline-flex flex-col items-center bg-white bg-opacity-20 text-white px-4 sm:px-6 py-3 rounded-lg shadow-lg max-w-md">
+                  <div className="flex items-center mb-2">
+                    <FaCompass className="text-yellow-300 text-lg mr-2" />
+                    <span className="text-sm font-bold">Game Info</span>
+                  </div>
+                  <p className="text-xs text-yellow-200 text-center">
+                    Between each level, you'll have a 30-second countdown to prepare for the next treasure map!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
         
-        {showLevelTransition && (
-          <div className="fixed inset-0 bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 flex items-center justify-center z-50 p-4">
-            <div className="text-center animate-bounce w-full max-w-md sm:max-w-lg">
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <FaCompass className="text-yellow-300 text-4xl" />
-                <div className="text-4xl sm:text-6xl md:text-8xl">🏴‍☠️</div>
-                <FaSkullCrossbones className="text-yellow-300 text-4xl" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-3 sm:mb-4">Level Up, Captain!</h2>
-              <div className="text-xl sm:text-2xl md:text-4xl font-bold text-yellow-300 mb-2">
-                Treasure Map {currentLevel} → Treasure Map {currentLevel + 1}
-              </div>
-              <div className="text-base sm:text-lg md:text-2xl text-white opacity-90 mb-4">
-                New treasures await your discovery!
-              </div>
-              
-              {/* Total Progress in Level Transition - Responsive */}
-              <div className="inline-flex flex-col sm:flex-row items-center bg-white bg-opacity-20 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg w-full sm:w-auto">
-                <div className="flex items-center mb-2 sm:mb-0">
-                  <FaCrown className="text-yellow-300 text-lg sm:text-xl md:text-2xl mr-2 sm:mr-3" />
-                  <span className="text-sm sm:text-base md:text-xl font-bold">Treasure Maps Discovered: {currentLevel + 1}/{MAX_LEVEL}</span>
-                </div>
-                <div className="w-16 sm:w-20 md:w-24 bg-white bg-opacity-20 rounded-full h-2 sm:h-3 sm:ml-4">
-                  <div 
-                    className="bg-yellow-300 h-2 sm:h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${((currentLevel + 1) / MAX_LEVEL) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         
         {/* Congratulations Modal */}
         {showCongratulationsModal && (
           <div className="fixed inset-0 bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 flex items-center justify-center z-50 p-4">
-            <div className={`text-center animate-bounce w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl p-6 sm:p-8 border-2 transition-colors duration-300 ${
+            <div className={`text-center w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl p-6 sm:p-8 border-2 transition-colors duration-300 ${
               darkMode ? 'bg-[#0b1022]/95 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
             }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
               <div className="flex items-center justify-center gap-3 mb-6">
@@ -1869,7 +1980,7 @@ const FallingGame = ({ game, onGameComplete }) => {
                   className="w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-base sm:text-lg font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 flex items-center justify-center"
                 >
                   <FaShip className="mr-2" />
-                  Continue to Treasure Map {currentLevel + 1}
+                  {currentLevel >= MAX_LEVEL ? "Congratulations on completing all the levels!" : `Continue to Treasure Map ${currentLevel + 1}`}
                 </button>
                 <button
                   onClick={handleExitAfterLevel}
@@ -1948,6 +2059,20 @@ const FallingGame = ({ game, onGameComplete }) => {
                 </div>
               )}
               
+              {/* First Problem Indicator - Responsive */}
+              {activeProblems.length > 0 && !isGeneratingProblems && (
+                <div className="mb-3 sm:mb-4 text-center px-2">
+                  <div className={`inline-flex flex-col sm:flex-row items-center px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg w-full sm:w-auto border-2 transition-colors duration-300 ${
+                    darkMode ? 'bg-gradient-to-r from-blue-500 to-blue-600 border-blue-700/40' : 'bg-gradient-to-r from-blue-500 to-blue-600 border-blue-300'
+                  }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(59, 130, 246, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
+                    <div className="flex items-center mb-1 sm:mb-0">
+                      <span className="text-yellow-300 text-lg sm:text-xl mr-2">⭐</span>
+                      <span className="text-sm sm:text-lg font-bold text-white">Answer the BLUE treasure first!</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div
                 ref={gameAreaRef}
                 className={`relative w-full h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] md:h-[calc(100vh-280px)] lg:h-[calc(100vh-260px)] shadow-2xl rounded-2xl mb-4 overflow-hidden border-2 transition-colors duration-300 ${
@@ -1955,9 +2080,10 @@ const FallingGame = ({ game, onGameComplete }) => {
                 }`}
                 style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}
               >
-                {activeProblems.map(problem => {
+                {activeProblems.map((problem, index) => {
                   let bgColor = "from-amber-500 to-orange-600";
                   let borderColor = "border-amber-300";
+                  let isFirstProblem = index === 0;
                   
                   // Visual feedback based on status and sequence
                   if (problem.status === 'correct') {
@@ -1969,16 +2095,22 @@ const FallingGame = ({ game, onGameComplete }) => {
                   } else if (problem.status === 'warning') {
                     bgColor = "from-yellow-500 to-yellow-600";
                     borderColor = "border-yellow-300";
-                  } else if (problem.sequenceIndex === currentSequenceIndex) {
-                    // Highlight current sequence problem
+                  } else if (isFirstProblem) {
+                    // Highlight the first problem (should be answered first)
                     bgColor = "from-blue-500 to-blue-600";
                     borderColor = "border-blue-300";
+                  } else if (problem.sequenceIndex === currentSequenceIndex) {
+                    // Highlight current sequence problem
+                    bgColor = "from-purple-500 to-purple-600";
+                    borderColor = "border-purple-300";
                   }
                   
                   return (
                     <div
                       key={problem.id}
-                      className={`absolute px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-3 bg-gradient-to-br ${bgColor} text-white rounded-lg shadow-lg border-2 ${borderColor} transform transition-transform duration-100 hover:scale-110`}
+                      className={`absolute px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-3 bg-gradient-to-br ${bgColor} text-white rounded-lg shadow-lg border-2 ${borderColor} transform transition-transform duration-100 hover:scale-110 ${
+                        isFirstProblem ? 'animate-pulse' : ''
+                      }`}
                       style={{
                         left: `${problem.x}%`,
                         top: `${problem.y}%`,
@@ -1987,10 +2119,13 @@ const FallingGame = ({ game, onGameComplete }) => {
                         fontWeight: 'bold',
                         minWidth: '60px',
                         textAlign: 'center',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+                        boxShadow: isFirstProblem ? '0 0 20px rgba(59, 130, 246, 0.6), 0 4px 6px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.3)'
                       }}
                     >
-                      <span className="font-bold text-xs sm:text-sm md:text-base">{problem.question}</span>
+                      <span className="font-bold text-xs sm:text-sm md:text-base">
+                        {problem.question}
+                        {isFirstProblem && <span className="ml-1 text-yellow-300">⭐</span>}
+                      </span>
                     </div>
                   );
                 })}
@@ -2199,47 +2334,82 @@ const FallingGame = ({ game, onGameComplete }) => {
           <div className={`text-center md:mt-36 my-8 p-8 w-full max-w-md mx-auto rounded-2xl shadow-2xl border-2 backdrop-blur-sm sm:p-6 lg:p-8 flex flex-col relative transition-colors duration-300 ${
             darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
           }`} style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}>
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <FaSkullCrossbones className="text-red-500 text-2xl" />
-              <Header type="h1" fontSize="5xl" weight="semibold" className="text-red-600 py-3 tracking-wide">
-                Shipwrecked!
-              </Header>
-              <FaSkullCrossbones className="text-red-500 text-2xl" />
-            </div>
-            <p className={`mb-6 text-lg ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
-              Your final treasure: <span className="font-bold text-yellow-500">{score}</span> coins
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Button
-                onClick={startGame}
-                variant="default"
-                size="sm"
-                rounded="full"
-                className={`transition-all duration-300 hover:scale-105 ${
-                  darkMode 
-                    ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
-                    : 'bg-yellow-600 hover:bg-yellow-500 text-white'
-                }`}
-              >
-                <FaShip className="mr-2" />
-                Set Sail Again
-              </Button>
-              <Button
-                onClick={() => { 
-                  if (onGameComplete) {
-                    // For the "Back to Games" button, just pass the score number
-                    onGameComplete(score);
-                  }
-                }}
-                variant="cancel"
-                size="sm"
-                rounded="full"
-                className="transition-all duration-300 hover:scale-105"
-              >
-                <FaAnchor className="mr-2" />
-                Return to Port
-              </Button>
-            </div>
+            {completedAllLevels ? (
+              <>
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <FaCrown className="text-yellow-500 text-2xl" />
+                  <Header type="h1" fontSize="5xl" weight="semibold" className={`${darkMode ? 'text-yellow-300' : 'text-yellow-700'} py-3 tracking-wide`}>
+                    Good work!
+                  </Header>
+                  <FaCrown className="text-yellow-500 text-2xl" />
+                </div>
+                <p className={`mb-6 text-lg ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                  You made it after clearing all the levels from 1 to 10.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    onClick={() => { 
+                      if (onGameComplete) onGameComplete(score);
+                    }}
+                    variant="default"
+                    size="sm"
+                    rounded="full"
+                    className={`transition-all duration-300 hover:scale-105 ${
+                      darkMode 
+                        ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                        : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                    }`}
+                  >
+                    <FaAnchor className="mr-2" />
+                    Return to Port
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <FaSkullCrossbones className="text-red-500 text-2xl" />
+                  <Header type="h1" fontSize="5xl" weight="semibold" className="text-red-600 py-3 tracking-wide">
+                    Shipwrecked!
+                  </Header>
+                  <FaSkullCrossbones className="text-red-500 text-2xl" />
+                </div>
+                <p className={`mb-6 text-lg ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                  Your final treasure: <span className="font-bold text-yellow-500">{score}</span> coins
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    onClick={startGame}
+                    variant="default"
+                    size="sm"
+                    rounded="full"
+                    className={`transition-all duration-300 hover:scale-105 ${
+                      darkMode 
+                        ? 'bg-yellow-500 hover:bg-yellow-400 text-[#0b1022]' 
+                        : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                    }`}
+                  >
+                    <FaShip className="mr-2" />
+                    Set Sail Again
+                  </Button>
+                  <Button
+                    onClick={() => { 
+                      if (onGameComplete) {
+                        // For the "Back to Games" button, just pass the score number
+                        onGameComplete(score);
+                      }
+                    }}
+                    variant="cancel"
+                    size="sm"
+                    rounded="full"
+                    className="transition-all duration-300 hover:scale-105"
+                  >
+                    <FaAnchor className="mr-2" />
+                    Return to Port
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
 

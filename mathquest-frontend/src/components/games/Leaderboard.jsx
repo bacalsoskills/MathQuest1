@@ -3,9 +3,12 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { FaCompass, FaCrown, FaSkullCrossbones, FaAnchor, FaMap } from 'react-icons/fa';
 
 const Leaderboard = ({ gameId, finalScore }) => {
   const { currentUser, token, isTeacher } = useAuth();
+  const { darkMode } = useTheme();
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUserRank, setCurrentUserRank] = useState(null);
@@ -71,18 +74,30 @@ const Leaderboard = ({ gameId, finalScore }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-6 text-center">
-        {isTeacher() ? 'Student Game Leaderboard' : 'Game Leaderboard'}
-      </h2>
+    <div className={`rounded-2xl shadow-2xl p-6 sm:p-8 border-2 transition-colors duration-300 ${
+      darkMode
+        ? 'bg-[#0b1022]/85 border-yellow-700/40'
+        : 'bg-gradient-to-br from-amber-100 to-orange-100 border-yellow-300'
+    }`} style={{ boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}>
+      <div className="flex items-center justify-center gap-3 mb-4">
+        <FaCompass className={`${darkMode ? 'text-yellow-400' : 'text-yellow-600'} text-2xl`} />
+        <h2 className={`text-3xl font-extrabold tracking-wide ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
+          {isTeacher() ? 'Captain’s Ledger' : 'Captain’s Board'}
+        </h2>
+        <FaSkullCrossbones className={`${darkMode ? 'text-yellow-400' : 'text-yellow-600'} text-2xl`} />
+      </div>
       
       {!isTeacher() && finalScore !== null && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200" >
-          <p className="text-center text-lg">
-            <span className="font-bold">Your Score:</span> {finalScore}
+        <div className={`mb-6 p-4 rounded-xl border-2 ${
+          darkMode
+            ? 'bg-[#0f1428] border-yellow-700/40'
+            : 'bg-gradient-to-r from-yellow-100 to-amber-100 border-yellow-300'
+        }`}>
+          <p className={`text-center text-lg ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
+            <span className="font-extrabold">Your Treasure:</span> {finalScore}
           </p>
           {currentUserRank && (
-            <p className="text-center text-lg">
+            <p className={`text-center text-lg ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
               <span className="font-bold">Your Rank:</span> {currentUserRank}{getOrdinalSuffix(currentUserRank)}
             </p>
           )}
@@ -90,25 +105,29 @@ const Leaderboard = ({ gameId, finalScore }) => {
       )}
       
       {leaderboard.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className={`text-center py-8 ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
           <p>
             {isTeacher() 
-              ? "No students have played this game yet."
-              : "No scores recorded yet. Be the first to play!"}
+              ? "No sailors have ventured here yet."
+              : "No treasures recorded yet. Be the first to sail!"}
           </p>
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
+          <table className={`min-w-full border-2 rounded-xl transition-colors duration-300 ${
+            darkMode
+              ? 'bg-[#0f1428] border-yellow-700/40'
+              : 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200'
+          }`}>
             <thead>
-              <tr className="bg-gray-100 text-gray-700 text-left">
+              <tr className={`${darkMode ? 'bg-[#13183a] text-yellow-200' : 'bg-gradient-to-r from-amber-200 to-yellow-200 text-yellow-900'} text-left`}>
                 <th className="py-3 px-4 font-semibold">Rank</th>
-                <th className="py-3 px-4 font-semibold">Player</th>
-                <th className="py-3 px-4 font-semibold text-right">Score</th>
-                <th className="py-3 px-4 font-semibold text-right">Date</th>
+                <th className="py-3 px-4 font-semibold">Sailor</th>
+                <th className="py-3 px-4 font-semibold text-right">Treasure</th>
+                <th className="py-3 px-4 font-semibold text-right">Log Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className={`${darkMode ? 'divide-yellow-700/40' : 'divide-yellow-200'}`}>
               {leaderboard.map((entry, index) => {
                 const isCurrentUser = currentUser && 
                   (entry.studentId === currentUser.id || entry.studentEmail === currentUser.email);
@@ -116,24 +135,22 @@ const Leaderboard = ({ gameId, finalScore }) => {
                 return (
                   <tr 
                     key={index} 
-                    className={isCurrentUser ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                    className={`${isCurrentUser
+                      ? (darkMode ? 'bg-[#1a2146]' : 'bg-yellow-100')
+                      : (darkMode ? 'hover:bg-[#111633]' : 'hover:bg-amber-100')}`}
                   >
-                    <td className="py-3 px-4">
+                    <td className={`py-3 px-4 ${darkMode ? 'text-yellow-300' : 'text-yellow-900'}`}>
                       {getPositionEmoji(index + 1)} {index + 1}{getOrdinalSuffix(index + 1)}
                     </td>
-                    <td className="py-3 px-4 font-medium">
+                    <td className={`py-3 px-4 font-semibold ${darkMode ? 'text-yellow-200' : 'text-yellow-900'}`}>
                       {entry.studentName || 'Anonymous'} 
-                      {isCurrentUser && <span className="ml-2 text-blue-600">(You)</span>}
+                      {isCurrentUser && <span className={`${darkMode ? 'text-yellow-400' : 'text-amber-700'} ml-2`}>(You)</span>}
                     </td>
-                    <td className="py-3 px-4 text-right font-bold">{entry.score}</td>
+                    <td className={`py-3 px-4 text-right font-extrabold ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>{entry.score}</td>
                     {(() => {
-                  
-
                       const parsedDate = new Date(entry.playedAt);
-              
-
                       return (
-                        <td className="py-3 px-4 text-right text-gray-500">
+                        <td className={`py-3 px-4 text-right ${darkMode ? 'text-yellow-400' : 'text-amber-700'}`}>
                           {entry.playedAt && !isNaN(parsedDate)
                             ? parsedDate.toLocaleDateString()
                             : '—'}

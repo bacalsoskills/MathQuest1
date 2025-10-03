@@ -11,6 +11,7 @@ import Modal from '../../ui/modal';
 import { Button } from '../../ui/button';
 import { Header } from '../../ui/heading';
 import logger from '../../services/logger';
+import { useTheme } from '../../context/ThemeContext';
 
 // Add these constants at the top after imports
 const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
@@ -31,6 +32,7 @@ const apiState = {
 
 const MultipleChoiceGame = ({ game, onGameComplete }) => {
   const { token, currentUser } = useAuth();
+  const { darkMode } = useTheme();
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -130,11 +132,10 @@ const MultipleChoiceGame = ({ game, onGameComplete }) => {
     try {
       const topicLower = topic.toLowerCase();
       let operationKeyword = '';
-      if (topicLower.includes('multiply')) operationKeyword = 'multiply';
-      else if (topicLower.includes('divide')) operationKeyword = 'divide';
+      // Only allow divide, add, subtract. Exclude fractions and multiplication entirely
+      if (topicLower.includes('divide')) operationKeyword = 'divide';
       else if (topicLower.includes('add')) operationKeyword = 'add';
       else if (topicLower.includes('subtract')) operationKeyword = 'subtract';
-      else if (topicLower.includes('fraction')) operationKeyword = 'fraction';
 
 
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -197,11 +198,9 @@ Respond ONLY with a JSON array where each object has:
           filteredProblems = parsedContent.filter(p => {
             if (!p.operation) return false;
             const op = p.operation.toLowerCase();
-            if (operationKeyword === 'multiply') return op.includes('multiply');
             if (operationKeyword === 'divide') return op.includes('divide');
             if (operationKeyword === 'add') return op.includes('add');
             if (operationKeyword === 'subtract') return op.includes('subtract');
-            if (operationKeyword === 'fraction') return op.includes('fraction') || op.includes('add') || op.includes('situational');
             return false;
           });
         }
@@ -237,7 +236,7 @@ Respond ONLY with a JSON array where each object has:
         }
       }
 
-      // Use Groq API only - no fallback
+      // Use Groq API; exclude fractions and multiplication
       const problems = await callGroqApi(game.topic, problemCount);
       
       if (Array.isArray(problems) && problems.length > 0) {
@@ -252,7 +251,13 @@ Respond ONLY with a JSON array where each object has:
         
 
         
-        const formattedProblems = uniqueProblems.map((p, idx) => ({
+        const formattedProblems = uniqueProblems
+          // Exclude any fraction or multiplication problems from API results just in case
+          .filter(p => {
+            const op = (p.operation || '').toLowerCase();
+            return !op.includes('fraction') && !op.includes('multiply');
+          })
+          .map((p, idx) => ({
           id: `${Date.now()}-${idx}`,
           question: p.question,
           answer: p.answer,
@@ -274,7 +279,7 @@ Respond ONLY with a JSON array where each object has:
       // If no problems returned, show error and retry
       logger.error('[MultipleChoiceGame] No problems generated from Groq API');
       
-      // Generate fallback questions based on topic
+      // Generate fallback questions based on topic (without fractions and multiplication)
       const fallbackQuestions = generateFallbackQuestions(game.topic, problemCount);
       if (fallbackQuestions.length > 0) {
         setQuestions(fallbackQuestions);
@@ -315,17 +320,6 @@ Respond ONLY with a JSON array where each object has:
     const options = [correctAnswer];
     const range = getDifficultyRanges(level);
     const maxRange = range.max * (level >= 3 ? 2 : 1);
-    if (topic && topic.toLowerCase().includes('fraction')) {
-      // Generate plausible fraction options
-      const [ansNum, ansDen] = correctAnswer.split(/[ /]+/).map(Number);
-      while (options.length < 4) {
-        let num = Math.max(1, ansNum + Math.floor(Math.random() * 5) - 2);
-        let den = ansDen || (Math.floor(Math.random() * 8) + 2);
-        let opt = `${num}/${den}`;
-        if (!options.includes(opt)) options.push(opt);
-      }
-      return options.sort(() => Math.random() - 0.5);
-    }
     while (options.length < 4) {
       const wrongAnswer = Math.floor(Math.random() * maxRange) + 1;
       if (!options.includes(wrongAnswer) && Math.abs(wrongAnswer - correctAnswer) > 1) {
@@ -657,14 +651,14 @@ Respond ONLY with a JSON array where each object has:
   };
   const toggleSettingsModal = () => setShowSettingsModal(prev => !prev);
   const toggleTableModal = () => {
-    if (game?.topic?.toLowerCase().includes('multiply') || game?.topic?.toLowerCase().includes('division')) {
+    if (game?.topic?.toLowerCase().includes('division')) {
       setShowTableModal(prev => !prev);
     } else {
-      toast.error('Multiplication table is only available for multiplication or division topics.');
+      toast.error('Division reference is only available for division topics.');
     }
   };
   const toggleMusic = () => setMusicEnabled(prev => !prev);
-  const isMultiplicationOrDivision = game?.topic?.toLowerCase().includes('multiply') || game?.topic?.toLowerCase().includes('division');
+  const isMultiplicationOrDivision = game?.topic?.toLowerCase().includes('division');
 
   // Fullscreen functionality
   const toggleFullscreen = () => {
@@ -880,51 +874,7 @@ Respond ONLY with a JSON array where each object has:
     for (let i = 0; i < count; i++) {
       let question, answer, options;
       
-      if (topicLower.includes('fraction')) {
-        // Basic fraction questions with proper calculation
-        const numerators = [1, 2, 3, 4, 5];
-        const denominators = [2, 3, 4, 5, 6];
-        const num1 = numerators[Math.floor(Math.random() * numerators.length)];
-        const den1 = denominators[Math.floor(Math.random() * denominators.length)];
-        const num2 = numerators[Math.floor(Math.random() * numerators.length)];
-        const den2 = denominators[Math.floor(Math.random() * denominators.length)];
-        
-        // Calculate correct answer using proper fraction addition
-        const lcm = (a, b) => (a * b) / gcd(a, b);
-        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-        
-        const commonDenominator = lcm(den1, den2);
-        const newNum1 = num1 * (commonDenominator / den1);
-        const newNum2 = num2 * (commonDenominator / den2);
-        const resultNum = newNum1 + newNum2;
-        
-        // Simplify the fraction
-        const divisor = gcd(resultNum, commonDenominator);
-        const simplifiedNum = resultNum / divisor;
-        const simplifiedDen = commonDenominator / divisor;
-        
-        question = `What is ${num1}/${den1} + ${num2}/${den2}?`;
-        answer = `${simplifiedNum}/${simplifiedDen}`;
-        
-        // Generate wrong options
-        const wrong1 = `${num1 + num2}/${den1}`;
-        const wrong2 = `${num1 + num2}/${den1 + den2}`;
-        const wrong3 = `${num1 * num2}/${den1 * den2}`;
-        
-        options = [answer, wrong1, wrong2, wrong3].sort(() => Math.random() - 0.5);
-      } else if (topicLower.includes('multiply')) {
-        // Basic multiplication
-        const num1 = Math.floor(Math.random() * 12) + 1;
-        const num2 = Math.floor(Math.random() * 12) + 1;
-        question = `What is ${num1} × ${num2}?`;
-        answer = (num1 * num2).toString();
-        
-        const wrong1 = (num1 + num2).toString();
-        const wrong2 = (num1 - num2).toString();
-        const wrong3 = (num1 * num2 + 1).toString();
-        
-        options = [answer, wrong1, wrong2, wrong3].sort(() => Math.random() - 0.5);
-      } else if (topicLower.includes('add')) {
+      if (topicLower.includes('add')) {
         // Basic addition
         const num1 = Math.floor(Math.random() * 50) + 1;
         const num2 = Math.floor(Math.random() * 50) + 1;
@@ -982,7 +932,7 @@ Respond ONLY with a JSON array where each object has:
   }
 
   return (
-    <div className="px-4 sm:px-6 game-container">
+    <div className={`px-4 sm:px-6 game-container min-h-screen ${darkMode ? 'bg-[#0b1022]' : 'bg-[#f5ecd2]'}`}>
       <div className="mx-auto">
       <audio ref={audioRef} src="/game-bg-music.mp3" loop autoPlay style={{ display: 'none' }} />
       
@@ -1000,11 +950,11 @@ Respond ONLY with a JSON array where each object has:
       
       <div className={`w-full mx-auto flex flex-col items-center justify-center md:flex-grow`}>
         {!gameStarted && !gameOver && countdownModal === null && (
-          <div className="text-center my-8 p-8 md:mt-36 rounded-2xl shadow-xl dark:bg-transparent sm:p-6 lg:p-8 flex flex-col min-h-[200px] sm:min-h-[260px] relative border border-white/10">
+          <div className={`text-center my-8 p-8 md:mt-36 rounded-2xl shadow-xl sm:p-6 lg:p-8 flex flex-col min-h-[200px] sm:min-h-[260px] relative border ${darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fbf4de]/90 border-yellow-300'}`}>
             <Header type="h1" fontSize="5xl" weight="semibold" className="text-yellow-500 py-3">
               {game?.name || 'Multiple Choice Game'}
             </Header>
-            <p className="dark:text-gray-300 text-gray-900 mb-3">{game?.instructions || 'Choose the correct answer for each question!'}</p>
+            <p className={`${darkMode ? 'text-yellow-200' : 'text-yellow-800'} mb-3`}>{game?.instructions || 'Choose the correct answer for each question!'}</p>
             <div className="flex flex-col items-center gap-3">
               <div className="flex justify-center gap-2">
                 <Button
@@ -1063,26 +1013,26 @@ Respond ONLY with a JSON array where each object has:
           <div className="flex flex-col lg:flex-row w-full gap-6">
             {/* Game Area - Full width on small screens, 3/4 on large screens */}
             <div className="w-full lg:w-3/4">
-              <div className="relative w-full h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)] lg:h-[calc(100vh-200px)] bg-gray-50 shadow-lg rounded-lg mb-4 overflow-hidden flex items-center justify-center">
+              <div className={`relative w-full h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)] lg:h-[calc(100vh-200px)] shadow-lg rounded-lg mb-4 overflow-hidden flex items-center justify-center border ${darkMode ? 'bg-[#0f1428] border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'}`}>
                 {currentQuestion && (
-                  <div className="bg-blue-50 rounded-lg p-6 border-2 border-blue-200 w-full max-w-2xl mx-4">
-                    <h3 className="text-xl font-bold mb-4 text-gray-800">Question: {currentQuestion.question}</h3>
+                  <div className={`rounded-lg p-6 w-full max-w-2xl mx-4 border ${darkMode ? 'bg-transparent border-white/10' : 'bg-white border-yellow-300'}`}>
+                    <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-yellow-200' : 'text-yellow-900'}`}>Question: {currentQuestion.question}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {currentQuestion.options.map(option => (
                   <button
                     key={option}
                     onClick={() => handleOptionSelect(option)}
                     disabled={showFeedback}
-                    className={`p-4 text-lg font-medium rounded-lg transition-colors !text-gray-800 ${
+                    className={`p-4 text-lg font-medium rounded-lg transition-colors ${darkMode ? '!text-yellow-200' : '!text-yellow-900'} ${
                       showFeedback
                         ? option === currentQuestion.correctAnswer
                           ? 'bg-green-100 border-2 border-green-500'
                           : selectedOption === option
                             ? 'bg-red-100 border-2 border-red-500'
-                            : 'bg-gray-100 border-2 border-gray-200'
+                            : `${darkMode ? 'bg-[#0f1428] border-2 border-yellow-700/40' : 'bg-[#fbf4de] border-2 border-yellow-300'}`
                         : selectedOption === option
-                          ? 'bg-blue-200 border-2 border-blue-500'
-                          : 'bg-white border-2 border-gray-300 hover:bg-gray-100'
+                          ? `${darkMode ? 'bg-yellow-700/30 border-2 border-yellow-500' : 'bg-yellow-100 border-2 border-yellow-500'}`
+                          : `${darkMode ? 'bg-transparent border-2 border-white/10 hover:bg-yellow-700/10' : 'bg-white border-2 border-yellow-300 hover:bg-yellow-100'}`
                     }`}
                   >
                     {option}
@@ -1105,21 +1055,21 @@ Respond ONLY with a JSON array where each object has:
 
             {/* Game Controls - Full width on small screens, 1/4 on large screens */}
             <div className="w-full lg:w-1/4">
-              <div className="bg-gray-50 rounded-lg p-4 shadow-lg h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)] lg:h-[calc(100vh-200px)] overflow-y-auto">
-                <Header type="h3" variant="default" fontSize="2xl" className="mb-6 text-primary text-center">Game Controls</Header>
+              <div className={`rounded-lg p-4 shadow-lg h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)] lg:h-[calc(100vh-200px)] overflow-y-auto border ${darkMode ? 'bg-[#0f1428] border-yellow-700/40' : 'bg-[#fbf4de] border-yellow-300'}`}>
+                <Header type="h3" variant="default" fontSize="2xl" className={`mb-6 text-center ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>Game Controls</Header>
                 
                 {/* Level Info */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                <div className={`mb-4 p-3 rounded-lg border ${darkMode ? 'bg-transparent border-white/10' : 'bg-white border-yellow-300'}`}>
                   <div className="text-center">
-                    <div className="text-sm text-gray-800">Current Level</div>
+                    <div className={`text-sm ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>Current Level</div>
                     <div className="text-2xl font-bold text-yellow-500">{currentLevel}</div>
                   </div>
                 </div>
 
                 {/* Score */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                <div className={`mb-4 p-3 rounded-lg border ${darkMode ? 'bg-transparent border-white/10' : 'bg-white border-yellow-300'}`}>
                   <div className="text-center">
-                    <div className="text-sm text-gray-800 flex items-center justify-center">
+                    <div className={`text-sm flex items-center justify-center ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
                       <FaStar className="mr-1 text-yellow-500" /> Score
                     </div>
                     <div className="text-2xl font-bold text-yellow-500">{score}</div>
@@ -1127,31 +1077,31 @@ Respond ONLY with a JSON array where each object has:
                 </div>
 
                 {/* Lives */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                <div className={`mb-4 p-3 rounded-lg border ${darkMode ? 'bg-transparent border-white/10' : 'bg-white border-yellow-300'}`}>
                   <div className="text-center">
-                    <div className="text-sm text-gray-800">Lives</div>
+                    <div className={`${darkMode ? 'text-yellow-300' : 'text-yellow-700'} text-sm`}>Lives</div>
                     <div className="text-2xl text-red-500">{'❤️'.repeat(lives) || '💔'}</div>
                   </div>
                 </div>
 
                 {/* Progress */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                <div className={`mb-4 p-3 rounded-lg border ${darkMode ? 'bg-transparent border-white/10' : 'bg-white border-yellow-300'}`}>
                   <div className="text-center">
-                    <div className="text-sm text-gray-800 mb-2">Progress</div>
-                    <div className="w-full h-3 bg-gray-600 rounded-full overflow-hidden border border-gray-500">
+                    <div className={`${darkMode ? 'text-yellow-300' : 'text-yellow-700'} text-sm mb-2`}>Progress</div>
+                    <div className={`w-full h-3 rounded-full overflow-hidden border ${darkMode ? 'border-white/10 bg-[#0f1428]' : 'border-yellow-300 bg-[#fbf4de]'}`}>
                       <div 
                         className="h-full bg-green-500 transition-all duration-300 ease-in-out"
                         style={{ width: `${Math.min(100, (problemsSolvedThisLevel / PROBLEMS_PER_LEVEL) * 100)}%` }}
                       ></div>
                     </div>
-                    <div className="text-sm font-bold mt-1">{problemsSolvedThisLevel}/{PROBLEMS_PER_LEVEL}</div>
+                    <div className={`${darkMode ? 'text-yellow-200' : 'text-yellow-900'} text-sm font-bold mt-1`}>{problemsSolvedThisLevel}/{PROBLEMS_PER_LEVEL}</div>
                   </div>
                 </div>
 
                 {/* Timer */}
-                <div className="mb-4 p-3 bg-gray-200 rounded-lg">
+                <div className={`mb-4 p-3 rounded-lg border ${darkMode ? 'bg-transparent border-white/10' : 'bg-white border-yellow-300'}`}>
                   <div className="text-center">
-                    <div className="text-sm text-gray-800">Time Left</div>
+                    <div className={`${darkMode ? 'text-yellow-300' : 'text-yellow-700'} text-sm`}>Time Left</div>
                     <div className="text-2xl font-bold text-blue-500">{timeLeft}s</div>
                   </div>
                 </div>
