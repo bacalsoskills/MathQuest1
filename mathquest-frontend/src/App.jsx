@@ -22,6 +22,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ContentProvider } from './context/ContentContext';
 import { ClassroomProvider } from './context/ClassroomContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { NotificationProvider } from './context/NotificationContext';
 import EmailUpdateVerification from './pages/EmailUpdateVerification';
 import VerificationPage from './pages/VerificationPage';
 import ClassroomSection from './pages/admin/ClassroomSection';
@@ -142,6 +143,7 @@ function App() {
         <ContentProvider>
           <ClassroomProvider>
             <ThemeProvider>
+              <NotificationProvider>
               <Router>
               <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
                 {/* Theme Toggle Button - Only for non-logged in users */}
@@ -473,6 +475,7 @@ function App() {
                 </Routes>
               </div>
               </Router>
+              </NotificationProvider>
             </ThemeProvider>
           </ClassroomProvider>
         </ContentProvider>

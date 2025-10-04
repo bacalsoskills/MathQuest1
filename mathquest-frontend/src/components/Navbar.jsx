@@ -2,6 +2,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useNotifications } from '../context/NotificationContext';
 import { Button } from "../ui/button"
 import { CgProfile } from "react-icons/cg";
 import { BiGroup } from "react-icons/bi";
@@ -55,6 +56,7 @@ const Navbar = () => {
   const { currentUser, logout, isAdmin, isTeacher, isStudent } = useAuth();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { darkMode, setDarkMode, isInitialized } = useTheme();
+  const { notifications, markAsRead } = useNotifications();
   
   // Check if device is mobile
   useEffect(() => {
@@ -152,6 +154,52 @@ const Navbar = () => {
   const handleMobileLinkClick = () => {
     if (isMobile) {
       setSidebarOpen(false);
+    }
+  };
+
+  // Helper function to get notification count for a link
+  const getNotificationCount = (linkName, linkPath) => {
+    // Map link names to notification types
+    const notificationMap = {
+      'Dashboard': 'dashboard',
+      'Classrooms': 'classrooms',
+      'Profile': 'profile',
+      'Help': 'help'
+    };
+
+    // Check for specific paths that might have notifications
+    if (linkPath.includes('/activities') || linkPath.includes('/games')) {
+      return notifications.activities;
+    }
+    if (linkPath.includes('/leaderboard')) {
+      return notifications.leaderboard;
+    }
+
+    const notificationType = notificationMap[linkName];
+    return notificationType ? notifications[notificationType] : 0;
+  };
+
+  // Helper function to handle link click and mark notifications as read
+  const handleLinkClick = (linkName, linkPath) => {
+    handleMobileLinkClick();
+    
+    // Mark notifications as read when navigating to a section
+    const notificationMap = {
+      'Dashboard': 'dashboard',
+      'Classrooms': 'classrooms',
+      'Profile': 'profile',
+      'Help': 'help'
+    };
+
+    if (linkPath.includes('/activities') || linkPath.includes('/games')) {
+      markAsRead('activities');
+    } else if (linkPath.includes('/leaderboard')) {
+      markAsRead('leaderboard');
+    } else {
+      const notificationType = notificationMap[linkName];
+      if (notificationType) {
+        markAsRead(notificationType);
+      }
     }
   };
 
@@ -360,7 +408,7 @@ const Navbar = () => {
               <div key={link.path + link.name}>
                 <Link
                   to={link.path}
-                  onClick={handleMobileLinkClick}
+                  onClick={() => handleLinkClick(link.name, link.path)}
                   className={`flex items-center ${sidebarOpen ? 'px-6 py-3' : 'justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
                     isActive(link.path)
                       ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
@@ -370,8 +418,8 @@ const Navbar = () => {
                 >
                   <span className={`inline-block ${ICON_SIZE} ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>{link.icon}</span>
                   {sidebarOpen && <span>{link.name}</span>}
-                  {/* Notification dot for Home, Dashboard, Leaderboard, Activity (example) */}
-                  {(link.name === 'Home' || link.name === 'Dashboard' || link.name === 'LeaderBoard' || link.name === 'Activity') && (
+                  {/* Dynamic notification dot */}
+                  {getNotificationCount(link.name, link.path) > 0 && (
                     <span className={`absolute right-4 w-2 h-2 bg-red-500 rounded-full ${isActive(link.path) ? 'top-1/2 -translate-y-1/2' : ''}`}></span>
                   )}
                 </Link>
@@ -382,8 +430,8 @@ const Navbar = () => {
                       <Link
                         key={subLink.path + subLink.name}
                         to={subLink.path}
-                        onClick={handleMobileLinkClick}
-                        className={`block px-6 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
+                        onClick={() => handleLinkClick(subLink.name, subLink.path)}
+                        className={`block px-6 py-2 text-sm font-medium rounded-lg transition-colors duration-150 relative ${
                           location.pathname === subLink.path || location.pathname.startsWith(subLink.path + '/')
                             ? (darkMode ? 'text-yellow-200' : 'text-yellow-800')
                             : (darkMode ? 'text-yellow-300 hover:bg-[#0f1428]' : 'text-yellow-700 hover:bg-[#fbf4de]')
@@ -392,6 +440,10 @@ const Navbar = () => {
                       >
                         <span className={`inline-block ${ICON_SIZE} mr-3 align-middle`}>{subLink.icon}</span>
                         {subLink.name}
+                        {/* Notification dot for sublinks */}
+                        {getNotificationCount(subLink.name, subLink.path) > 0 && (
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full"></span>
+                        )}
                       </Link>
                     ))}
                   </div>
@@ -402,7 +454,7 @@ const Navbar = () => {
             {(isStudent() || isTeacher()) && (
               <Link
                 to={isStudent() ? '/student/join-classroom' : '/teacher/add-classroom'}
-                onClick={handleMobileLinkClick}
+                onClick={() => handleLinkClick('Classrooms', isStudent() ? '/student/join-classroom' : '/teacher/add-classroom')}
                 className={`flex items-center ${sidebarOpen ? 'px-4 py-3' : 'mr-4 justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
                   (isStudent() && isActive('/student/join-classroom')) || (isTeacher() && isActive('/teacher/add-classroom'))
                     ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
@@ -414,13 +466,17 @@ const Navbar = () => {
                   <AiOutlinePlusCircle />
                 </span>
                 {sidebarOpen && (isStudent() ? 'Join Classroom' : 'Create Classroom')}
+                {/* Notification dot for classroom actions */}
+                {notifications.classrooms > 0 && (
+                  <span className="absolute right-4 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
               </Link>
             )}
             {/* Help link at the end */}
             {!isAdmin() && (
               <Link
                 to={isTeacher() ? '/teacher/help' : '/student/help'}
-                onClick={handleMobileLinkClick}
+                onClick={() => handleLinkClick('Help', isTeacher() ? '/teacher/help' : '/student/help')}
                 className={`flex items-center ${sidebarOpen ? 'px-4 py-3' : 'mr-4 justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
                   isActive(isTeacher() ? '/teacher/help' : '/student/help')
                     ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
@@ -432,6 +488,10 @@ const Navbar = () => {
                   <FaQuestionCircle />
                 </span>
                 {sidebarOpen && <span>Help</span>}
+                {/* Notification dot for help */}
+                {notifications.help > 0 && (
+                  <span className="absolute right-4 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
               </Link>
             )}
           </nav>
