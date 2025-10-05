@@ -327,6 +327,7 @@ const QuizAttemptPage = () => {
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
   const [nextLocation, setNextLocation] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [timerStarted, setTimerStarted] = useState(false);
 
   const lsKey = `quizAttempt-${attemptId}`;
 
@@ -512,8 +513,8 @@ const QuizAttemptPage = () => {
           
           if (savedTimeLeft && savedTimeLeft > 0) {
             // Use saved timer state
-
             setTimeLeft(savedTimeLeft);
+            setTimerStarted(true);
           } else {
             // Calculate new timer based on start time
             const startTime = new Date(attemptData.startedAt).getTime();
@@ -521,8 +522,10 @@ const QuizAttemptPage = () => {
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             const remaining = Math.max(timeLimitSeconds - elapsedSeconds, 0);
             
-
             setTimeLeft(remaining);
+            if (remaining > 0) {
+              setTimerStarted(true);
+            }
           }
         }
         
@@ -570,11 +573,10 @@ const QuizAttemptPage = () => {
 
   // Handle auto-submission when timer reaches zero
   useEffect(() => {
-    if (timeLeft === 0 && !showResultModal && !showConfirmationModal) {
-
+    if (timerStarted && timeLeft === 0 && !showResultModal && !showConfirmationModal) {
       setShowConfirmationModal(true);
     }
-  }, [timeLeft, showResultModal, showConfirmationModal]);
+  }, [timerStarted, timeLeft, showResultModal, showConfirmationModal]);
 
   const stopTimer = useCallback(() => {
     if (timerId) {
