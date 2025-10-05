@@ -765,6 +765,14 @@ const QuizAttemptPage = () => {
 
   useEffect(() => {
     const handleKeyPress = (e) => {
+      // Prevent unintended submissions when typing in fields or when a modal is open
+      const target = e.target || document.activeElement;
+      const tag = (target?.tagName || '').toLowerCase();
+      const isTypingElement = tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable;
+      const isAnyModalOpen = showResultModal || showReviewModal || showConfirmationModal || showExitConfirmModal;
+
+      if (isTypingElement || isAnyModalOpen) return;
+
       if (e.key === 'Enter') {
         if (currentQuestionIndex === quizDetails?.questions?.length - 1) {
           handleSubmitQuiz();
