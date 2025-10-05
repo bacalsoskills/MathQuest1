@@ -326,6 +326,7 @@ const QuizAttemptPage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [timerId, setTimerId] = useState(null);
+  const [timerInitialized, setTimerInitialized] = useState(false);
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
   const [nextLocation, setNextLocation] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -518,7 +519,8 @@ const QuizAttemptPage = () => {
             setTimeLeft(savedTimeLeft);
           } else {
             // Calculate new timer based on start time
-            const startTime = new Date(attemptData.startedAt).getTime();
+            const rawStart = attemptData?.startedAt || attemptData?.startTime || attemptData?.createdAt || attemptData?.started_at;
+            const startTime = rawStart ? new Date(rawStart).getTime() : Date.now();
             const now = new Date().getTime();
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             const remaining = Math.max(timeLimitSeconds - elapsedSeconds, 0);
@@ -564,6 +566,7 @@ const QuizAttemptPage = () => {
     }, 1000);
     
     setTimerId(id);
+    setTimerInitialized(true);
     
     return () => {
       clearInterval(id);
@@ -572,11 +575,14 @@ const QuizAttemptPage = () => {
 
   // Handle auto-submission when timer reaches zero
   useEffect(() => {
-    if (timeLeft === 0 && !showResultModal && !showConfirmationModal) {
-
-      setShowConfirmationModal(true);
+    const hasAnyAnswer = Object.keys(answers || {}).length > 0;
+    if (timeLeft === 0 && timerInitialized && !showResultModal && !showConfirmationModal) {
+      // Only prompt if user already interacted (has at least one answer)
+      if (hasAnyAnswer) {
+        setShowConfirmationModal(true);
+      }
     }
-  }, [timeLeft, showResultModal, showConfirmationModal]);
+  }, [timeLeft, timerInitialized, showResultModal, showConfirmationModal, answers]);
 
   const stopTimer = useCallback(() => {
     if (timerId) {
