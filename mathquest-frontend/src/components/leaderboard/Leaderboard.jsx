@@ -6,6 +6,7 @@ import { FaTrophy, FaMedal, FaClock, FaChartLine, FaChevronDown } from 'react-ic
 import { MdOutlineQuiz } from "react-icons/md";
 import { Chart } from 'react-chartjs-2';
 import { Header } from "../../ui/heading"
+import { useTheme } from '../../context/ThemeContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -31,17 +32,26 @@ ChartJS.register(
 );
 
 const LeaderboardCard = ({ rank, student, score, isFirst }) => {
+  const { darkMode } = useTheme();
   return (
-    <div className={`flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-6 ${isFirst ? 'h-80' : 'h-64'}`}>
-      <div className={`w-16 h-16 flex items-center justify-center rounded-full mb-2 ${
-        rank === 1 ? 'bg-yellow-400' : rank === 2 ? 'bg-gray-300' : 'bg-amber-600'
+    <div className={`flex flex-col items-center justify-center rounded-2xl shadow-2xl p-6 border-2 ${isFirst ? 'h-80' : 'h-64'} ${
+      darkMode
+        ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700'
+        : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200'
+    }`}>
+      <div className={`w-16 h-16 flex items-center justify-center rounded-full mb-2 shadow ${
+        rank === 1
+          ? 'bg-gradient-to-br from-yellow-400 to-orange-400'
+          : rank === 2
+            ? (darkMode ? 'bg-gradient-to-br from-gray-500 to-gray-400' : 'bg-gradient-to-br from-gray-300 to-gray-400')
+            : 'bg-gradient-to-br from-amber-600 to-orange-700'
       }`}>
         {rank === 1 ? <FaTrophy className="text-white text-2xl" /> : <FaMedal className="text-white text-2xl" />}
       </div>
-      <div className="w-24 h-24 bg-gray-200 rounded-full mb-4"></div>
-      <h3 className="text-xl font-bold mb-2">{student}</h3>
-      <p className="text-gray-600">Score: {score}</p>
-      <p className="text-sm text-gray-500">#{rank}</p>
+      <div className={`w-24 h-24 rounded-full mb-4 border shadow-inner ${darkMode ? 'bg-gradient-to-br from-gray-600 to-gray-500 border-gray-600' : 'bg-gradient-to-br from-stone-200 to-amber-100 border-amber-200'}`}></div>
+      <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>{student}</h3>
+      <p className={`${darkMode ? 'text-amber-300' : 'text-amber-700'}`}>Score: {score}</p>
+      <p className={`text-sm ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>#{rank}</p>
     </div>
   );
 };
@@ -86,59 +96,60 @@ const LeaderboardTable = ({ entries }) => {
     return timeA - timeB;
   });
 
+  const { darkMode } = useTheme();
   return (
     <div className="space-y-8">
       {/* Top 3 Podium */}
       <div className="flex justify-center items-end space-x-2 sm:space-x-4 sm:h-80">
         {/* Second Place */}
         <div className="flex flex-col items-center">
-          <div className="w-8 h-8 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-gray-300 mb-2">
+          <div className={`w-8 h-8 sm:w-16 sm:h-16 flex items-center justify-center rounded-full mb-2 shadow ${darkMode ? 'bg-gradient-to-br from-gray-500 to-gray-400' : 'bg-gradient-to-br from-gray-300 to-gray-400'}`}>
             <FaMedal className="text-white text-sm sm:text-2xl" />
           </div>
-          <div className="w-20 h-20 sm:w-48 sm:h-48 bg-white rounded-lg shadow-lg p-2 sm:p-4 flex flex-col items-center justify-center">
-            <h3 className="text-xs sm:text-xl font-bold mb-1 sm:mb-2">{formatStudentName(sortedEntries[1]?.studentName)}</h3>
-            <p className="text-xs sm:text-sm text-gray-500">#2</p>
+          <div className={`w-20 h-20 sm:w-48 sm:h-48 rounded-2xl shadow-2xl p-2 sm:p-4 flex flex-col items-center justify-center border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200'}`}>
+            <h3 className={`text-xs sm:text-xl font-bold mb-1 sm:mb-2 ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>{formatStudentName(sortedEntries[1]?.studentName)}</h3>
+            <p className={`text-xs sm:text-sm ${darkMode ? 'text-amber-300' : 'text-amber-700'}`}>#2</p>
           </div>
         </div>
 
         {/* First Place */}
         <div className="flex flex-col items-center">
-          <div className="w-8 h-8 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-yellow-400 mb-2">
+          <div className="w-8 h-8 sm:w-16 sm:h-16 flex items-center justify-center rounded-full mb-2 shadow bg-gradient-to-br from-yellow-400 to-orange-400">
             <FaTrophy className="text-white text-sm sm:text-2xl" />
           </div>
-          <div className="w-20 h-24 sm:w-48 sm:h-56 bg-white rounded-lg shadow-lg p-2 sm:p-4 flex flex-col items-center justify-center">
-            <h3 className="text-xs text-center sm:text-xl font-bold mb-1 sm:mb-2">{formatStudentName(sortedEntries[0]?.studentName)}</h3>
-            <p className="text-xs sm:text-sm text-gray-500">#1</p>
+          <div className={`w-20 h-24 sm:w-48 sm:h-56 rounded-2xl shadow-2xl p-2 sm:p-4 flex flex-col items-center justify-center border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-300'}`}>
+            <h3 className={`text-xs text-center sm:text-xl font-bold mb-1 sm:mb-2 ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>{formatStudentName(sortedEntries[0]?.studentName)}</h3>
+            <p className={`text-xs sm:text-sm ${darkMode ? 'text-amber-300' : 'text-amber-700'}`}>#1</p>
           </div>
         </div>
 
         {/* Third Place */}
         <div className="flex flex-col items-center">
-          <div className="w-8 h-8 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-amber-600 mb-2">
+          <div className="w-8 h-8 sm:w-16 sm:h-16 flex items-center justify-center rounded-full mb-2 shadow bg-gradient-to-br from-amber-600 to-orange-700">
             <FaMedal className="text-white text-sm sm:text-2xl" />
           </div>
-          <div className="w-20 h-16 sm:w-48 sm:h-40 bg-white rounded-lg shadow-lg p-2 sm:p-4 flex flex-col items-center justify-center">
-            <h3 className="text-xs sm:text-xl font-bold mb-1 sm:mb-2">{formatStudentName(sortedEntries[2]?.studentName)}</h3>
-            <p className="text-xs sm:text-sm text-gray-500">#3</p>
+          <div className={`w-20 h-16 sm:w-48 sm:h-40 rounded-2xl shadow-2xl p-2 sm:p-4 flex flex-col items-center justify-center border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200'}`}>
+            <h3 className={`text-xs sm:text-xl font-bold mb-1 sm:mb-2 ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>{formatStudentName(sortedEntries[2]?.studentName)}</h3>
+            <p className={`text-xs sm:text-sm ${darkMode ? 'text-amber-300' : 'text-amber-700'}`}>#3</p>
           </div>
         </div>
       </div>
 
       {/* Remaining Entries Table */}
-      <div className="bg-white rounded-lg shadow-lg overflow-x-auto">
+      <div className={`rounded-2xl shadow-2xl overflow-x-auto border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200'}`}>
         <table className="min-w-full">
-          <thead className="bg-gray-50">
+          <thead className={`${darkMode ? 'bg-gray-700/60' : 'bg-amber-200/60'}`}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+              <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Rank</th>
+              <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Student</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className={`${darkMode ? 'divide-gray-700' : 'divide-amber-200'}`}>
             {sortedEntries.map((entry, index) => (
-              <tr key={entry?.id || index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
+              <tr key={entry?.id || index} className={`${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-amber-100/60'}`}>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-amber-300' : 'text-amber-700'}`}>{index + 1}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{formatStudentName(entry?.studentName)}</div>
+                  <div className={`text-sm font-bold ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>{formatStudentName(entry?.studentName)}</div>
                 </td>
               </tr>
             ))}
@@ -150,28 +161,29 @@ const LeaderboardTable = ({ entries }) => {
 };
 
 const QuizAttemptsTable = ({ attempts, quizStatus, quizId, quizList, quizLeaderboards, currentUser }) => {
+  const { darkMode } = useTheme();
   if (!attempts || attempts.length === 0) {
     if (quizStatus === 'available') {
       return (
-        <div className="bg-blue-50 rounded-lg p-6 text-center">
-          <p className="text-blue-800 font-medium">This quiz is available!</p>
-          <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+        <div className={`rounded-2xl p-6 text-center border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200'}`}>
+          <p className={`${darkMode ? 'text-amber-200' : 'text-amber-900'} font-bold`}>This quiz is available!</p>
+          <button className="mt-4 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-md hover:from-amber-700 hover:to-orange-700 shadow">
             Take the quiz now
           </button>
         </div>
       );
     } else if (quizStatus === 'unavailable') {
       return (
-        <div className="bg-gray-50 rounded-lg p-6 text-center">
-          <p className="text-gray-800">Quiz not available</p>
-          <p className="text-gray-600 mt-2">Score: 0</p>
+        <div className={`rounded-2xl p-6 text-center border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-stone-50 to-stone-100 border-stone-200'}`}>
+          <p className={`${darkMode ? 'text-stone-200' : 'text-stone-800'}`}>Quiz not available</p>
+          <p className={`${darkMode ? 'text-stone-300' : 'text-stone-600'} mt-2`}>Score: 0</p>
         </div>
       );
     } else if (quizStatus === 'upcoming') {
       return (
-        <div className="bg-yellow-50 rounded-lg p-6 text-center">
-          <p className="text-yellow-800">Quiz will be available soon</p>
-          <p className="text-yellow-600 mt-2">Check back later</p>
+        <div className={`rounded-2xl p-6 text-center border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-yellow-50 to-amber-50 border-amber-200'}`}>
+          <p className={`${darkMode ? 'text-amber-300' : 'text-amber-800'}`}>Quiz will be available soon</p>
+          <p className={`${darkMode ? 'text-amber-400' : 'text-amber-600'} mt-2`}>Check back later</p>
         </div>
       );
     }
@@ -182,8 +194,8 @@ const QuizAttemptsTable = ({ attempts, quizStatus, quizId, quizList, quizLeaderb
   
   if (quizAttempts.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-6 text-center">
-        <p className="text-gray-800">No attempts for this quiz yet</p>
+      <div className={`${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50'} rounded-lg p-6 text-center`}>
+        <p className={`${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>No attempts for this quiz yet</p>
       </div>
     );
   }
@@ -232,18 +244,18 @@ const QuizAttemptsTable = ({ attempts, quizStatus, quizId, quizList, quizLeaderb
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-lg overflow-x-auto">
+      <div className={`rounded-2xl shadow-2xl overflow-x-auto border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200'}`}>
         <table className="min-w-full">
-          <thead className="bg-gray-50">
+          <thead className={`${darkMode ? 'bg-gray-700/60' : 'bg-amber-200/60'}`}>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempt #</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Spent (minutes)</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th className={`px-4 py-3 text-left text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Attempt #</th>
+              <th className={`px-4 py-3 text-left text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Score</th>
+              <th className={`px-4 py-3 text-left text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Time Spent (minutes)</th>
+              <th className={`px-4 py-3 text-left text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Status</th>
+              <th className={`px-4 py-3 text-left text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Date</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className={`${darkMode ? 'divide-gray-700' : 'divide-amber-200'}`}>
             {sortedAttempts.map((attempt) => {
               // Convert seconds to minutes
               const timeSpentSeconds = attempt.timeSpentSeconds || 0;
@@ -252,24 +264,24 @@ const QuizAttemptsTable = ({ attempts, quizStatus, quizId, quizList, quizLeaderb
               const formattedTime = `${minutes}.${seconds.toString().padStart(2, '0')}`;
               
               return (
-                <tr key={attempt.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                <tr key={attempt.id} className={`${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-amber-100/60'}`}>
+                  <td className={`px-4 py-3 whitespace-nowrap text-sm ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>
                     {attempt.attemptNumber || '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                  <td className={`px-4 py-3 whitespace-nowrap text-sm ${darkMode ? 'text-amber-300' : 'text-amber-800'}`}>
                     {attempt.score || 0}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                  <td className={`px-4 py-3 whitespace-nowrap text-sm ${darkMode ? 'text-amber-300' : 'text-amber-800'}`}>
                     {formattedTime}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm">
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      attempt.passed ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                      attempt.passed ? 'bg-green-100 text-green-800' : (darkMode ? 'bg-amber-900/40 text-amber-200' : 'bg-amber-100 text-amber-800')
                     }`}>
                       {attempt.passed ? 'Passed' : 'Keep Learning'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                  <td className={`px-4 py-3 whitespace-nowrap text-sm ${darkMode ? 'text-amber-300' : 'text-amber-800'}`}>
                     {formatDate(attempt.completedAt)}
                   </td>
                 </tr>
@@ -280,35 +292,35 @@ const QuizAttemptsTable = ({ attempts, quizStatus, quizId, quizList, quizLeaderb
       </div>
 
       {/* Final Score Display */}
-      <div className="bg-blue-100 rounded-lg p-4">
-        <h3 className="text-lg font-medium text-blue-800 mb-2">Final Score</h3>
+      <div className={`rounded-2xl p-4 border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-yellow-50 to-amber-50 border-amber-200'}`}>
+        <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Final Score</h3>
         <div className="flex items-center justify-between">
-          <p className="text-2xl font-bold text-blue-600">
+          <p className={`text-2xl font-bold ${darkMode ? 'text-amber-300' : 'text-amber-700'}`}>
             {averageScore}
             {isPassing && (
-              <span className="ml-2 text-sm font-normal text-green-600">(Passed)</span>
+              <span className={`ml-2 text-sm font-normal ${darkMode ? 'text-green-400' : 'text-green-700'}`}>(Passed)</span>
             )}
           </p>
           {studentRank && studentRank <= 10 && (
-            <span className="text-sm font-medium text-gray-600">
+            <span className={`text-sm font-medium ${darkMode ? 'text-amber-300' : 'text-amber-800'}`}>
               Rank: #{studentRank}
             </span>
           )}
         </div>
         {passingScore > 0 && (
-          <p className="text-sm text-gray-600 mt-2">
+          <p className={`text-sm mt-2 ${darkMode ? 'text-amber-300' : 'text-amber-700'}`}>
             Passing Score: {passingScore}
           </p>
         )}
       </div>
 
       {/* Formula Note */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-800 mb-2">Score Calculation Formula:</h3>
-        <p className="text-sm text-gray-600">
+      <div className={`rounded-2xl p-4 border-2 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-stone-50 to-stone-100 border-stone-200'}`}>
+        <h3 className={`text-sm font-bold mb-2 ${darkMode ? 'text-stone-200' : 'text-stone-800'}`}>Score Calculation Formula:</h3>
+        <p className={`text-sm ${darkMode ? 'text-stone-300' : 'text-stone-700'}`}>
           Final Score = Highest Score / Number of Attempts
         </p>
-        <p className="text-sm text-gray-600 mt-2">
+        <p className={`text-sm mt-2 ${darkMode ? 'text-stone-300' : 'text-stone-700'}`}>
           Note: In case of tied scores, ranking is determined by completion time (faster completion ranks higher)
         </p>
       </div>
@@ -318,6 +330,7 @@ const QuizAttemptsTable = ({ attempts, quizStatus, quizId, quizList, quizLeaderb
 
 const PerformanceGraph = ({ quizData }) => {
   const [isMobile, setIsMobile] = useState(false);
+  const { darkMode } = useTheme();
 
   useEffect(() => {
     const handleResize = () => {
@@ -525,24 +538,24 @@ const PerformanceGraph = ({ quizData }) => {
 
   if (!quizData || quizData.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-6 text-center">
-        <p className="text-gray-800">No quiz data available</p>
+      <div className={`${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50'} rounded-lg p-6 text-center`}>
+        <p className={`${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>No quiz data available</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg py-4 sm:py-8"
+    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg py-4 sm:py-8`}
     style={{
         backgroundImage: 'radial-gradient(rgba(0, 0, 0, 0.1) 0.5px, transparent 0.5px)',
         backgroundSize: '10px 10px',
       }}
     >
-      <h3 className="text-lg font-medium text-gray-900 mb-4 px-4 sm:px-6">Overall Performance</h3>
+      <h3 className={`text-lg font-medium mb-4 px-4 sm:px-6 ${darkMode ? 'text-amber-200' : 'text-gray-900'}`}>Overall Performance</h3>
       <div className="h-80 pr-4">
         <Chart type="bar" data={data} options={options} />
       </div>
-      <div className="mt-6 text-sm text-gray-600 px-4 sm:px-6">
+      <div className={`mt-6 text-sm px-4 sm:px-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
         <p>This graph shows your average score across all attempts for each quiz.</p>
         <p className="mt-2">Hover over points to see detailed information including number of attempts and highest score achieved.</p>
       </div>
@@ -554,6 +567,7 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { classroomId: urlClassroomId } = useParams();
+  const { darkMode } = useTheme();
   const [activeTab, setActiveTab] = useState('overall');
   const [activeQuizTab, setActiveQuizTab] = useState('overall');
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -782,7 +796,10 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-200 border-t-amber-600"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-transparent animate-spin border-t-yellow-500" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+        </div>
       </div>
     );
   }
@@ -790,13 +807,13 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
   if (error) {
     return (
       <div className="text-center p-8">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md mx-auto">
+        <div className={`rounded-2xl p-6 max-w-md mx-auto border-2 shadow-2xl ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700' : 'bg-gradient-to-br from-yellow-50 to-amber-50 border-amber-200'}`}>
           <div className="text-4xl mb-4">🏴‍☠️</div>
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">Captain's Board Temporarily Unavailable</h3>
-          <p className="text-yellow-700 mb-4">
+          <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-amber-200' : 'text-amber-900'}`}>Captain's Board Temporarily Unavailable</h3>
+          <p className={`${darkMode ? 'text-amber-300' : 'text-amber-800'} mb-4`}>
             {error}
           </p>
-          <p className="text-sm text-yellow-600">
+          <p className={`text-sm ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
             The leaderboard will show sample data for demonstration purposes.
           </p>
           <button
@@ -804,7 +821,7 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
               setError(null);
               loadData();
             }}
-            className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
+            className="mt-4 px-4 py-2 rounded-md text-white transition-colors bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow"
           >
             Try Again
           </button>
@@ -822,31 +839,29 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Header type="h2" fontSize="2xl" weight="bold" className="text-center mb-8">Captain's Board</Header>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+      <div className="absolute inset-0 opacity-5 pointer-events-none select-none">
+        <div className="absolute top-4 left-4 text-6xl">🗺️</div>
+        <div className="absolute top-10 right-10 text-5xl">⚓</div>
+        <div className="absolute bottom-10 left-12 text-6xl">🏴‍☠️</div>
+        <div className="absolute bottom-6 right-6 text-6xl">⚔️</div>
+      </div>
+      <div className="relative z-10">
+        <Header type="h2" fontSize="2xl" weight="bold" className={`text-center mb-8 text-transparent bg-clip-text ${darkMode ? 'bg-gradient-to-r from-yellow-400 to-amber-400' : 'bg-gradient-to-r from-yellow-600 to-orange-600'}`}>Captain's Board</Header>
       
       {/* Demo Notice */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl">🗺️</div>
-          <div>
-            <h3 className="text-sm font-semibold text-blue-800">Demo Mode</h3>
-            <p className="text-sm text-blue-700">
-              Showing sample leaderboard data for demonstration. Real data will appear when the backend API is fully connected.
-            </p>
-          </div>
-        </div>
-      </div>
-      
+
       {/* Main Tabs */}
       <div className="flex justify-center mb-8">
         <nav className="flex space-x-4" aria-label="Tabs">
           <button
             onClick={() => setActiveTab('overall')}
-            className={`px-4 py-2 text-sm font-medium rounded-sm ${
+            className={`px-4 py-2 text-sm font-bold rounded-md border-2 transition-colors ${
               activeTab === 'overall'
-                ? 'bg-blue-900 text-gray-50'
-                : 'text-gray-500  hover:text-gray-700'
+                ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-700 shadow'
+                : darkMode
+                  ? 'text-amber-200 border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900 hover:border-gray-600'
+                  : 'text-amber-800 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 hover:border-amber-400'
             }`}
           >
             Overall
@@ -854,10 +869,12 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
        
           <button
             onClick={() => setActiveTab('myquizzes')}
-            className={`px-4 py-2 text-sm font-medium rounded-sm ${
+            className={`px-4 py-2 text-sm font-bold rounded-md border-2 transition-colors ${
               activeTab === 'myquizzes'
-                ? 'bg-blue-900 text-gray-50'
-                : 'text-gray-500  hover:text-gray-700'
+                ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-700 shadow'
+                : darkMode
+                  ? 'text-amber-200 border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900 hover:border-gray-600'
+                  : 'text-amber-800 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 hover:border-amber-400'
             }`}
           >
             My Quizzes
@@ -870,7 +887,11 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className={`flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-bold border-2 focus:outline-none ${
+              darkMode
+                ? 'text-amber-200 bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-gray-600'
+                : 'text-amber-900 bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-300 hover:border-amber-400'
+            }`}
           >
             <div className="flex items-center">
               <MdOutlineQuiz className="mr-2 h-4 w-4" />
@@ -880,14 +901,14 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
           </button>
           
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+            <div className={`absolute right-0 mt-2 w-56 rounded-md shadow-lg z-10 border-2 ${darkMode ? 'border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900' : 'border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50'}`}>
               <div className="py-1">
                 <button
                   onClick={() => {
                     setActiveQuizTab('overall');
                     setIsDropdownOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className={`block w-full text-left px-4 py-2 text-sm ${darkMode ? 'text-amber-200 hover:bg-gray-700/50' : 'text-amber-900 hover:bg-amber-100/60'}`}
                 >
                   {activeTab === 'overall' ? 'Overall Quizzes' : 'Overall'}
                 </button>
@@ -898,7 +919,7 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
                       setActiveQuizTab(quiz.id.toString());
                       setIsDropdownOpen(false);
                     }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className={`block w-full text-left px-4 py-2 text-sm ${darkMode ? 'text-amber-200 hover:bg-gray-700/50' : 'text-amber-900 hover:bg-amber-100/60'}`}
                   >
                     {quiz.quizName}
                   </button>
@@ -936,6 +957,7 @@ const Leaderboard = ({ classroomId: propClassroomId }) => {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };
