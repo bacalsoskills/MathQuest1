@@ -113,6 +113,8 @@ const IdentificationQuestion = ({ question, onAnswer, currentAnswer, questionId 
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
+      // Prevent bubbling to the global key handler to avoid unintended next/submit
+      e.stopPropagation();
       onAnswer(question.id, inputValue, true);
     }
   };
