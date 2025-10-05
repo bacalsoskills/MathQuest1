@@ -327,6 +327,7 @@ const QuizAttemptPage = () => {
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
   const [nextLocation, setNextLocation] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [timerStarted, setTimerStarted] = useState(false);
 
   const lsKey = `quizAttempt-${attemptId}`;
 
@@ -398,7 +399,7 @@ const QuizAttemptPage = () => {
 
   const handleLeavePage = () => {
     if (nextLocation) {
-      navigate(nextLocation, { state: { activeTab: 'lessons' } });
+      navigate(nextLocation);
     }
     setShowExitConfirmModal(false);
     setNextLocation(null);
@@ -412,8 +413,8 @@ const QuizAttemptPage = () => {
   const handleLeaveQuizClick = (e) => {
     e.preventDefault();
     if (showResultModal) {
-      // If results are shown, allow direct navigation to lessons tab
-      navigate(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms', { state: { activeTab: 'lessons' } });
+      // If results are shown, allow direct navigation
+      navigate(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms');
     } else {
       // Show confirmation modal
       setNextLocation(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms');
@@ -432,6 +433,22 @@ const QuizAttemptPage = () => {
 
         if (!quizData || !attemptData) {
           throw new Error('Quiz or attempt data not found.');
+        }
+
+        // If the attempt is already completed, inform and exit gracefully
+        if (attemptData.completedAt) {
+          toast.error('This quiz attempt is already completed.');
+          setLoading(false);
+          // Redirect back to classroom (if known) or quizzes page
+          if (quizData.activityId) {
+            try {
+              const activityResponse = await api.get(`/activities/${quizData.activityId}`);
+              const activityData = activityResponse.data;
+              setClassroomId(activityData.classroomId);
+              navigate(`/student/classrooms/${activityData.classroomId}`, { state: { activeTab: 'activities' } });
+            } catch {}
+          }
+          return;
         }
 
         // Get the activity data to find the classroom ID
@@ -512,8 +529,8 @@ const QuizAttemptPage = () => {
           
           if (savedTimeLeft && savedTimeLeft > 0) {
             // Use saved timer state
-
             setTimeLeft(savedTimeLeft);
+            setTimerStarted(true);
           } else {
             // Calculate new timer based on start time
             const startTime = new Date(attemptData.startedAt).getTime();
@@ -521,8 +538,10 @@ const QuizAttemptPage = () => {
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             const remaining = Math.max(timeLimitSeconds - elapsedSeconds, 0);
             
-
             setTimeLeft(remaining);
+            if (remaining > 0) {
+              setTimerStarted(true);
+            }
           }
         }
         
@@ -570,11 +589,10 @@ const QuizAttemptPage = () => {
 
   // Handle auto-submission when timer reaches zero
   useEffect(() => {
-    if (timeLeft === 0 && !showResultModal && !showConfirmationModal) {
-
+    if (timerStarted && timeLeft === 0 && !showResultModal && !showConfirmationModal) {
       setShowConfirmationModal(true);
     }
-  }, [timeLeft, showResultModal, showConfirmationModal]);
+  }, [timerStarted, timeLeft, showResultModal, showConfirmationModal]);
 
   const stopTimer = useCallback(() => {
     if (timerId) {
@@ -757,7 +775,7 @@ const QuizAttemptPage = () => {
   const handleModalClose = () => {
     setShowResultModal(false);
     if(classroomId) {
-      navigate(`/student/classrooms/${classroomId}`, { state: { activeTab: 'lessons' } });
+      navigate(`/student/classrooms/${classroomId}`);
     } else {
       navigate('/student/classrooms');
     }
@@ -892,7 +910,7 @@ const QuizAttemptPage = () => {
                 </button>
               )}
             </div>
-             {timeLeft !== null && (
+            {timerStarted && timeLeft !== null && timeLeft > 0 && (
                 <div className="flex justify-center items-center mt-6">
                     <div className={`px-4 py-2 rounded-full text-white font-semibold shadow-lg ${timeLeft < 60 ? 'bg-red-500 animate-pulse' : timeLeft < 300 ? 'bg-yellow-500' : 'bg-blue-500'}`}>
                     Time Left: {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}

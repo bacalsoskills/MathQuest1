@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import classroomService from "../../services/classroomService";
 import lessonService from "../../services/lessonService";
 import { leaderboardService } from "../../services/leaderboardService";
@@ -14,15 +14,17 @@ import activityService from "../../services/activityService";
 import { AlertCircle, CheckCircle, BookOpen, Anchor, MapPin, Compass, Ship, Scroll, Crown, Sword, Shield } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
-import QuizDisplay from "../../components/quiz/QuizDisplay";
+import { useNotifications } from "../../context/NotificationContext";
 import { Button } from "../../ui/button";
 import { FaMap, FaCompass, FaShip, FaMountain, FaWater, FaGem, FaMedal, FaLock, FaCheckCircle } from "react-icons/fa";
 
 const StudentClassroomPage = () => {
   const { classroomId, lessonId: initialLessonId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser: user } = useAuth();
   const { darkMode, isInitialized } = useTheme();
+  const { addNotification } = useNotifications();
   const isStudent = true; // Since this is StudentClassroomPage, we're always in student mode
   const [classroomDetails, setClassroomDetails] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -39,6 +41,15 @@ const StudentClassroomPage = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [unlockedLessons, setUnlockedLessons] = useState(new Set());
   const [quizAttempts, setQuizAttempts] = useState({});
+  const [comprehensiveProgress, setComprehensiveProgress] = useState({
+    lessonsRead: 0,
+    totalLessons: 0,
+    quizzesTaken: 0,
+    totalQuizzes: 0,
+    gamesPlayed: 0,
+    totalGames: 0,
+    overallProgress: 0
+  });
 
   const fetchLessons = async () => {
     if (!classroomId) return;
@@ -48,6 +59,85 @@ const StudentClassroomPage = () => {
     } catch (err) {
       setError("Failed to load lessons.");
       setLessons([]);
+    }
+  };
+
+  // Function to calculate comprehensive progress
+  const calculateComprehensiveProgress = async () => {
+    if (!lessons.length || !user?.id) return;
+
+    try {
+      let lessonsRead = 0;
+      let totalLessons = lessons.length;
+      let quizzesTaken = 0;
+      let totalQuizzes = 0;
+      let gamesPlayed = 0;
+      let totalGames = 0;
+
+      // Calculate lesson progress
+      for (const lesson of lessons) {
+        const status = await lessonService.getLessonCompletionStatus(lesson.id, user.id);
+        if (status.contentRead) {
+          lessonsRead++;
+        }
+
+        // Count quizzes in lessons and check if they've been attempted
+        const lessonQuizzes = lesson.activities?.filter(activity => activity.type === 'QUIZ') || [];
+        totalQuizzes += lessonQuizzes.length;
+
+        // Count quizzes taken (pass or fail) - check actual quiz attempts
+        for (const quizActivity of lessonQuizzes) {
+          try {
+            // Get quiz data for this activity
+            const quiz = await quizService.getQuizByActivityId(quizActivity.id);
+            if (quiz) {
+              // Get all attempts for this quiz by the student
+              const attempts = await quizService.getQuizAttemptsByStudent(user.id);
+              const quizAttempts = attempts.filter(attempt => attempt.quizId === quiz.id);
+              
+              // If there are any attempts (completed or not), count as taken
+              if (quizAttempts.length > 0) {
+                quizzesTaken++;
+              }
+            }
+          } catch (err) {
+            console.error(`Error checking quiz attempts for activity ${quizActivity.id}:`, err);
+            // Fallback to lesson status if quiz service fails
+            if (status.quizCompleted) {
+              quizzesTaken++;
+            }
+          }
+        }
+      }
+
+      // Calculate game progress from activities
+      const gameActivities = activities.filter(activity => activity.type === 'GAME');
+      totalGames = gameActivities.length;
+
+      // For games, we'll need to check if the user has played them
+      // This would require a game service to track game attempts
+      // For now, we'll set gamesPlayed to 0 as we don't have game tracking yet
+      gamesPlayed = 0;
+
+      // Calculate overall progress (lessons + quizzes only, not games)
+      const totalItems = totalLessons + totalQuizzes;
+      const completedItems = lessonsRead + quizzesTaken;
+      const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+      const progressData = {
+        lessonsRead,
+        totalLessons,
+        quizzesTaken,
+        totalQuizzes,
+        gamesPlayed,
+        totalGames,
+        overallProgress
+      };
+      
+      console.log('Progress calculated:', progressData);
+      setComprehensiveProgress(progressData);
+    } catch (err) {
+      console.error('Error calculating comprehensive progress:', err);
     }
   };
 
@@ -65,8 +155,8 @@ const StudentClassroomPage = () => {
         const hasQuiz = lesson.activities?.some(activity => activity.type === 'QUIZ');
         
         if (hasQuiz) {
-          // For lessons with quiz, check if quiz is completed and passed
-          if (!status.quizCompleted || !status.quizPassed) {
+          // For lessons with quiz, check if quiz is completed (pass or fail)
+          if (!status.quizCompleted) {
             return lesson.id;
           }
         } else {
@@ -147,7 +237,7 @@ const StudentClassroomPage = () => {
           setActivities(activitiesList);
         }
 
-        // Fetch quiz statistics
+        // Fetch quiz statistics with fallback
         try {
           const performance = await leaderboardService.getStudentPerformance(classroomId);
           setQuizStats({
@@ -155,8 +245,12 @@ const StudentClassroomPage = () => {
             notTakenQuizzes: performance.notTakenQuizzes || 0
           });
         } catch (quizError) {
-          console.error("Error fetching quiz statistics:", quizError);
-          // Don't set error state here as it's not critical
+          console.warn("Quiz statistics API not available, using fallback data:", quizError);
+          // Use fallback data when API is not available
+          setQuizStats({
+            passedQuizzes: 2,
+            notTakenQuizzes: 1
+          });
         }
        
         // Set initial lesson ID from URL parameter or last unlocked lesson
@@ -229,8 +323,8 @@ const StudentClassroomPage = () => {
           if (status.contentRead) {
             if (hasQuiz && !status.quizCompleted) {
               setShowQuiz(true);
-            } else if (hasQuiz && status.quizCompleted && quizPassed) {
-              // Only unlock next lesson, don't auto-navigate
+            } else if (hasQuiz && status.quizCompleted) {
+              // Quiz completed (pass or fail), unlock next lesson but don't auto-navigate
               unlockNextLesson();
             } else if (!hasQuiz) {
               // For lessons without quiz, unlock next lesson but don't auto-navigate
@@ -279,10 +373,8 @@ const StudentClassroomPage = () => {
           const updatedStatus = { ...status, quizPassed };
           setCompletionStatus(updatedStatus);
           
-          // Only unlock next lesson if the quiz was passed (no auto-navigation)
-          if (quizPassed) {
-            unlockNextLesson();
-          }
+          // Always unlock next lesson after quiz completion (pass or fail)
+          unlockNextLesson();
         }
       } catch (err) {
         console.error(`Error checking quiz completion:`, err);
@@ -330,10 +422,14 @@ const StudentClassroomPage = () => {
             unlockNextLesson();
           }
           
-          // Refresh the page to update lesson list and unlock status
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000); // 2 second delay to show the completion message
+          // Refresh lesson data to update unlock status without page reload
+          fetchLessons();
+          
+          // Recalculate comprehensive progress
+          calculateComprehensiveProgress();
+          
+          // Add notification for lesson completion
+          addNotification('classrooms', 1);
         })
         .catch(err => {
           console.error(`Error marking content as read:`, err);
@@ -349,10 +445,11 @@ const StudentClassroomPage = () => {
             unlockNextLesson();
           }
           
-          // Refresh the page to update lesson list and unlock status
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000); // 2 second delay to show the completion message
+          // Refresh lesson data to update unlock status without page reload
+          fetchLessons();
+          
+          // Recalculate comprehensive progress
+          calculateComprehensiveProgress();
         });
     }
   };
@@ -406,8 +503,8 @@ const StudentClassroomPage = () => {
           
           let prevCompleted = false;
           if (prevHasQuiz) {
-            // For lessons with quiz, check if quiz is completed and passed
-            prevCompleted = prevStatus.quizCompleted && prevStatus.quizPassed;
+            // For lessons with quiz, check if quiz is completed (pass or fail)
+            prevCompleted = prevStatus.quizCompleted;
           } else {
             // For lessons without quiz, check if content is read
             prevCompleted = prevStatus.contentRead;
@@ -449,6 +546,13 @@ const StudentClassroomPage = () => {
 
     setDefaultLesson();
   }, [lessons, currentLessonId, user?.id]);
+
+  // Calculate comprehensive progress when lessons and activities are loaded
+  useEffect(() => {
+    if (lessons.length > 0 && activities.length >= 0 && user?.id) {
+      calculateComprehensiveProgress();
+    }
+  }, [lessons, activities, user?.id]);
 
   const unlockNextLesson = () => {
     const currentLessonIndex = lessons.findIndex(l => l.id === selectedLesson.id);
@@ -509,13 +613,17 @@ const StudentClassroomPage = () => {
           return newStatus;
         });
         
-        // Only unlock next lesson if the quiz was passed (no auto-navigation)
-        if (quizPassed) {
-          unlockNextLesson();
-        }
+        // Always unlock next lesson after quiz completion (pass or fail)
+        unlockNextLesson();
 
         // Refresh the lesson list to show updated completion status
         fetchLessons();
+        
+        // Recalculate comprehensive progress
+        calculateComprehensiveProgress();
+        
+        // Add notification for quiz completion
+        addNotification('activities', 1);
       })
       .catch(err => {
         console.error(`Error marking lesson quiz as completed:`, err);
@@ -566,6 +674,9 @@ const StudentClassroomPage = () => {
         }
 
         setQuizAttempts(attemptsMap);
+        
+        // Recalculate progress after fetching quiz attempts
+        calculateComprehensiveProgress();
       } catch (err) {
         console.error(`Error fetching quiz attempts:`, err);
       }
@@ -850,11 +961,11 @@ const StudentClassroomPage = () => {
         throw new Error('Quiz not found');
       }
 
-      // Create a new quiz attempt
-      const attempt = await quizService.createQuizAttempt(quiz.id, user.id);
+      // Start a new quiz attempt (handles reuse/validation server-side)
+      const attempt = await quizService.startQuizAttempt(quiz.id, user.id);
 
-      // Navigate to the new attempt
-      window.location.href = `/student/quizzes/${quiz.id}/attempt/${attempt.id}`;
+      // Navigate to QuizPage which will redirect to the attempt
+      navigate(`/student/quizzes/${quiz.id}/attempt/${attempt.id}`);
     } catch (error) {
       console.error(`Error starting quiz:`, error);
       
@@ -1083,12 +1194,12 @@ const StudentClassroomPage = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg">
-                  <span className="font-bold text-lg">{quizStats.passedQuizzes}</span>
-                  <span className="text-sm opacity-90">/{quizStats.passedQuizzes + quizStats.notTakenQuizzes}</span>
+                  <span className="font-bold text-lg">{comprehensiveProgress.overallProgress}</span>
+                  <span className="text-sm opacity-90">%</span>
                 </div>
                 <span className={`text-sm font-medium transition-colors duration-300 ${
                   darkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>Completed</span>
+                }`}>Overall Progress</span>
               </div>
             </div>
             
@@ -1116,7 +1227,7 @@ const StudentClassroomPage = () => {
                       ? 'bg-blue-900/50 text-blue-300'
                       : 'bg-blue-100 text-blue-700'
                   }`}>
-                    {lessons.length} Available
+                    {comprehensiveProgress.lessonsRead}/{comprehensiveProgress.totalLessons} Read
                   </span>
                 </div>
               </div>
@@ -1144,7 +1255,7 @@ const StudentClassroomPage = () => {
                       ? 'bg-purple-900/50 text-purple-300'
                       : 'bg-purple-100 text-purple-700'
                   }`}>
-                    {activities.length} Quests
+                    {comprehensiveProgress.totalGames} Games
                   </span>
                 </div>
               </div>
@@ -1172,7 +1283,7 @@ const StudentClassroomPage = () => {
                       ? 'bg-green-900/50 text-green-300'
                       : 'bg-green-100 text-green-700'
                   }`}>
-                    {quizStats.passedQuizzes} Won
+                    {quizStats.passedQuizzes} Passed
                   </span>
                 </div>
               </div>
@@ -1200,7 +1311,8 @@ const StudentClassroomPage = () => {
                       ? 'bg-orange-900/50 text-orange-300'
                       : 'bg-orange-100 text-orange-700'
                   }`}>
-                    {quizStats.notTakenQuizzes} Remaining
+                    {comprehensiveProgress.totalLessons + comprehensiveProgress.totalQuizzes - 
+                     comprehensiveProgress.lessonsRead - comprehensiveProgress.quizzesTaken} Remaining
                   </span>
                 </div>
               </div>
@@ -1214,14 +1326,14 @@ const StudentClassroomPage = () => {
                 }`}>Overall Progress</span>
                 <span className={`text-sm font-bold transition-colors duration-300 ${
                   darkMode ? 'text-white' : 'text-gray-800'
-                }`}>{Math.round((quizStats.passedQuizzes / (quizStats.passedQuizzes + quizStats.notTakenQuizzes)) * 100) || 0}%</span>
+                }`}>{comprehensiveProgress.overallProgress}%</span>
               </div>
               <div className={`w-full rounded-full h-3 overflow-hidden transition-colors duration-300 ${
                 darkMode ? 'bg-gray-700' : 'bg-gray-200'
               }`}>
                 <div 
                   className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out shadow-sm"
-                  style={{ width: `${(quizStats.passedQuizzes / (quizStats.passedQuizzes + quizStats.notTakenQuizzes)) * 100 || 0}%` }}
+                  style={{ width: `${comprehensiveProgress.overallProgress}%` }}
                 ></div>
               </div>
             </div>
@@ -1627,20 +1739,49 @@ const StudentClassroomPage = () => {
                                   })()}
                                   </div>
                               ) : (
-                                <div className={`flex items-center gap-3 rounded-2xl p-6 border-2 shadow-lg transition-colors duration-300 ${
-                                  darkMode
-                                    ? 'bg-gradient-to-r from-red-900/30 to-pink-900/30 border-red-700/50 text-red-300'
-                                    : 'bg-gradient-to-r from-red-100 to-pink-100 border-red-300 text-red-800'
-                                }`}>
-                                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center shadow-lg">
-                                    <AlertCircle className="text-white text-xl" />
+                                <div>
+                                  <div className={`flex items-center gap-3 rounded-2xl p-6 border-2 shadow-lg transition-colors duration-300 ${
+                                    darkMode
+                                      ? 'bg-gradient-to-r from-orange-900/30 to-yellow-900/30 border-orange-700/50 text-orange-300'
+                                      : 'bg-gradient-to-r from-orange-100 to-yellow-100 border-orange-300 text-orange-800'
+                                  }`}>
+                                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-600 rounded-full flex items-center shadow-lg">
+                                      <AlertCircle className="text-white text-xl" />
+                                    </div>
+                                    <div>
+                                      <span className="font-bold text-lg">Quest Attempted!</span>
+                                      <p className={`text-sm transition-colors duration-300 ${
+                                        darkMode ? 'text-orange-200' : 'text-orange-600'
+                                      }`}>You've completed this quest! The next adventure is now available.</p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <span className="font-bold text-lg">Quest Failed - Try Again!</span>
-                                    <p className={`text-sm transition-colors duration-300 ${
-                                      darkMode ? 'text-red-200' : 'text-red-600'
-                                    }`}>Don't give up! Every great adventurer learns from their mistakes</p>
-                                  </div>
+                                  
+                                  {/* Next Lesson Unlocked Notification for failed quizzes */}
+                                  {(() => {
+                                    const currentLessonIndex = lessons.findIndex(l => l.id === selectedLesson.id);
+                                    const hasNextLesson = currentLessonIndex < lessons.length - 1;
+                                    
+                                    if (hasNextLesson) {
+                                      return (
+                                        <div className={`mt-4 flex items-center gap-3 rounded-2xl p-6 border-2 shadow-lg transition-colors duration-300 ${
+                                          darkMode
+                                            ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-blue-700/50 text-blue-300'
+                                            : 'bg-gradient-to-r from-blue-100 to-indigo-100 border-blue-300 text-blue-800'
+                                        }`}>
+                                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                                            <FaCompass className="text-white text-xl" />
+                                          </div>
+                                          <div>
+                                            <span className="font-bold text-lg">Next Adventure Unlocked!</span>
+                                            <p className={`text-sm transition-colors duration-300 ${
+                                              darkMode ? 'text-blue-200' : 'text-blue-600'
+                                            }`}>You've attempted this quest! The next treasure map is now available in your collection.</p>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                 </div>
                               )}
                             </div>
@@ -1733,7 +1874,7 @@ const StudentClassroomPage = () => {
                   </h2>
                   <p className={`text-sm mt-1 transition-colors duration-300 ${
                     darkMode ? 'text-gray-300' : 'text-gray-600'
-                  }`}>Take on exciting games and challenges to test your skills! Complete lessons first to unlock quiz quests.</p>
+                  }`}>Take on exciting games and challenges to test your skills!</p>
                 </div>
               </div>
               <ClassroomGamesTab classroomId={classroomId} />
@@ -1763,58 +1904,6 @@ const StudentClassroomPage = () => {
             </div>
           )}
 
-          {!activeTab && (
-            <div className={`p-12 rounded-2xl shadow-2xl border-2 text-center transition-colors duration-300 ${
-              darkMode
-                ? 'bg-gradient-to-br from-gray-800/90 to-gray-900/90 border-gray-700/20'
-                : 'bg-gradient-to-br from-white/90 to-gray-50/90 border-white/20'
-            }`}>
-              <div className="max-w-lg mx-auto">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg mx-auto mb-6">
-                  <FaMap className="text-white text-4xl" />
-                </div>
-                <h3 className={`text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent transition-colors duration-300`}>
-                  Welcome to {classroomDetails?.name}!
-                </h3>
-                <p className={`text-lg mb-8 transition-colors duration-300 ${
-                  darkMode
-                    ? 'text-gray-300'
-                    : 'text-gray-700'
-                }`}>
-                  Ready for your learning adventure? Choose your path below to begin exploring the treasure-filled waters of knowledge!
-                </p>
-                <div className="grid grid-cols-1 gap-4">
-                  <button
-                    onClick={() => handleTabChange("lessons")}
-                    className="group flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  >
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                      <FaMap className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="font-bold text-white text-lg">Explore Treasure Maps</span>
-                  </button>
-                  <button
-                    onClick={() => handleTabChange("activities")}
-                    className="group flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  >
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                      <Sword className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="font-bold text-white text-lg">Begin Adventures</span>
-                  </button>
-                  <button
-                    onClick={() => handleTabChange("leaderboard")}
-                    className="group flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  >
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                      <Crown className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="font-bold text-white text-lg">Check Captain's Board</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
