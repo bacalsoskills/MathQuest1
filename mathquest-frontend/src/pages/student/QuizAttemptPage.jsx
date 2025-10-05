@@ -895,7 +895,7 @@ const QuizAttemptPage = () => {
              {timeLeft !== null && (
                 <div className="flex justify-center items-center mt-6">
                     <div className={`px-4 py-2 rounded-full text-white font-semibold shadow-lg ${timeLeft < 60 ? 'bg-red-500 animate-pulse' : timeLeft < 300 ? 'bg-yellow-500' : 'bg-blue-500'}`}>
-                    Time Left111: {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
+                    Time Left: {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
                     </div>
                 </div>
             )}
