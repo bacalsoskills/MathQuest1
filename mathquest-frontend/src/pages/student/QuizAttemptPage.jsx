@@ -113,8 +113,6 @@ const IdentificationQuestion = ({ question, onAnswer, currentAnswer, questionId 
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      // Prevent bubbling to the global key handler to avoid unintended next/submit
-      e.stopPropagation();
       onAnswer(question.id, inputValue, true);
     }
   };
@@ -326,7 +324,6 @@ const QuizAttemptPage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [timerId, setTimerId] = useState(null);
-  const [timerInitialized, setTimerInitialized] = useState(false);
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
   const [nextLocation, setNextLocation] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -401,7 +398,7 @@ const QuizAttemptPage = () => {
 
   const handleLeavePage = () => {
     if (nextLocation) {
-      navigate(nextLocation, { state: { activeTab: 'lessons' } });
+      navigate(nextLocation);
     }
     setShowExitConfirmModal(false);
     setNextLocation(null);
@@ -415,8 +412,8 @@ const QuizAttemptPage = () => {
   const handleLeaveQuizClick = (e) => {
     e.preventDefault();
     if (showResultModal) {
-      // If results are shown, allow direct navigation to lessons tab
-      navigate(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms', { state: { activeTab: 'lessons' } });
+      // If results are shown, allow direct navigation
+      navigate(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms');
     } else {
       // Show confirmation modal
       setNextLocation(classroomId ? `/student/classrooms/${classroomId}` : '/student/classrooms');
@@ -519,8 +516,7 @@ const QuizAttemptPage = () => {
             setTimeLeft(savedTimeLeft);
           } else {
             // Calculate new timer based on start time
-            const rawStart = attemptData?.startedAt || attemptData?.startTime || attemptData?.createdAt || attemptData?.started_at;
-            const startTime = rawStart ? new Date(rawStart).getTime() : Date.now();
+            const startTime = new Date(attemptData.startedAt).getTime();
             const now = new Date().getTime();
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             const remaining = Math.max(timeLimitSeconds - elapsedSeconds, 0);
@@ -566,7 +562,6 @@ const QuizAttemptPage = () => {
     }, 1000);
     
     setTimerId(id);
-    setTimerInitialized(true);
     
     return () => {
       clearInterval(id);
@@ -575,14 +570,11 @@ const QuizAttemptPage = () => {
 
   // Handle auto-submission when timer reaches zero
   useEffect(() => {
-    const hasAnyAnswer = Object.keys(answers || {}).length > 0;
-    if (timeLeft === 0 && timerInitialized && !showResultModal && !showConfirmationModal) {
-      // Only prompt if user already interacted (has at least one answer)
-      if (hasAnyAnswer) {
-        setShowConfirmationModal(true);
-      }
+    if (timeLeft === 0 && !showResultModal && !showConfirmationModal) {
+
+      setShowConfirmationModal(true);
     }
-  }, [timeLeft, timerInitialized, showResultModal, showConfirmationModal, answers]);
+  }, [timeLeft, showResultModal, showConfirmationModal]);
 
   const stopTimer = useCallback(() => {
     if (timerId) {
@@ -765,7 +757,7 @@ const QuizAttemptPage = () => {
   const handleModalClose = () => {
     setShowResultModal(false);
     if(classroomId) {
-      navigate(`/student/classrooms/${classroomId}`, { state: { activeTab: 'lessons' } });
+      navigate(`/student/classrooms/${classroomId}`);
     } else {
       navigate('/student/classrooms');
     }
@@ -773,14 +765,6 @@ const QuizAttemptPage = () => {
 
   useEffect(() => {
     const handleKeyPress = (e) => {
-      // Prevent unintended submissions when typing in fields or when a modal is open
-      const target = e.target || document.activeElement;
-      const tag = (target?.tagName || '').toLowerCase();
-      const isTypingElement = tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable;
-      const isAnyModalOpen = showResultModal || showReviewModal || showConfirmationModal || showExitConfirmModal;
-
-      if (isTypingElement || isAnyModalOpen) return;
-
       if (e.key === 'Enter') {
         if (currentQuestionIndex === quizDetails?.questions?.length - 1) {
           handleSubmitQuiz();
@@ -911,7 +895,7 @@ const QuizAttemptPage = () => {
              {timeLeft !== null && (
                 <div className="flex justify-center items-center mt-6">
                     <div className={`px-4 py-2 rounded-full text-white font-semibold shadow-lg ${timeLeft < 60 ? 'bg-red-500 animate-pulse' : timeLeft < 300 ? 'bg-yellow-500' : 'bg-blue-500'}`}>
-                    Time Left: {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
+                    Time Left111: {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
                     </div>
                 </div>
             )}
