@@ -957,8 +957,8 @@ const StudentClassroomPage = () => {
         throw new Error('Quiz not found');
       }
 
-      // Create a new quiz attempt
-      const attempt = await quizService.createQuizAttempt(quiz.id, user.id);
+      // Start a new quiz attempt (handles reuse/validation server-side)
+      const attempt = await quizService.startQuizAttempt(quiz.id, user.id);
 
       // Navigate to QuizPage which will redirect to the attempt
       navigate(`/student/quizzes/${quiz.id}/attempt/${attempt.id}`);

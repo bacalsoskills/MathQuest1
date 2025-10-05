@@ -435,6 +435,22 @@ const QuizAttemptPage = () => {
           throw new Error('Quiz or attempt data not found.');
         }
 
+        // If the attempt is already completed, inform and exit gracefully
+        if (attemptData.completedAt) {
+          toast.error('This quiz attempt is already completed.');
+          setLoading(false);
+          // Redirect back to classroom (if known) or quizzes page
+          if (quizData.activityId) {
+            try {
+              const activityResponse = await api.get(`/activities/${quizData.activityId}`);
+              const activityData = activityResponse.data;
+              setClassroomId(activityData.classroomId);
+              navigate(`/student/classrooms/${activityData.classroomId}`, { state: { activeTab: 'activities' } });
+            } catch {}
+          }
+          return;
+        }
+
         // Get the activity data to find the classroom ID
         if (quizData.activityId) {
           try {
@@ -894,7 +910,7 @@ const QuizAttemptPage = () => {
                 </button>
               )}
             </div>
-             {timeLeft !== null && (
+            {timerStarted && timeLeft !== null && timeLeft > 0 && (
                 <div className="flex justify-center items-center mt-6">
                     <div className={`px-4 py-2 rounded-full text-white font-semibold shadow-lg ${timeLeft < 60 ? 'bg-red-500 animate-pulse' : timeLeft < 300 ? 'bg-yellow-500' : 'bg-blue-500'}`}>
                     Time Left: {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
