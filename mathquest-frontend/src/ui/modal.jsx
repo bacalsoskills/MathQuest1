@@ -34,7 +34,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, maxWidth = 'max-w-2xl
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-gray-50 dark:bg-gray-800 rounded-xl shadow-xl w-full ${maxWidth} mx-4 flex flex-col max-h-[95vh] animate-fadeIn`}
+        className={`bg-gray-50 dark:bg-gray-800 rounded-xl shadow-xl w-[calc(100vw-2rem)] sm:w-full ${maxWidth} mx-4 sm:mx-6 md:mx-8 flex flex-col overflow-hidden max-h-[90svh] md:max-h-[90vh] animate-fadeIn`}
         role="dialog"
         aria-modal="true"
       >

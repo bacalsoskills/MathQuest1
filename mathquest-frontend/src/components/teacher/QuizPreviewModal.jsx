@@ -44,7 +44,7 @@ const QuizPreviewModal = ({ isOpen, onClose, quizId }) => {
       isOpen={isOpen} 
       onClose={onClose} 
       title="Quiz Preview"
-      maxWidth="max-w-4xl"
+      maxWidth="max-w-[95vw] md:max-w-5xl lg:max-w-6xl"
     >
       {loading ? (
         <div className="flex justify-center items-center h-32">
@@ -57,7 +57,7 @@ const QuizPreviewModal = ({ isOpen, onClose, quizId }) => {
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <h3 className="text-xl font-bold mb-2 text-gray-900">{quiz.quizName}</h3>
             <p className="text-gray-700 mb-3">{quiz.description}</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
               <div>
                 <span className="font-semibold">Available From:</span>
                 <br />
@@ -94,7 +94,7 @@ const QuizPreviewModal = ({ isOpen, onClose, quizId }) => {
                       {idx + 1}
                     </span>
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900 mb-1">{q.questionText}</div>
+                      <div className="font-semibold text-gray-900 mb-1 break-words whitespace-pre-wrap">{q.questionText}</div>
                       <div className="text-xs text-gray-500 mb-2">
                         Type: {q.questionType.replace(/_/g, ' ')} | Points: {q.points}
                       </div>
@@ -106,7 +106,7 @@ const QuizPreviewModal = ({ isOpen, onClose, quizId }) => {
                   <div className="ml-11">
                     <ul className="space-y-2">
                       {q.options.map((opt, oIdx) => (
-                        <li key={oIdx} className={`p-3 rounded-lg border ${
+                        <li key={oIdx} className={`p-3 rounded-lg border break-words whitespace-pre-wrap ${
                           q.correctAnswer === opt 
                             ? 'bg-green-50 border-green-200 text-green-800 font-medium' 
                             : 'bg-gray-50 border-gray-200'
@@ -128,7 +128,7 @@ const QuizPreviewModal = ({ isOpen, onClose, quizId }) => {
                   <div className="ml-11">
                     <ul className="space-y-2">
                       {q.options.map((opt, oIdx) => (
-                        <li key={oIdx} className={`p-3 rounded-lg border ${
+                        <li key={oIdx} className={`p-3 rounded-lg border break-words whitespace-pre-wrap ${
                           Array.isArray(q.correctAnswer) && q.correctAnswer.includes(opt)
                             ? 'bg-green-50 border-green-200 text-green-800 font-medium' 
                             : 'bg-gray-50 border-gray-200'
@@ -148,7 +148,7 @@ const QuizPreviewModal = ({ isOpen, onClose, quizId }) => {
                 
                 {q.questionType === 'IDENTIFICATION' && (
                   <div className="ml-11">
-                    <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 font-medium">
+                    <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 font-medium break-words whitespace-pre-wrap">
                       <span className="font-semibold">Correct Answer:</span> {q.correctAnswer}
                     </div>
                   </div>

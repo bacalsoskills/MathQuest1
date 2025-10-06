@@ -105,152 +105,154 @@ const Dashboard = () => {
 
   return (
     <div
-      className="w-full min-h-[70vh] px-4 sm:px-6 lg:px-8 lg:py-8 flex flex-col items-center justify-start"
+      className="w-full min-h-screen overflow-x-hidden flex flex-col items-center justify-start"
       style={{
         backgroundImage: darkMode
           ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
           : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
       }}
     >
-      {/* Header */}
-      <div className="max-w-6xl w-full flex flex-col sm:flex-row items-start sm:items-center justify-center gap-3 mt-6 sm:mt-8 mb-4">
-        <div className="flex items-center gap-3">
-          <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-xl sm:text-2xl'} />
-          <Heading type="h1" fontSize="4xl" weight="bold" className={(darkMode ? 'text-yellow-200' : 'text-blue-800') + ' tracking-wide'}>
-            MathQuest Dashboard
-          </Heading>
-          <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-xl sm:text-2xl'} />
-        </div>
-      </div>
-
-      {/* Decorative divider */}
-      <div className="max-w-6xl w-full">
-        <div className="h-[2px] w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 opacity-80 mb-6"></div>
-      </div>
-
-      {/* Cards grid */}
-      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-        {cards.map((card, idx) => (
-          <div
-            key={card.title}
-            className={`rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 flex flex-col min-h-[220px] sm:min-h-[260px] relative border-2 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] ${
-              darkMode
-                ? 'bg-[#0b1022]/85 border-yellow-700/40'
-                : 'bg-[#f5ecd2] border-yellow-300'
-            } ${card.disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-            style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}
-          >
-            {/* Scroll top band */}
-            <div className={`absolute -top-1 left-4 right-4 h-2 rounded-b-full ${darkMode ? 'bg-yellow-700/40' : 'bg-yellow-300/70'}`}></div>
-
-            <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-              <div className={`${darkMode ? 'bg-yellow-700/30' : 'bg-yellow-500/20'} rounded-xl p-2 sm:p-3 flex items-center justify-center ring-2 ${darkMode ? 'ring-yellow-700/50' : 'ring-yellow-300/70'}`}>
-                {card.icon}
-              </div>
-              <Heading type="h2" fontSize="xl" sm="2xl" weight="bold" className={(darkMode ? 'text-yellow-200' : 'text-gray-800') + ' tracking-wide'}>
-                {card.title}
-              </Heading>
-            </div>
-            <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed max-w-md'}>{card.desc}</p>
-            <div className="mt-auto">
-              <Button 
-                variant="link" 
-                size="sm" 
-                onClick={card.onClick} 
-                className={(darkMode ? 'text-yellow-300' : 'text-yellow-800') + ' !px-0 hover:underline'}
-                disabled={card.disabled}
-              >
-                {card.button}
-              </Button>
-            </div>
-
-            {/* Nautical corner pins */}
-            <div className="absolute top-2 right-2 text-yellow-500/70">⚓</div>
-            <div className="absolute bottom-2 left-2 text-yellow-500/70">🧭</div>
+      {/* Outer container with consistent padding */}
+      <div className="w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 flex flex-col">
+        {/* Header */}
+        <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+            <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-lg sm:text-xl md:text-2xl flex-shrink-0'} />
+            <Heading type="h1" fontSize="2xl" sm="3xl" md="4xl" weight="bold" className={(darkMode ? 'text-yellow-200' : 'text-blue-800') + ' tracking-wide text-center sm:text-left break-words'}>
+              MathQuest Dashboard
+            </Heading>
+            <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-lg sm:text-xl md:text-2xl flex-shrink-0'} />
           </div>
-        ))}
+        </div>
 
-        {/* Developers section replaces previous info card */}
-        <div
-          className={`col-span-1 md:col-span-2 rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 border-2 backdrop-blur-sm mt-2 relative transition-all duration-300 ${
-            darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
-          }`}
-          style={{ boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.08)' }}
-        >
-          {/* Section header */}
-          <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className={`${darkMode ? 'bg-yellow-700/30' : 'bg-yellow-500/20'} rounded-xl p-2 sm:p-3 flex items-center justify-center ring-2 ${darkMode ? 'ring-yellow-700/50' : 'ring-yellow-300/70'}`}>
-                <FaShip className="text-yellow-500 text-xl sm:text-2xl" />
+        {/* Decorative divider */}
+        <div className="w-full mb-4 sm:mb-6">
+          <div className="h-[2px] w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 opacity-80"></div>
+        </div>
+
+        {/* Cards grid - responsive with proper overflow handling */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:gap-6 auto-rows-auto">
+          {cards.map((card, idx) => (
+            <div
+              key={card.title}
+              className={`rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col relative border-2 backdrop-blur-sm transition-all duration-300 hover:scale-[1.01] ${
+                darkMode
+                  ? 'bg-[#0b1022]/85 border-yellow-700/40'
+                  : 'bg-[#f5ecd2] border-yellow-300'
+              } ${card.disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+              style={{ boxShadow: darkMode ? '0 8px 20px rgba(255, 215, 0, 0.08)' : '0 8px 20px rgba(0,0,0,0.08)' }}
+            >
+              {/* Scroll top band */}
+              <div className={`absolute -top-1 left-3 sm:left-4 right-3 sm:right-4 h-1.5 sm:h-2 rounded-b-full ${darkMode ? 'bg-yellow-700/40' : 'bg-yellow-300/70'}`}></div>
+
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                <div className={`${darkMode ? 'bg-yellow-700/30' : 'bg-yellow-500/20'} rounded-lg sm:rounded-xl p-2 flex items-center justify-center ring-2 ${darkMode ? 'ring-yellow-700/50' : 'ring-yellow-300/70'} flex-shrink-0`}>
+                  {card.icon}
+                </div>
+                <Heading type="h2" fontSize="lg" sm="xl" md="2xl" weight="bold" className={(darkMode ? 'text-yellow-200' : 'text-gray-800') + ' tracking-wide break-words flex-1 min-w-0'}>
+                  {card.title}
+                </Heading>
               </div>
-              <Heading type="h2" fontSize="xl" sm="2xl" weight="bold" className={(darkMode ? 'text-yellow-200' : 'text-gray-800') + ' tracking-wide'}>
+              <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed break-words'}>{card.desc}</p>
+              <div className="mt-auto pt-2">
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  onClick={card.onClick} 
+                  className={(darkMode ? 'text-yellow-300' : 'text-yellow-800') + ' !px-0 hover:underline text-xs sm:text-sm'}
+                  disabled={card.disabled}
+                >
+                  {card.button}
+                </Button>
+              </div>
+
+              {/* Nautical corner pins */}
+              <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 text-yellow-500/70 text-sm sm:text-base">⚓</div>
+              <div className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2 text-yellow-500/70 text-sm sm:text-base">🧭</div>
+            </div>
+          ))}
+
+          {/* Developers section - spans full width on larger screens */}
+          <div
+            className={`col-span-1 md:col-span-2 rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl p-3 sm:p-4 md:p-5 lg:p-6 border-2 backdrop-blur-sm relative transition-all duration-300 ${
+              darkMode ? 'bg-[#0b1022]/85 border-yellow-700/40' : 'bg-[#f5ecd2] border-yellow-300'
+            }`}
+            style={{ boxShadow: darkMode ? '0 8px 20px rgba(255, 215, 0, 0.08)' : '0 8px 20px rgba(0,0,0,0.08)' }}
+          >
+            {/* Section header */}
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 md:mb-5">
+              <div className={`${darkMode ? 'bg-yellow-700/30' : 'bg-yellow-500/20'} rounded-lg sm:rounded-xl p-2 flex items-center justify-center ring-2 ${darkMode ? 'ring-yellow-700/50' : 'ring-yellow-300/70'} flex-shrink-0`}>
+                <FaShip className="text-yellow-500 text-lg sm:text-xl md:text-2xl" />
+              </div>
+              <Heading type="h2" fontSize="lg" sm="xl" md="2xl" weight="bold" className={(darkMode ? 'text-yellow-200' : 'text-gray-800') + ' tracking-wide break-words'}>
                 Developers Crew
               </Heading>
             </div>
-          </div>
 
-          {/* Crew grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {developers.map((dev, i) => (
-              <div
-                key={dev.name + i}
-                className={`relative rounded-2xl p-4 border-2 shadow-xl transition-all duration-300 hover:scale-[1.02] ${
-                  darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fff6dc] border-yellow-300'
-                }`}
-                style={{ boxShadow: darkMode ? '0 8px 18px rgba(255,215,0,0.08)' : '0 8px 18px rgba(0,0,0,0.06)' }}
-              >
-                {/* top scroll band */}
-                <div className={`absolute -top-1 left-3 right-3 h-2 rounded-b-full ${darkMode ? 'bg-yellow-700/40' : 'bg-yellow-300/70'}`}></div>
+            {/* Crew grid - responsive layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5 auto-rows-auto">
+              {developers.map((dev, i) => (
+                <div
+                  key={dev.name + i}
+                  className={`relative rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 shadow-lg sm:shadow-xl transition-all duration-300 hover:scale-[1.01] ${
+                    darkMode ? 'bg-[#0f1428]/80 border-yellow-700/40' : 'bg-[#fff6dc] border-yellow-300'
+                  }`}
+                  style={{ boxShadow: darkMode ? '0 6px 15px rgba(255,215,0,0.08)' : '0 6px 15px rgba(0,0,0,0.06)' }}
+                >
+                  {/* top scroll band */}
+                  <div className={`absolute -top-1 left-2 sm:left-3 right-2 sm:right-3 h-1.5 sm:h-2 rounded-b-full ${darkMode ? 'bg-yellow-700/40' : 'bg-yellow-300/70'}`}></div>
 
-                {/* Pirate photo frame */}
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="relative">
-                    <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden ring-4 ${darkMode ? 'ring-yellow-700/60' : 'ring-yellow-300'} shadow-lg flex items-center justify-center ${darkMode ? 'bg-yellow-800/30' : 'bg-yellow-200'}`}>
-                      <img
-                        src={dev.photo}
-                        alt={dev.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { 
-                          console.log('Image failed to load:', dev.photo);
-                          e.currentTarget.style.display = 'none'; 
-                          // Show fallback icon
-                          const fallback = document.createElement('div');
-                          fallback.className = 'w-full h-full flex items-center justify-center text-2xl text-yellow-600';
-                          fallback.innerHTML = '👤';
-                          e.currentTarget.parentElement?.appendChild(fallback);
-                        }}
-                        onLoad={() => console.log('Image loaded successfully:', dev.photo)}
-                      />
+                  {/* Pirate photo frame */}
+                  <div className="flex flex-col items-center gap-2 mb-2 sm:mb-3">
+                    <div className="relative flex-shrink-0">
+                      <div className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden ring-3 sm:ring-4 ${darkMode ? 'ring-yellow-700/60' : 'ring-yellow-300'} shadow-lg flex items-center justify-center ${darkMode ? 'bg-yellow-800/30' : 'bg-yellow-200'}`}>
+                        <img
+                          src={dev.photo}
+                          alt={dev.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { 
+                            console.log('Image failed to load:', dev.photo);
+                            e.currentTarget.style.display = 'none'; 
+                            // Show fallback icon
+                            const fallback = document.createElement('div');
+                            fallback.className = 'w-full h-full flex items-center justify-center text-xl sm:text-2xl text-yellow-600';
+                            fallback.innerHTML = '👤';
+                            e.currentTarget.parentElement?.appendChild(fallback);
+                          }}
+                          onLoad={() => console.log('Image loaded successfully:', dev.photo)}
+                        />
+                      </div>
+                      <div className={`absolute -inset-1 rounded-full pointer-events-none ${darkMode ? 'ring-2 ring-yellow-800/50' : 'ring-2 ring-yellow-400/60'}`}></div>
+                      <div className="absolute -right-1 sm:-right-2 -bottom-1 sm:-bottom-2 text-base sm:text-lg text-yellow-500">🧭</div>
                     </div>
-                    <div className={`absolute -inset-1 rounded-full pointer-events-none ${darkMode ? 'ring-2 ring-yellow-800/50' : 'ring-2 ring-yellow-400/60'}`}></div>
-                    <div className="absolute -right-2 -bottom-2 text-yellow-500">🧭</div>
+                    <div className="w-full text-center">
+                      <div className={(darkMode ? 'text-yellow-200' : 'text-gray-800') + ' font-bold text-xs sm:text-sm md:text-base break-words px-1'}>{dev.name}</div>
+                      <div className={(darkMode ? 'text-yellow-300/80' : 'text-yellow-700') + ' text-[10px] sm:text-xs break-words'}>{dev.role}</div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className={(darkMode ? 'text-yellow-200' : 'text-gray-800') + ' font-bold text-base sm:text-lg truncate'}>{dev.name}</div>
-                    <div className={(darkMode ? 'text-yellow-300/80' : 'text-yellow-700') + ' text-xs sm:text-sm'}>{dev.role}</div>
+
+                  {/* Skills scroll */}
+                  <div className={`rounded-lg sm:rounded-xl p-2 sm:p-3 border flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap ${darkMode ? 'bg-[#0b1022]/70 border-yellow-700/40' : 'bg-[#fdf2cf] border-yellow-300'}`}>
+                    <span className={(darkMode ? 'text-yellow-300' : 'text-yellow-800') + ' text-sm sm:text-base flex-shrink-0'}>{dev.icon}</span>
+                    {dev.skills.map((s, idx) => (
+                      <span
+                        key={s + idx}
+                        className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap ${darkMode ? 'bg-yellow-700/30 text-yellow-200' : 'bg-yellow-200 text-yellow-800'}`}
+                      >
+                        {s}
+                      </span>
+                    ))}
                   </div>
-                </div>
 
-                {/* Skills scroll */}
-                <div className={`rounded-xl p-3 border flex items-center gap-2 flex-wrap ${darkMode ? 'bg-[#0b1022]/70 border-yellow-700/40' : 'bg-[#fdf2cf] border-yellow-300'}`}>
-                  <span className={(darkMode ? 'text-yellow-300' : 'text-yellow-800') + ' text-lg'}>{dev.icon}</span>
-                  {dev.skills.map((s, idx) => (
-                    <span
-                      key={s + idx}
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${darkMode ? 'bg-yellow-700/30 text-yellow-200' : 'bg-yellow-200 text-yellow-800'}`}
-                    >
-                      {s}
-                    </span>
-                  ))}
+                  {/* Nautical pins */}
+                  <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 text-yellow-500/70 text-xs sm:text-sm">⚓</div>
+                  <div className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2 text-yellow-500/70 text-xs sm:text-sm">🧭</div>
                 </div>
-
-                {/* Nautical pins */}
-                <div className="absolute top-2 right-2 text-yellow-500/70 text-sm">⚓</div>
-                <div className="absolute bottom-2 left-2 text-yellow-500/70 text-sm">🧭</div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

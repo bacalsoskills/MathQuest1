@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import SystemSettingsService from '../../services/systemSettingsService';
 import { toast } from 'react-hot-toast';
 import { FaSave, FaPlus, FaTrash, FaEdit } from 'react-icons/fa';
@@ -10,6 +11,7 @@ import { Button } from '../../ui/button';
 
 const SystemAnnouncements = () => {
     const { isAdmin, currentUser } = useAuth();
+    const { fetchNotifications } = useNotifications();
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingAnnouncement, setEditingAnnouncement] = useState(null);
@@ -37,6 +39,8 @@ const SystemAnnouncements = () => {
 
     useEffect(() => {
         loadAnnouncements();
+        // Refresh notifications when component mounts to ensure sync
+        fetchNotifications();
     }, []);
 
     const loadAnnouncements = async () => {
@@ -113,6 +117,9 @@ const SystemAnnouncements = () => {
             // Refresh announcements to get the updated list
             await loadAnnouncements();
 
+            // Refresh notifications to update the notification count in navbar
+            await fetchNotifications();
+
             setNewAnnouncement({
                 message: '',
                 startDate: '',
@@ -132,6 +139,10 @@ const SystemAnnouncements = () => {
         try {
             await SystemSettingsService.deleteAnnouncement(id);
             await loadAnnouncements();
+            
+            // Refresh notifications to update the notification count in navbar
+            await fetchNotifications();
+            
             toast.success('Announcement removed successfully');
         } catch (error) {
             console.error('Failed to remove announcement:', error);
@@ -148,6 +159,10 @@ const SystemAnnouncements = () => {
                     isActive
                 });
                 await loadAnnouncements();
+                
+                // Refresh notifications to update the notification count in navbar
+                await fetchNotifications();
+                
                 toast.success('Announcement status updated');
             }
         } catch (error) {
@@ -252,6 +267,10 @@ const SystemAnnouncements = () => {
 
             await SystemSettingsService.updateAnnouncement(editingAnnouncement.id, announcementData);
             await loadAnnouncements();
+            
+            // Refresh notifications to update the notification count in navbar
+            await fetchNotifications();
+            
             setEditingAnnouncement(null);
             toast.success('Announcement updated successfully');
         } catch (error) {
@@ -282,7 +301,12 @@ const SystemAnnouncements = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Left column: New Announcement Form */}
                     <div className="space-y-4">
-                        <Header type="h2" fontSize="2xl" weight="bold" className="mb-6 text-primary dark:text-gray-300">Add New Announcement</Header>
+                        <div className="flex items-center justify-between">
+                            <Header type="h2" fontSize="2xl" weight="bold" className="text-primary dark:text-gray-300">Add New Announcement</Header>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full">
+                                🔔 Will appear in notifications
+                            </div>
+                        </div>
                         <div className="border p-4 rounded-lg space-y-4 bg-white shadow-sm">
                             <div className="mb-4">
                                 <label className="block text-sm font-medium mb-2">Message <span className="text-red-500">*</span></label>
@@ -333,6 +357,9 @@ const SystemAnnouncements = () => {
                                     <option value="TEACHERS">Teachers Only</option>
                                     <option value="STUDENTS">Students Only</option>
                                 </select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    📢 This announcement will appear in the notification dropdown for the selected audience
+                                </p>
                             </div>
 
                             <Button
@@ -350,7 +377,12 @@ const SystemAnnouncements = () => {
 
                     {/* Right column: Existing Announcements */}
                     <div className="space-y-4">
-                        <Header type="h2" fontSize="2xl" weight="bold" className="mb-6 text-primary dark:text-gray-300">Announcement List</Header>
+                        <div className="flex items-center justify-between">
+                            <Header type="h2" fontSize="2xl" weight="bold" className="text-primary dark:text-gray-300">Announcement List</Header>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
+                                📢 Connected to navbar notifications
+                            </div>
+                        </div>
                         <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2">
                             {announcements.length === 0 ? (
                                 <div className="border p-4 rounded-lg bg-gray-50 text-center text-gray-500">

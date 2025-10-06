@@ -67,6 +67,31 @@ class NotificationService {
     }
   }
 
+  // Create lesson notification for students
+  async createLessonNotification(lessonData, classroomId) {
+    try {
+      const notificationData = {
+        type: 'LESSON',
+        title: 'New Lesson Available!',
+        message: `📚 A new lesson "${lessonData.title}" has been added by your teacher! Check it out in your Classroom Treasure Map.`,
+        classroomId: classroomId,
+        lessonId: lessonData.id,
+        targetAudience: 'STUDENTS',
+        metadata: {
+          lessonTitle: lessonData.title,
+          hasQuiz: lessonData.hasQuiz || false,
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      const response = await api.post('/notifications/lesson', notificationData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating lesson notification:', error);
+      throw error;
+    }
+  }
+
   // Delete notification
   async deleteNotification(notificationId) {
     try {

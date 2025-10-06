@@ -3,6 +3,7 @@ import lessonService from "../../services/lessonService";
 import contentBlockService from "../../services/contentBlockService";
 import activityService from "../../services/activityService";
 import quizService from "../../services/quizService";
+import notificationService from "../../services/notificationService";
 import { Button } from "../../ui/button";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -267,6 +268,21 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
 
         await quizService.createQuiz(activity.id, quizToCreate);
       }
+
+      // Create notification for students after successful lesson creation
+      try {
+        const lessonNotificationData = {
+          ...lesson,
+          hasQuiz: hasQuiz,
+          quizTitle: hasQuiz ? quizData.title : null
+        };
+        
+        await notificationService.createLessonNotification(lessonNotificationData, classroomId);
+        console.log('✅ Lesson notification sent to students');
+      } catch (notificationError) {
+        // Don't fail the lesson creation if notification fails
+        console.error('⚠️ Failed to send lesson notification:', notificationError);
+      }
       
       // Reset form
       setLessonData({
@@ -312,6 +328,13 @@ const AddLessonModal = ({ isOpen, onClose, classroomId, onLessonAdded }) => {
       if (onLessonAdded) {
         onLessonAdded(lesson);
       }
+      
+      // Show success message
+      const successMessage = hasQuiz 
+        ? `✅ Scroll "${lessonData.title}" and Treasure Quest "${quizData.title}" created successfully! Students have been notified.`
+        : `✅ Scroll "${lessonData.title}" created successfully! Students have been notified.`;
+      
+      toast.success(successMessage);
       
       onClose();
     } catch (err) {

@@ -200,4 +200,42 @@ html, body {
   visibility: visible !important;
   opacity: 1 !important;
   height: auto !important;
+}
+
+/* Custom scrollbar styles for navbar classroom dropdown */
+.navbar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #eab308 transparent;
+}
+
+.navbar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.navbar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.navbar-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #eab308;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.navbar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #ca8a04;
+}
+
+/* Dark mode scrollbar */
+.dark .navbar-scrollbar {
+  scrollbar-color: #eab308 transparent;
+}
+
+.dark .navbar-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #eab308;
+}
+
+.dark .navbar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #facc15;
 } 

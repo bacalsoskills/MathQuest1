@@ -13,8 +13,9 @@ const SystemSettingsService = {
 
   getActiveAnnouncements: async (userRole) => {
     try {
+      // Use a public endpoint that doesn't require admin role
       const response = await api.get(
-        `/api/admin/settings/announcements/active?userRole=${userRole}`
+        `/api/announcements/active?userRole=${userRole}`
       );
 
       // Convert UTC dates to local dates
@@ -37,6 +38,35 @@ const SystemSettingsService = {
       return announcements;
     } catch (error) {
       console.error("Failed to fetch active announcements:", error);
+      throw error;
+    }
+  },
+
+  getAllActiveAnnouncements: async () => {
+    try {
+      // Fallback method to get all active announcements
+      const response = await api.get('/api/announcements/all');
+
+      // Convert UTC dates to local dates
+      const announcements = response.data.map((announcement) => {
+        const processedAnnouncement = { ...announcement };
+
+        if (announcement.startDate) {
+          const startDate = new Date(announcement.startDate);
+          processedAnnouncement.startDate = startDate.toISOString();
+        }
+
+        if (announcement.endDate) {
+          const endDate = new Date(announcement.endDate);
+          processedAnnouncement.endDate = endDate.toISOString();
+        }
+
+        return processedAnnouncement;
+      });
+
+      return announcements;
+    } catch (error) {
+      console.error("Failed to fetch all active announcements:", error);
       throw error;
     }
   },

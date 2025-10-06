@@ -70,22 +70,22 @@ const StudentClassrooms = () => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen transition-colors duration-300 ${
+      <div className={`min-h-screen transition-colors duration-300 overflow-x-hidden ${
         darkMode
           ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
           : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100'
-      } relative overflow-hidden flex justify-center items-center`}>
+      } relative flex justify-center items-center px-4`}>
         {/* Pirate-themed background elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 text-6xl">⚓</div>
-          <div className="absolute top-20 right-20 text-5xl">🗺️</div>
-          <div className="absolute bottom-20 left-20 text-5xl">🏴‍☠️</div>
-          <div className="absolute bottom-10 right-10 text-6xl">⚔️</div>
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-5 sm:top-10 left-5 sm:left-10 text-3xl sm:text-5xl md:text-6xl">⚓</div>
+          <div className="absolute top-10 sm:top-20 right-10 sm:right-20 text-2xl sm:text-4xl md:text-5xl">🗺️</div>
+          <div className="absolute bottom-10 sm:bottom-20 left-10 sm:left-20 text-2xl sm:text-4xl md:text-5xl">🏴‍☠️</div>
+          <div className="absolute bottom-5 sm:bottom-10 right-5 sm:right-10 text-3xl sm:text-5xl md:text-6xl">⚔️</div>
         </div>
         
-        <div className="flex flex-col items-center gap-6 relative z-10">
+        <div className="flex flex-col items-center gap-4 sm:gap-5 md:gap-6 relative z-10">
           <div className="relative">
-            <div className={`animate-spin rounded-full h-16 w-16 border-4 ${
+            <div className={`animate-spin rounded-full h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 border-4 ${
               darkMode
                 ? 'border-amber-200 border-t-amber-600'
                 : 'border-amber-200 border-t-amber-600'
@@ -96,13 +96,13 @@ const StudentClassrooms = () => {
                 : 'border-t-amber-400'
             }`} style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
           </div>
-          <div className="text-center">
-            <h3 className={`text-xl font-semibold mb-2 ${
+          <div className="text-center px-4">
+            <h3 className={`text-base sm:text-lg md:text-xl font-semibold mb-2 break-words ${
               darkMode
                 ? 'text-amber-300'
                 : 'text-amber-800'
             }`}>⚓ Preparing Your Pirate Adventure</h3>
-            <p className={`${
+            <p className={`text-sm sm:text-base break-words ${
               darkMode
                 ? 'text-amber-400'
                 : 'text-amber-600'
@@ -114,26 +114,26 @@ const StudentClassrooms = () => {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`min-h-screen transition-colors duration-300 overflow-x-hidden ${
       darkMode
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
         : 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100'
-    } relative overflow-hidden`}>
+    } relative`}>
       {/* Pirate-themed background elements */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-10 text-8xl">⚓</div>
-        <div className="absolute top-40 right-20 text-6xl">🗺️</div>
-        <div className="absolute bottom-40 left-20 text-7xl">🏴‍☠️</div>
-        <div className="absolute bottom-20 right-10 text-8xl">⚔️</div>
-        <div className="absolute top-1/2 left-1/4 text-5xl">🏴</div>
-        <div className="absolute top-1/3 right-1/3 text-6xl">⚓</div>
-        <div className="absolute bottom-1/3 left-1/2 text-5xl">🗺️</div>
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
+        <div className="absolute top-10 sm:top-20 left-5 sm:left-10 text-4xl sm:text-6xl md:text-8xl">⚓</div>
+        <div className="absolute top-20 sm:top-40 right-10 sm:right-20 text-3xl sm:text-5xl md:text-6xl">🗺️</div>
+        <div className="absolute bottom-20 sm:bottom-40 left-10 sm:left-20 text-4xl sm:text-6xl md:text-7xl">🏴‍☠️</div>
+        <div className="absolute bottom-10 sm:bottom-20 right-5 sm:right-10 text-4xl sm:text-6xl md:text-8xl">⚔️</div>
+        <div className="absolute top-1/2 left-1/4 text-2xl sm:text-4xl md:text-5xl">🏴</div>
+        <div className="absolute top-1/3 right-1/3 text-3xl sm:text-5xl md:text-6xl">⚓</div>
+        <div className="absolute bottom-1/3 left-1/2 text-2xl sm:text-4xl md:text-5xl">🗺️</div>
       </div>
       
-      <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="relative z-10 px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        <div className="max-w-6xl mx-auto w-full">
         {/* Pirate Treasure Map Header */}
-        <div className={`rounded-3xl shadow-2xl border-4 mb-8 overflow-hidden relative transition-colors duration-300 ${
+        <div className={`rounded-xl sm:rounded-2xl md:rounded-3xl shadow-lg sm:shadow-xl md:shadow-2xl border-2 sm:border-3 md:border-4 mb-4 sm:mb-6 md:mb-8 overflow-hidden relative transition-colors duration-300 ${
           darkMode
             ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 border-gray-600'
             : 'bg-gradient-to-r from-amber-800 via-amber-700 to-amber-800 border-amber-600'
@@ -146,17 +146,17 @@ const StudentClassrooms = () => {
           }`}></div>
           <div className="absolute inset-0 opacity-20" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23d97706\" fill-opacity=\"0.1\"%3E%3Cpath d=\"M0 30h60v30H0z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"}}></div>
           
-          <div className="relative z-10 p-8 text-center">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="text-4xl">🗺️</div>
-              <Header type="h1" fontSize="5xl" weight="bold" className={`transition-colors duration-300 ${
+          <div className="relative z-10 p-4 sm:p-6 md:p-8 text-center">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3 md:mb-4 flex-wrap">
+              <div className="text-2xl sm:text-3xl md:text-4xl flex-shrink-0">🗺️</div>
+              <Header type="h1" fontSize="2xl" sm="3xl" md="4xl" lg="5xl" weight="bold" className={`transition-colors duration-300 break-words ${
                 darkMode
                   ? 'text-gray-100'
                   : 'text-amber-100'
               }`}>My Treasure Maps</Header>
-              <div className="text-4xl">🏴‍☠️</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl flex-shrink-0">🏴‍☠️</div>
             </div>
-            <p className={`text-lg transition-colors duration-300 ${
+            <p className={`text-sm sm:text-base md:text-lg transition-colors duration-300 break-words ${
               darkMode
                 ? 'text-gray-300'
                 : 'text-amber-200'
@@ -164,7 +164,7 @@ const StudentClassrooms = () => {
           </div>
         </div>
         {/* Pirate Navigation Panel */}
-        <div className={`rounded-2xl shadow-xl border-4 mb-8 overflow-hidden relative transition-colors duration-300 ${
+        <div className={`rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl border-2 sm:border-3 md:border-4 mb-4 sm:mb-6 md:mb-8 overflow-hidden relative transition-colors duration-300 ${
           darkMode
             ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-gray-600'
             : 'bg-gradient-to-r from-amber-800 to-amber-700 border-amber-600'
@@ -177,22 +177,22 @@ const StudentClassrooms = () => {
           }`}></div>
           <div className="absolute inset-0 opacity-10" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%23d97706\" fill-opacity=\"0.1\"%3E%3Cpath d=\"M0 20h40v20H0z\"/%3E%3C/g%3E%3C/svg%3E')"}}></div>
           
-          <div className="relative z-10 p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="relative z-10 p-4 sm:p-5 md:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
               {/* Search Compass */}
-              <div className="relative w-full sm:w-auto">
+              <div className="relative w-full sm:w-auto sm:flex-1 sm:max-w-sm">
                 <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors duration-300 ${
                   darkMode
                     ? 'text-gray-300'
                     : 'text-amber-700'
                 }`}>
-                  <Compass className="w-5 h-5" />
+                  <Compass className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                 </div>
                 <Input
                   type="search"
                   name="search"
                   id="search"
-                  className={`block w-full sm:w-64 pl-10 pr-3 py-3 sm:text-sm transition-colors duration-300 ${
+                  className={`block w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-3 text-sm transition-colors duration-300 ${
                     darkMode
                       ? 'border-gray-300 text-gray-300 bg-gray-700/50'
                       : 'border-amber-700 text-amber-700 bg-amber-100/50'
@@ -206,98 +206,98 @@ const StudentClassrooms = () => {
               {/* Join Classroom Button */}
               <Link
                 to="/student/join-classroom"
-                className={`font-semibold flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg ${
+                className={`font-semibold flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-sm sm:text-base w-full sm:w-auto whitespace-nowrap ${
                   darkMode
                     ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
                     : 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'
                 }`}
               >
-                <AiOutlinePlusCircle className="w-5 h-5" />
-                Join New Adventure
+                <AiOutlinePlusCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="break-words">Join New Adventure</span>
               </Link>
             </div>
           </div>
         </div>
 
         {error && (
-          <div className={`border-2 rounded-xl p-6 mb-6 flex items-center gap-3 shadow-lg transition-colors duration-300 ${
+          <div className={`border-2 rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 flex items-center gap-2 sm:gap-3 shadow-lg transition-colors duration-300 ${
             darkMode
               ? 'bg-gradient-to-r from-red-100 to-orange-100 border-red-400'
               : 'bg-gradient-to-r from-red-100 to-orange-100 border-red-400'
           }`}>
-            <div className="text-2xl">🚨</div>
-            <span className="block sm:inline text-red-800 font-medium">{error}</span>
+            <div className="text-xl sm:text-2xl flex-shrink-0">🚨</div>
+            <span className="block text-sm sm:text-base text-red-800 font-medium break-words flex-1">{error}</span>
             <button 
-              className="ml-auto text-red-600 hover:text-red-800 transition-colors duration-300"
+              className="ml-auto text-red-600 hover:text-red-800 transition-colors duration-300 flex-shrink-0"
               onClick={() => setError('')}
             >
               <span className="sr-only">Close</span>
-              <span className="text-xl">×</span>
+              <span className="text-xl sm:text-2xl">×</span>
             </button>
           </div>
         )}
 
         {classrooms.length === 0 ? (
-          <div className={`rounded-2xl shadow-2xl border-4 p-8 text-center transition-colors duration-300 ${
+          <div className={`rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl md:shadow-2xl border-2 sm:border-3 md:border-4 p-6 sm:p-7 md:p-8 text-center transition-colors duration-300 ${
             darkMode
               ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-300'
               : 'bg-gradient-to-br from-amber-100 to-amber-50 border-amber-400'
           }`}>
-            <div className="text-6xl mb-4">🗺️</div>
-            <p className={`text-lg font-medium mb-6 transition-colors duration-300 ${
+            <div className="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">🗺️</div>
+            <p className={`text-base sm:text-lg font-medium mb-4 sm:mb-5 md:mb-6 transition-colors duration-300 break-words ${
               darkMode
                 ? 'text-gray-700'
                 : 'text-amber-700'
             }`}>Ahoy! You haven't joined any classroom adventures yet!</p>
             <Link to="/student/join-classroom">
-              <Button className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg ${
+              <Button className={`flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg text-sm sm:text-base ${
                 darkMode
                   ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
                   : 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'
               }`}>
-                <AiOutlinePlusCircle className="w-5 h-5" />
-                Join Your First Adventure
+                <AiOutlinePlusCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="whitespace-nowrap">Join Your First Adventure</span>
               </Button>
             </Link>
           </div>
         ) : filteredClassrooms.length === 0 ? (
-          <div className={`rounded-2xl shadow-2xl border-4 p-8 text-center transition-colors duration-300 ${
+          <div className={`rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl md:shadow-2xl border-2 sm:border-3 md:border-4 p-6 sm:p-7 md:p-8 text-center transition-colors duration-300 ${
             darkMode
               ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-300'
               : 'bg-gradient-to-br from-amber-100 to-amber-50 border-amber-400'
           }`}>
-            <div className="text-6xl mb-4">🔍</div>
-            <p className={`text-lg font-medium transition-colors duration-300 ${
+            <div className="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">🔍</div>
+            <p className={`text-base sm:text-lg font-medium transition-colors duration-300 break-words ${
               darkMode
                 ? 'text-gray-700'
                 : 'text-amber-700'
             }`}>No treasure maps found for '{searchTerm}'</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6 lg:gap-8">
             {filteredClassrooms.map(classroom => (
               <Link to={`/student/classrooms/${classroom.id}`} key={classroom.id} className="block group">
-                <div className={`rounded-2xl shadow-xl overflow-hidden flex flex-col transition-all duration-300 transform group-hover:scale-105 group-hover:shadow-2xl ${
+                <div className={`rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl overflow-hidden flex flex-col transition-all duration-300 transform group-hover:scale-[1.02] group-hover:shadow-2xl ${
                   darkMode
-                    ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-4 border-gray-300'
-                    : 'bg-gradient-to-br from-amber-100 to-amber-50 border-4 border-amber-400'
+                    ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-2 sm:border-3 md:border-4 border-gray-300'
+                    : 'bg-gradient-to-br from-amber-100 to-amber-50 border-2 sm:border-3 md:border-4 border-amber-400'
                 }`}>
                   {/* Treasure Map Header */}
-                  <div className={`px-4 py-3 text-white text-base sm:text-lg font-semibold text-left relative overflow-hidden transition-colors duration-300 ${
+                  <div className={`px-3 sm:px-4 py-2 sm:py-3 text-white text-sm sm:text-base md:text-lg font-semibold text-left relative overflow-hidden transition-colors duration-300 ${
                     darkMode
                       ? 'bg-gradient-to-r from-gray-700 to-gray-600'
                       : 'bg-gradient-to-r from-amber-700 to-amber-600'
                   }`}>
                     {/* Decorative elements */}
-                    <div className="absolute top-2 right-2 text-lg opacity-60">🗺️</div>
-                    <div className="absolute bottom-2 left-2 text-sm opacity-40">⚓</div>
-                    <div className="relative z-10">
+                    <div className="absolute top-1 sm:top-2 right-1 sm:right-2 text-base sm:text-lg opacity-60">🗺️</div>
+                    <div className="absolute bottom-1 sm:bottom-2 left-1 sm:left-2 text-xs sm:text-sm opacity-40">⚓</div>
+                    <div className="relative z-10 break-words">
                       {classroom.shortCode || classroom.subject?.substring(0, 3)?.toUpperCase() || 'CLASS'}
                     </div>
                   </div>
                   
                   {/* Treasure Map Image */}
-                  <div className="w-full h-48 relative overflow-hidden">
+                  <div className="w-full h-40 sm:h-44 md:h-48 relative overflow-hidden">
                     {classroom.image ? (
                       <img 
                         src={`data:image/jpeg;base64,${classroom.image}`} 
@@ -311,8 +311,8 @@ const StudentClassrooms = () => {
                           : 'bg-gradient-to-br from-amber-800 to-amber-900'
                       }`}>
                         <div className="text-center">
-                          <div className="text-4xl mb-2">🏴‍☠️</div>
-                          <span className={`font-medium text-lg lg:text-3xl transition-colors duration-300 ${
+                          <div className="text-3xl sm:text-4xl mb-2">🏴‍☠️</div>
+                          <span className={`font-medium text-base sm:text-lg md:text-2xl lg:text-3xl transition-colors duration-300 break-words ${
                             darkMode
                               ? 'text-gray-100'
                               : 'text-amber-100'
@@ -325,22 +325,22 @@ const StudentClassrooms = () => {
                   </div>
                   
                   {/* Treasure Map Details */}
-                  <div className="p-5 text-left flex-grow flex flex-col justify-start">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="text-xl">🗺️</div>
-                      <Header type="h2" fontSize="xl" weight="bold" className={`truncate transition-colors duration-300 ${
+                  <div className="p-3 sm:p-4 md:p-5 text-left flex-grow flex flex-col justify-start">
+                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                      <div className="text-lg sm:text-xl flex-shrink-0">🗺️</div>
+                      <Header type="h2" fontSize="base" sm="lg" md="xl" weight="bold" className={`truncate transition-colors duration-300 min-w-0 ${
                         darkMode
                           ? 'text-gray-800'
                           : 'text-amber-800'
                       }`} title={classroom.name}>{classroom.name}</Header>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Ship className={`w-4 h-4 transition-colors duration-300 ${
+                    <div className="flex items-center gap-2 mb-2">
+                      <Ship className={`w-3 h-3 sm:w-4 sm:h-4 transition-colors duration-300 flex-shrink-0 ${
                         darkMode
                           ? 'text-gray-600'
                           : 'text-amber-600'
                       }`} />
-                      <p className={`text-sm sm:text-base font-medium transition-colors duration-300 ${
+                      <p className={`text-xs sm:text-sm font-medium transition-colors duration-300 break-words min-w-0 ${
                         darkMode
                           ? 'text-gray-700'
                           : 'text-amber-700'
@@ -352,9 +352,9 @@ const StudentClassrooms = () => {
                         }
                       </p>
                     </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <div className="text-lg">⚔️</div>
-                      <p className={`text-sm transition-colors duration-300 ${
+                    <div className="mt-2 sm:mt-3 flex items-center gap-2">
+                      <div className="text-base sm:text-lg flex-shrink-0">⚔️</div>
+                      <p className={`text-xs sm:text-sm transition-colors duration-300 ${
                         darkMode
                           ? 'text-gray-600'
                           : 'text-amber-600'

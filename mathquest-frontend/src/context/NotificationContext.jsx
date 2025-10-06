@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import notificationService from '../services/notificationService';
+import SystemSettingsService from '../services/systemSettingsService';
 
 const NotificationContext = createContext();
 
@@ -19,7 +20,8 @@ export const NotificationProvider = ({ children }) => {
     activities: 0,
     leaderboard: 0,
     profile: 0,
-    help: 0
+    help: 0,
+    announcements: 0
   });
   
   const [loading, setLoading] = useState(false);
@@ -34,16 +36,55 @@ export const NotificationProvider = ({ children }) => {
       // Try to fetch from API first, fallback to mock data
       try {
         const apiNotifications = await notificationService.getNotificationCounts();
-        setNotifications(apiNotifications);
+        const announcementCount = await fetchAnnouncementCount();
+        setNotifications({
+          ...apiNotifications,
+          announcements: announcementCount
+        });
       } catch (apiError) {
         console.log('API not available, using mock notifications');
         const mockNotifications = await getMockNotifications();
-        setNotifications(mockNotifications);
+        const announcementCount = await fetchAnnouncementCount();
+        setNotifications({
+          ...mockNotifications,
+          announcements: announcementCount
+        });
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to fetch announcement count
+  const fetchAnnouncementCount = async () => {
+    if (!currentUser || isAdmin()) return 0;
+    
+    try {
+      let userRole = 'ROLE_STUDENT';
+      if (isTeacher && typeof isTeacher === 'function' && isTeacher()) {
+        userRole = 'ROLE_TEACHER';
+      } else if (isStudent && typeof isStudent === 'function' && isStudent()) {
+        userRole = 'ROLE_STUDENT';
+      }
+      
+      // Fetch announcements for the user's role and everyone
+      const [roleAnnouncements, everyoneAnnouncements] = await Promise.all([
+        SystemSettingsService.getActiveAnnouncements(userRole).catch(() => []),
+        SystemSettingsService.getActiveAnnouncements('EVERYONE').catch(() => [])
+      ]);
+      
+      // Combine and deduplicate announcements
+      const allAnnouncements = [...roleAnnouncements, ...everyoneAnnouncements];
+      const uniqueAnnouncements = allAnnouncements.filter((announcement, index, self) => 
+        index === self.findIndex(a => a.id === announcement.id)
+      );
+      
+      return uniqueAnnouncements.length;
+    } catch (error) {
+      console.error('Failed to fetch announcement count:', error);
+      return 0;
     }
   };
 
@@ -59,7 +100,8 @@ export const NotificationProvider = ({ children }) => {
         activities: 0,
         leaderboard: 0,
         profile: 0,
-        help: 0
+        help: 0,
+        announcements: 0
       };
     } else if (isTeacher()) {
       return {
@@ -68,7 +110,8 @@ export const NotificationProvider = ({ children }) => {
         activities: 2, // New quiz attempts, game completions
         leaderboard: 0,
         profile: 0,
-        help: 0
+        help: 0,
+        announcements: 0
       };
     } else if (isStudent()) {
       return {
@@ -77,7 +120,8 @@ export const NotificationProvider = ({ children }) => {
         activities: 1, // New games, achievements
         leaderboard: 1, // Ranking updates
         profile: 0,
-        help: 0
+        help: 0,
+        announcements: 0
       };
     }
     
@@ -87,7 +131,8 @@ export const NotificationProvider = ({ children }) => {
       activities: 0,
       leaderboard: 0,
       profile: 0,
-      help: 0
+      help: 0,
+      announcements: 0
     };
   };
 
@@ -115,7 +160,8 @@ export const NotificationProvider = ({ children }) => {
       activities: 0,
       leaderboard: 0,
       profile: 0,
-      help: 0
+      help: 0,
+      announcements: 0
     });
   };
 

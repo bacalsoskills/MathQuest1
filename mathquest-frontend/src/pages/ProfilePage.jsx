@@ -346,66 +346,69 @@ const ProfilePage = () => {
 
   if (loading && !profile) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh] sm:min-h-[70vh] md:min-h-[80vh] lg:min-h-[85vh]"
+      <div className="flex justify-center items-center min-h-screen overflow-x-hidden"
            style={{
              backgroundImage: darkMode
                ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
             : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
            }}
       >
-      <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 border-t-2 border-b-2 border-primary"></div>
     </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh] sm:min-h-[70vh] md:min-h-[80vh] lg:min-h-[85vh]"
+      <div className="flex justify-center items-center min-h-screen overflow-x-hidden px-4"
            style={{
              backgroundImage: darkMode
                ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
             : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
            }}
       >
-        <div className="text-base sm:text-lg md:text-xl font-semibold text-red-600">{error || "Could not load profile."}</div>
+        <div className="text-sm sm:text-base md:text-lg font-semibold text-red-600 break-words text-center">{error || "Could not load profile."}</div>
       </div>
     );
   }
 
   return (
     <div
-      className="px-4 sm:px-6 lg:py-10 py-6"
+      className="w-full min-h-screen overflow-x-hidden px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8"
       style={{
         backgroundImage: darkMode
           ? "linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(3,7,18,1) 100%)"
             : "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)",
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
       }}
     >
-      <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3 mb-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-lg sm:text-xl'} />
-          <Header type="h1" fontSize="5xl" weight="bold" className={(darkMode ? 'text-yellow-300' : 'text-primary') + ' mb-1 text-3xl sm:text-4xl lg:text-5xl'}> {pageTitle} </Header>
-          <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-lg sm:text-xl'} />
+      <div className="max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+          <FaCompass className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-base sm:text-lg md:text-xl flex-shrink-0'} />
+          <Header type="h1" fontSize="2xl" sm="3xl" md="4xl" weight="bold" className={(darkMode ? 'text-yellow-300' : 'text-primary') + ' text-2xl sm:text-3xl md:text-4xl break-words text-center sm:text-left'}> {pageTitle} </Header>
+          <FaSkullCrossbones className={(darkMode ? 'text-yellow-400' : 'text-yellow-700') + ' text-base sm:text-lg md:text-xl flex-shrink-0'} />
         </div>
       </div>
-      <div className="h-[2px] w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 mb-4 sm:mb-6 md:mb-8 opacity-80"></div>
+      <div className="h-[2px] w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 mb-3 sm:mb-4 md:mb-6 opacity-80"></div>
 
 
         {/* Add verification reminders */}
         {profile?.createdByAdmin && !profile?.emailVerified && profile?.emailVerificationRequired && (
-          <div className="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
+          <div className="mb-3 sm:mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 sm:px-4 py-2 sm:py-3 rounded relative text-xs sm:text-sm break-words" role="alert">
             <strong>Email Verification Required:</strong> Please verify your email address to access all features.
             {!showResendVerification ? (
               <button 
                 onClick={() => setShowResendVerification(true)}
-                className="ml-2 text-yellow-700 underline"
+                className="ml-2 text-yellow-700 underline text-xs sm:text-sm"
                 disabled={resendLoading}
               >
                 {resendLoading ? 'Sending...' : 'Resend verification email'}
@@ -413,7 +416,7 @@ const ProfilePage = () => {
             ) : (
               <button 
                 onClick={handleResendVerification}
-                className="ml-2 text-yellow-700 underline"
+                className="ml-2 text-yellow-700 underline text-xs sm:text-sm"
                 disabled={resendLoading}
               >
                 {resendLoading ? 'Sending...' : 'Click to resend'}
@@ -423,22 +426,22 @@ const ProfilePage = () => {
         )}
 
         {profile?.temporaryPassword && (
-          <div className="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
+          <div className="mb-3 sm:mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 sm:px-4 py-2 sm:py-3 rounded relative text-xs sm:text-sm break-words" role="alert">
             <strong>Password Update Required:</strong> You are using a temporary password. Please update your password for security.
-            <p className="text-xs sm:text-sm mt-1">Your temporary password will expire in 7 days.</p>
+            <p className="text-[10px] sm:text-xs mt-1">Your temporary password will expire in 7 days.</p>
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6">
   
           <div
-            className="w-full md:w-1/3 flex flex-col items-center space-y-4 mt-6 md:mt-12 px-6 sm:px-10 rounded-2xl border border-white/10 dark:border-yellow-600/40 shadow-xl"
+            className="w-full lg:w-1/3 flex flex-col items-center space-y-3 sm:space-y-4 py-4 sm:py-6 px-4 sm:px-6 md:px-8 rounded-xl sm:rounded-2xl border border-white/10 dark:border-yellow-600/40 shadow-lg sm:shadow-xl"
             style={{
               background: darkMode ? 'rgba(10, 13, 26, 0.85)' : '#f5ecd2',
-              boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.1)'
+              boxShadow: darkMode ? '0 8px 20px rgba(255, 215, 0, 0.08)' : '0 8px 20px rgba(0,0,0,0.1)'
             }}
           >
-            <Avatar className="h-40 w-40 sm:h-48 sm:w-48 md:h-52 md:w-52 shadow-sm rounded-md overflow-hidden mt-6">
+            <Avatar className="h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 shadow-sm rounded-md overflow-hidden flex-shrink-0">
               {profileImageSrc ? (
                 <AvatarImage 
                   src={profileImageSrc} 
@@ -449,7 +452,7 @@ const ProfilePage = () => {
                   style={{objectFit: 'cover'}}
                 />
               ) : (
-                <AvatarFallback className="text-3xl sm:text-4xl bg-yellow-500 text-white">
+                <AvatarFallback className="text-2xl sm:text-3xl md:text-4xl bg-yellow-500 text-white">
                   {getInitials(profile?.firstName, profile?.lastName)}
                 </AvatarFallback>
               )}
@@ -467,45 +470,45 @@ const ProfilePage = () => {
               onClick={triggerFileInput} 
               variant="link"
               size="sm"
-              className="w-full"
+              className="w-full text-xs sm:text-sm"
               rounded="full"
               disabled={photoUploadLoading}
             >
               {photoUploadLoading ? 'Hoisting Portrait...' : profile?.profileImage ? 'Change Portrait' : 'Upload a Portrait'}
             </Button>
-            <div className="flex items-center gap-2 mb-6 opacity-80">
-              <FaShip className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-base sm:text-lg'} />
-              <span className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-sm sm:text-base'}>Captain {editFormData.fullName || currentUser?.username}</span>
+            <div className="flex items-center gap-2 pb-2 sm:pb-3 opacity-80">
+              <FaShip className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-sm sm:text-base flex-shrink-0'} />
+              <span className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-xs sm:text-sm break-words text-center'}>Captain {editFormData.fullName || currentUser?.username}</span>
             </div>
           </div>
 
       
           <div
-            className="w-full md:w-2/3 rounded-2xl border border-white/10 dark:border-yellow-600/40 shadow-xl"
+            className="w-full lg:w-2/3 rounded-xl sm:rounded-2xl border border-white/10 dark:border-yellow-600/40 shadow-lg sm:shadow-xl overflow-hidden"
             style={{
               background: darkMode ? 'rgba(10, 13, 26, 0.85)' : '#f5ecd2',
-              boxShadow: darkMode ? '0 10px 25px rgba(255, 215, 0, 0.08)' : '0 10px 25px rgba(0,0,0,0.1)'
+              boxShadow: darkMode ? '0 8px 20px rgba(255, 215, 0, 0.08)' : '0 8px 20px rgba(0,0,0,0.1)'
             }}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="mb-4 sm:mb-6 !font-montserrat tracking-wide bg-transparent p-3 sm:p-4 flex gap-4 sm:gap-6 border-b border-yellow-600/30 overflow-x-auto">
-                <TabsTrigger value="edit" className={`py-2 !rounded-none !px-0 text-base sm:text-lg !text-left !bg-transparent mr-3 ${activeTab === 'edit' ? 'dark:text-yellow-300 text-yellow-800 font-bold border-b-2 border-yellow-500' : 'dark:text-gray-300 text-yellow-900/80'}`}>
+              <TabsList className="mb-3 sm:mb-4 md:mb-6 !font-montserrat tracking-wide bg-transparent p-2 sm:p-3 md:p-4 flex gap-3 sm:gap-4 md:gap-6 border-b border-yellow-600/30 overflow-x-auto">
+                <TabsTrigger value="edit" className={`py-1.5 sm:py-2 !rounded-none !px-0 text-sm sm:text-base md:text-lg !text-left !bg-transparent mr-2 sm:mr-3 whitespace-nowrap ${activeTab === 'edit' ? 'dark:text-yellow-300 text-yellow-800 font-bold border-b-2 border-yellow-500' : 'dark:text-gray-300 text-yellow-900/80'}`}>
                   Edit Info
                 </TabsTrigger>
-                <TabsTrigger value="password" className={`!px-0 sm:!px-2 rounded-none py-2 text-base sm:text-lg !bg-transparent ${activeTab === 'password' ? 'dark:text-yellow-300 text-yellow-800 font-bold border-b-2 border-yellow-500 ' : 'dark:text-gray-300 text-yellow-900/80 '}`}>
+                <TabsTrigger value="password" className={`!px-0 sm:!px-2 rounded-none py-1.5 sm:py-2 text-sm sm:text-base md:text-lg !bg-transparent whitespace-nowrap ${activeTab === 'password' ? 'dark:text-yellow-300 text-yellow-800 font-bold border-b-2 border-yellow-500 ' : 'dark:text-gray-300 text-yellow-900/80 '}`}>
                   Change Password
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="edit" className="px-4 sm:px-6 pb-6 sm:pb-8">
+              <TabsContent value="edit" className="px-3 sm:px-4 md:px-6 pb-4 sm:pb-6 md:pb-8">
                 <div>
                   {error && (
-                    <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
+                    <div className="mb-3 sm:mb-4 bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded relative text-xs sm:text-sm break-words" role="alert">
                       {error}
                     </div>
                   )}
                   {success && (
-                    <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
+                    <div className="mb-3 sm:mb-4 bg-green-100 border border-green-400 text-green-700 px-3 sm:px-4 py-2 sm:py-3 rounded relative text-xs sm:text-sm break-words" role="alert">
                       {success}
                     </div>
                   )}
@@ -515,48 +518,48 @@ const ProfilePage = () => {
                       Please check your inbox and verify to complete the email update.
                     </div>
                   )} */}
-                  <form onSubmit={handleEditSubmit} className="space-y-4">
+                  <form onSubmit={handleEditSubmit} className="space-y-3 sm:space-y-4">
                     <div>
-                      <Label htmlFor="fullName" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Full Name</Label>
+                      <Label htmlFor="fullName" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-xs sm:text-sm'}>Full Name</Label>
                       <Input
                         id="fullName"
                         name="fullName"
                         type="text"
                         required
-                        className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
+                        className={"mt-1 block w-full text-sm " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                         value={editFormData.fullName}
                         onChange={handleEditChange}
                         disabled={profileUpdateLoading}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="username" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Username</Label>
+                      <Label htmlFor="username" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-xs sm:text-sm'}>Username</Label>
                       <Input
                         id="username"
                         name="username"
                         type="text"
                         required
-                        className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
+                        className={"mt-1 block w-full text-sm " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                         value={editFormData.username}
                         onChange={handleEditChange}
                         disabled={profileUpdateLoading}
                       />
-                      <p className={"text-xs mt-1 " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>Username can be changed if not already taken by another user.</p>
+                      <p className={"text-[10px] sm:text-xs mt-1 break-words " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>Username can be changed if not already taken by another user.</p>
                     </div>
                     <div>
-                      <Label htmlFor="email" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Email</Label>
+                      <Label htmlFor="email" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-xs sm:text-sm'}>Email</Label>
                       <Input
                         id="email"
                         name="email"
                         type="email"
                         required
-                        className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
+                        className={"mt-1 block w-full text-sm " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                         value={editFormData.email}
                         onChange={handleEditChange}
                         disabled={profileUpdateLoading}
                       />
                       {profile?.createdByAdmin && !profile?.emailVerified && profile?.emailVerificationRequired && (
-                        <div className="mt-2 text-sm text-yellow-600">
+                        <div className="mt-2 text-[10px] sm:text-xs text-yellow-600 break-words">
                           Email verification required for admin-created account.
                           <button 
                             onClick={handleResendVerification}
@@ -568,36 +571,36 @@ const ProfilePage = () => {
                         </div>
                       )}
                       {pendingEmailVerification && (
-                        <div className={"mt-2 text-sm " + (darkMode ? 'text-yellow-300' : 'text-yellow-700')}>
+                        <div className={"mt-2 text-[10px] sm:text-xs break-words " + (darkMode ? 'text-yellow-300' : 'text-yellow-700')}>
                           A verification email has been sent to your new email address. Please check your inbox and verify to complete the update.
                         </div>
                       )}
                       {!pendingEmailVerification && !profile?.createdByAdmin && (
-                        <p className={"text-xs mt-1 " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>
+                        <p className={"text-[10px] sm:text-xs mt-1 break-words " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>
                           Changing your email will require verification of the new address.
                         </p>
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="role" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Account Role</Label>
+                      <Label htmlFor="role" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-xs sm:text-sm'}>Account Role</Label>
                       <Input
                         id="role"
                         name="role"
                         type="text"
                         readOnly
-                        className="mt-1 block w-full !bg-[#D9D9D9] !text-[#464545] !border-none !rounded-none   cursor-not-allowed"
+                        className="mt-1 block w-full text-sm !bg-[#D9D9D9] !text-[#464545] !border-none !rounded-none cursor-not-allowed"
                         value={formatRoleDisplay(profile?.roles)}
                       />
                     </div>
 
-                    <div className="flex flex-col sm:flex-row justify-start gap-3 pt-4">
+                    <div className="flex flex-col sm:flex-row justify-start gap-2 sm:gap-3 pt-3 sm:pt-4">
                       <Button 
                         type="submit" 
                         disabled={profileUpdateLoading} 
                         variant="default" 
                         size="sm" 
                         rounded="full"
-                        className="w-full sm:w-1/2 lg:w-1/4"
+                        className="w-full sm:w-auto text-xs sm:text-sm"
                       >
                         {profileUpdateLoading ? 'Saving Booty...' : 'Save Changes'}
                       </Button> 
@@ -608,7 +611,7 @@ const ProfilePage = () => {
                         rounded="full"
                         onClick={() => navigate(-1)} 
                         disabled={profileUpdateLoading} 
-                        className="w-full sm:w-1/2 lg:w-1/4"
+                        className="w-full sm:w-auto text-xs sm:text-sm"
                       >
                         Cancel
                       </Button>
@@ -636,36 +639,36 @@ const ProfilePage = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="password" className="px-4 sm:px-6 pb-6 sm:pb-8">
+              <TabsContent value="password" className="px-3 sm:px-4 md:px-6 pb-4 sm:pb-6 md:pb-8">
                 <div className="">
                  
                   {passwordError && (
-                    <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
+                    <div className="mb-3 sm:mb-4 bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded relative text-xs sm:text-sm break-words" role="alert">
                       {passwordError}
                     </div>
                   )}
                   {passwordSuccess && (
-                    <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-sm sm:text-base" role="alert">
+                    <div className="mb-3 sm:mb-4 bg-green-100 border border-green-400 text-green-700 px-3 sm:px-4 py-2 sm:py-3 rounded relative text-xs sm:text-sm break-words" role="alert">
                       {passwordSuccess}
                     </div>
                   )}
-                  <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
+                  <form onSubmit={handlePasswordChangeSubmit} className="space-y-3 sm:space-y-4">
                     <div>
-                      <Label htmlFor="currentPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Current Password</Label>
+                      <Label htmlFor="currentPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-xs sm:text-sm'}>Current Password</Label>
                       <div className="relative">
                         <Input
                           id="currentPassword"
                           name="currentPassword"
                           type={showCurrentPassword ? 'text' : 'password'}
                           required
-                         className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
+                         className={"mt-1 block w-full text-sm " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                           value={passwordFormData.currentPassword}
                           onChange={handlePasswordChange}
                           disabled={passwordLoading}
                         />
                         <button
                           type="button"
-                          className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                          className="absolute inset-y-0 right-2 sm:right-3 flex items-center text-gray-500 z-10 bg-transparent text-sm"
                           onClick={() => setShowCurrentPassword((prev) => !prev)}
                           tabIndex={-1}
                           aria-label="Toggle current password visibility"
@@ -676,21 +679,21 @@ const ProfilePage = () => {
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="newPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>New Password</Label>
+                      <Label htmlFor="newPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-xs sm:text-sm'}>New Password</Label>
                       <div className="relative">
                         <Input
                           id="newPassword"
                           name="newPassword"
                           type={showNewPassword ? 'text' : 'password'}
                           required
-                        className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
+                        className={"mt-1 block w-full text-sm " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                           value={passwordFormData.newPassword}
                           onChange={handlePasswordChange}
                           disabled={passwordLoading}
                         />
                         <button
                           type="button"
-                          className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                          className="absolute inset-y-0 right-2 sm:right-3 flex items-center text-gray-500 z-10 bg-transparent text-sm"
                           onClick={() => setShowNewPassword((prev) => !prev)}
                           tabIndex={-1}
                           aria-label="Toggle new password visibility"
@@ -699,24 +702,24 @@ const ProfilePage = () => {
                           {showNewPassword ? <FaRegEyeSlash /> : <FaRegEye />}
                         </button>
                       </div>
-                      <p className={"text-xs mt-1 " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>Must be at least 6 characters long.</p>
+                      <p className={"text-[10px] sm:text-xs mt-1 break-words " + (darkMode ? 'text-yellow-300/80' : 'text-yellow-700')}>Must be at least 6 characters long.</p>
                     </div>
                     <div>
-                      <Label htmlFor="confirmPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-sm sm:text-base'}>Confirm New Password</Label>
+                      <Label htmlFor="confirmPassword" className={"block mb-1 " + (darkMode ? 'text-yellow-200' : 'text-gray-800') + ' text-xs sm:text-sm'}>Confirm New Password</Label>
                       <div className="relative">
                         <Input
                           id="confirmPassword"
                           name="confirmPassword"
                           type={showConfirmPassword ? 'text' : 'password'}
                           required
-                         className={"mt-1 block w-full " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
+                         className={"mt-1 block w-full text-sm " + (darkMode ? '!bg-[#0f1428] !text-gray-100' : '!bg-[#fbf4de] !text-gray-900')}
                           value={passwordFormData.confirmPassword}
                           onChange={handlePasswordChange}
                           disabled={passwordLoading}
                         />
                         <button
                           type="button"
-                          className="absolute inset-y-0 right-3 flex items-center text-gray-500 z-10 bg-transparent"
+                          className="absolute inset-y-0 right-2 sm:right-3 flex items-center text-gray-500 z-10 bg-transparent text-sm"
                           onClick={() => setShowConfirmPassword((prev) => !prev)}
                           tabIndex={-1}
                           aria-label="Toggle confirm password visibility"
@@ -726,12 +729,12 @@ const ProfilePage = () => {
                         </button>
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row justify-start gap-3 pt-4">
+                    <div className="flex flex-col sm:flex-row justify-start gap-2 sm:gap-3 pt-3 sm:pt-4">
                     
-                      <Button type="submit" disabled={passwordLoading} variant="default" size="sm" className="w-full sm:w-1/2 lg:w-1/4" rounded="full">
+                      <Button type="submit" disabled={passwordLoading} variant="default" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" rounded="full">
                         {passwordLoading ? 'Saving Booty...' : 'Save Changes'}
                       </Button>
-                      <Button type="button"  variant="cancel" size="sm" className="w-full sm:w-1/2 lg:w-1/4" rounded="full" onClick={() => setPasswordFormData({ currentPassword: '', newPassword: '', confirmPassword: '' })} disabled={passwordLoading}>
+                      <Button type="button"  variant="cancel" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" rounded="full" onClick={() => setPasswordFormData({ currentPassword: '', newPassword: '', confirmPassword: '' })} disabled={passwordLoading}>
                         Cancel
                       </Button>
                     </div>

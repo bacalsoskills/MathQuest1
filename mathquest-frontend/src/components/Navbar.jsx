@@ -22,6 +22,7 @@ import { MdOutlineDashboard } from "react-icons/md";
 import { useSidebar } from '../context/SidebarContext';
 import { GrAnnounce } from "react-icons/gr";
 import { MdOutlineGames } from "react-icons/md";
+import NotificationDropdown from './NotificationDropdown';
 
 // Helper function to get initials
 const getInitials = (firstName, lastName) => {
@@ -52,24 +53,31 @@ const Navbar = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [classrooms, setClassrooms] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   const { currentUser, logout, isAdmin, isTeacher, isStudent } = useAuth();
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { darkMode, setDarkMode, isInitialized } = useTheme();
   const { notifications, markAsRead } = useNotifications();
   
-  // Check if device is mobile
+  // Check device type for responsive design
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
+    const checkDeviceType = () => {
+      const width = window.innerWidth;
+      const mobile = width < 768;
+      const tablet = width >= 768 && width < 1024;
+      const desktop = width >= 1024;
       
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+      setIsDesktop(desktop);
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
+    checkDeviceType();
+    window.addEventListener('resize', checkDeviceType);
     
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkDeviceType);
   }, []);
 
   // Remove the local dark mode effect since it's now handled by ThemeContext
@@ -214,23 +222,23 @@ const Navbar = () => {
             darkMode 
               ? 'bg-[#0b1022] border-yellow-700/40' 
               : 'bg-[#f5ecd2] border-yellow-300'
-          }`}>
-            <div className="flex items-center justify-between px-4 py-3">
+          }`} style={{ minHeight: '60px' }}>
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3">
               {/* Logo on the left */}
               <Link to="/" className="flex items-center">
                 <img
                   src="/images/new-logo.png"
                   alt="MathQuest Logo"
-                  className="h-10 w-10 object-contain"
+                  className="h-8 w-8 sm:h-10 sm:w-10 object-contain"
                 />
               </Link>
               
               {/* Login and Sign Up buttons on the right */}
-              <div className="flex items-center space-x-2">
-                <Button asChild variant="outlineWhite" size="sm" className="!rounded-md text-xs px-3 py-1">
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <Button asChild variant="outlineWhite" size="sm" className="!rounded-md text-xs px-2 sm:px-3 py-1">
                   <Link to="/login">Login</Link>
                 </Button>
-                <Button asChild variant="default" size="sm" className="!rounded-md text-xs px-3 py-1">
+                <Button asChild variant="default" size="sm" className="!rounded-md text-xs px-2 sm:px-3 py-1">
                   <Link to="/register">Sign Up</Link>
                 </Button>
               </div>
@@ -238,14 +246,14 @@ const Navbar = () => {
           </nav>
         )}
 
-        {/* Desktop navbar for non-authenticated users */}
-        <nav className={`py-5 absolute w-full z-10 md:block hidden transition-colors duration-300 ${
+        {/* Responsive navbar for non-authenticated users */}
+        <nav className={`py-3 sm:py-5 absolute w-full z-10 md:block hidden transition-colors duration-300 ${
           darkMode 
             ? 'bg-[#0b1022]/90 backdrop-blur-sm' 
             : 'bg-[#f5ecd2]/90 backdrop-blur-sm'
-        }`}>
+        }`} style={{ minHeight: '80px' }}>
           <div className="max-w-[1280px] container mx-auto px-4">
-            <div className="flex justify-between items-center h-28 ">
+            <div className={`flex justify-between items-center ${isTablet ? 'h-20' : 'h-28'}`}>
               <div className="flex space-x-4">
                 <Link
                   to="/"
@@ -254,15 +262,15 @@ const Navbar = () => {
                   <img
                     src="images/new-logo.png"
                     alt="MathQuest Logo"
-                    className="h-[70px] w-[70px] md:h-[135px] md:w-[135px] py-2"
+                    className={`${isTablet ? 'h-[60px] w-[60px]' : 'h-[70px] w-[70px] md:h-[135px] md:w-[135px]'} py-2`}
                   />
                 </Link>
               </div>
-              <div className="flex space-x-4">
-                <Button asChild variant="outlineWhite" className=" !rounded-md " size="sm">
+              <div className="flex space-x-2 sm:space-x-4">
+                <Button asChild variant="outlineWhite" className="!rounded-md" size={isTablet ? "sm" : "sm"}>
                   <Link to="/login">Login</Link>
                 </Button>
-                <Button asChild variant="default" size="sm">
+                <Button asChild variant="default" size={isTablet ? "sm" : "sm"}>
                   <Link to="/register">Sign Up</Link>
                 </Button>
               </div>
@@ -351,46 +359,67 @@ const Navbar = () => {
   // Mobile sidebar overlay
   const MobileOverlay = () => (
     <>
-      {/* Mobile overlay */}
-      {isMobile && sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+        {/* Mobile overlay */}
+        {isMobile && sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+            style={{ minHeight: '100vh' }}
+          />
+        )}
       
-      {/* Mobile sidebar */}
-      <aside className={`fixed top-0 left-0 h-full z-50 transition-all duration-300 ease-in-out ${
+      {/* Responsive sidebar */}
+      <aside className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300 ease-in-out ${
         isMobile 
-          ? `w-80 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+          ? `w-72 sm:w-80 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+          : isTablet
+          ? `${sidebarOpen ? 'w-72' : 'w-20 px-1'}`
           : `${sidebarOpen ? 'w-80' : 'w-28 px-2'}`
       } flex flex-col justify-between shadow-lg ${
         darkMode 
           ? 'bg-[#0b1022] text-yellow-200' 
           : 'bg-[#f5ecd2] text-yellow-800'
-      }`}>
+      }`} style={{ 
+        overflow: 'visible', 
+        minHeight: '100vh',
+        maxHeight: '100vh',
+        width: 'fit-content',
+        maxWidth: '90vw'
+      }}>
         {/* Top: Logo and App Name + Toggle */}
         <div>
-          <div className={`flex items-center gap-3 mb-5 ${sidebarOpen ? 'px-6' : 'px-0'} pt-6 pb-2 ${sidebarOpen ? '' : 'justify-center'}`}>
+          <div className={`flex items-center gap-1 sm:gap-2 mb-3 sm:mb-4 ${sidebarOpen ? 'px-2 sm:px-4' : 'px-1'} pt-3 sm:pt-4 pb-1 ${sidebarOpen ? '' : 'justify-center'}`}>
             {sidebarOpen && (
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+              <div className={`flex-shrink-0 rounded-full flex items-center justify-center ${
                 darkMode ? 'bg-yellow-500' : 'bg-yellow-600'
-              }`}>
-                <img src="/images/new-logo.png" alt="MathQuest Logo" className="w-16 h-16 object-contain" />
+              }`} style={{ width: 'clamp(32px, 4vw, 64px)', height: 'clamp(32px, 4vw, 64px)' }}>
+                <img 
+                  src="/images/new-logo.png" 
+                  alt="MathQuest Logo" 
+                  className="object-contain" 
+                  style={{ width: 'clamp(28px, 3.5vw, 56px)', height: 'clamp(28px, 3.5vw, 56px)' }}
+                />
               </div>
             )}
-            {sidebarOpen && <span className={`font-semibold text-lg tracking-wide ${
-              darkMode ? 'text-yellow-200' : 'text-yellow-800'
-            }`}>MathQuest</span>}
+            {sidebarOpen && (
+              <span className={`font-semibold tracking-wide flex-shrink-0 ${
+                darkMode ? 'text-yellow-200' : 'text-yellow-800'
+              }`} style={{ fontSize: 'clamp(0.75rem, 1.5vw, 1.125rem)' }}>MathQuest</span>
+            )}
             <button
-              className={`flex items-center justify-center ${sidebarOpen ? 'ml-auto' : ''} focus:outline-none h-12 w-12 rounded-lg transition-colors duration-150 ${!sidebarOpen ? 'mx-auto' : ''} ${
+              className={`flex items-center justify-center ${sidebarOpen ? 'ml-auto' : ''} focus:outline-none rounded-lg transition-colors duration-150 ${!sidebarOpen ? 'mx-auto' : ''} ${
                 darkMode ? 'text-yellow-200 hover:text-yellow-100' : 'text-yellow-800 hover:text-yellow-700'
               }`}
-              style={{ minWidth: '48px', minHeight: '48px' }}
+              style={{ 
+                width: 'clamp(32px, 3.5vw, 48px)', 
+                height: 'clamp(32px, 3.5vw, 48px)',
+                minWidth: 'clamp(32px, 3.5vw, 48px)',
+                minHeight: 'clamp(32px, 3.5vw, 48px)'
+              }}
               onClick={handleSidebarToggle}
               aria-label="Toggle Sidebar"
             >
-              <HiMenuAlt1 className={ICON_SIZE} />
+              <HiMenuAlt1 style={{ fontSize: 'clamp(1.25rem, 2.5vw, 1.875rem)' }} />
             </button>
           </div>
           {/* Search Bar */}
@@ -403,21 +432,53 @@ const Navbar = () => {
             </div>
           )} */}
           {/* Navigation Links */}
-          <nav className="flex flex-col gap-1 px-2">
+          <nav className="flex flex-col gap-1 px-1 sm:px-2 flex-1 overflow-y-auto navbar-scrollbar" style={{ 
+            overflow: 'visible', 
+            maxHeight: 'calc(100vh - clamp(160px, 20vh, 240px))'
+          }}>
+            {/* Notifications for non-admin users - positioned above Dashboard */}
+            {!isAdmin() && (
+              <div className={`flex items-center ${sidebarOpen ? 'px-2 sm:px-3' : 'justify-center'} py-1 sm:py-2 rounded-lg transition-colors duration-150 group relative mb-1`}
+                style={{ 
+                  minHeight: 'clamp(36px, 4vw, 48px)', 
+                  minWidth: sidebarOpen ? undefined : 'clamp(36px, 4vw, 48px)', 
+                  overflow: 'visible',
+                  padding: 'clamp(4px, 0.5vw, 8px)'
+                }}>
+                <div className="relative z-50" style={{ overflow: 'visible' }}>
+                  <NotificationDropdown showText={sidebarOpen} />
+                </div>
+              </div>
+            )}
+            
             {linksToShow.map((link) => (
               <div key={link.path + link.name}>
                 <Link
                   to={link.path}
                   onClick={() => handleLinkClick(link.name, link.path)}
-                  className={`flex items-center ${sidebarOpen ? 'px-6 py-3' : 'justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
+                  className={`flex items-center ${sidebarOpen ? 'px-2 sm:px-3' : 'justify-center'} py-1 sm:py-2 rounded-lg font-medium transition-colors duration-150 group relative ${
                     isActive(link.path)
                       ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
                       : (darkMode ? 'text-yellow-200 hover:bg-[#0f1428]' : 'text-yellow-800 hover:bg-[#fbf4de]')
                   }`}
-                  style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
+                  style={{ 
+                    minHeight: 'clamp(36px, 4vw, 48px)', 
+                    minWidth: sidebarOpen ? undefined : 'clamp(36px, 4vw, 48px)',
+                    padding: 'clamp(4px, 0.5vw, 8px)',
+                    fontSize: 'clamp(0.75rem, 1.2vw, 0.875rem)'
+                  }}
                 >
-                  <span className={`inline-block ${ICON_SIZE} ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>{link.icon}</span>
-                  {sidebarOpen && <span>{link.name}</span>}
+                  <span className={`inline-block flex items-center justify-center flex-shrink-0`} style={{ 
+                    fontSize: 'clamp(1.25rem, 2.5vw, 1.875rem)',
+                    width: 'clamp(24px, 3vw, 32px)',
+                    height: 'clamp(24px, 3vw, 32px)',
+                    marginRight: sidebarOpen ? 'clamp(8px, 1vw, 12px)' : '0'
+                  }}>{link.icon}</span>
+                  {sidebarOpen && (
+                    <span className="truncate" style={{ fontSize: 'clamp(0.75rem, 1.2vw, 0.875rem)' }}>
+                      {link.name}
+                    </span>
+                  )}
                   {/* Dynamic notification dot */}
                   {getNotificationCount(link.name, link.path) > 0 && (
                     <span className={`absolute right-4 w-2 h-2 bg-red-500 rounded-full ${isActive(link.path) ? 'top-1/2 -translate-y-1/2' : ''}`}></span>
@@ -425,27 +486,50 @@ const Navbar = () => {
                 </Link>
                 {/* Sublinks: active = text-white, no bg; hover = bg-white/50 */}
                 {link.subLinks && sidebarOpen && (
-                  <div className="ml-8 mt-1">
-                    {link.subLinks.map((subLink) => (
-                      <Link
-                        key={subLink.path + subLink.name}
-                        to={subLink.path}
-                        onClick={() => handleLinkClick(subLink.name, subLink.path)}
-                        className={`block px-6 py-2 text-sm font-medium rounded-lg transition-colors duration-150 relative ${
-                          location.pathname === subLink.path || location.pathname.startsWith(subLink.path + '/')
-                            ? (darkMode ? 'text-yellow-200' : 'text-yellow-800')
-                            : (darkMode ? 'text-yellow-300 hover:bg-[#0f1428]' : 'text-yellow-700 hover:bg-[#fbf4de]')
-                        }`}
-                        style={{ minHeight: '40px' }}
-                      >
-                        <span className={`inline-block ${ICON_SIZE} mr-3 align-middle`}>{subLink.icon}</span>
-                        {subLink.name}
-                        {/* Notification dot for sublinks */}
-                        {getNotificationCount(subLink.name, subLink.path) > 0 && (
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full"></span>
-                        )}
-                      </Link>
-                    ))}
+                  <div className={`${isTablet ? 'ml-6' : 'ml-8'} mt-1`}>
+                    {/* Scrollable container for classrooms with responsive max height */}
+                    <div 
+                      className="overflow-y-auto navbar-scrollbar"
+                      style={{ maxHeight: 'clamp(96px, 15vh, 160px)' }}
+                    >
+                      {link.subLinks.map((subLink) => (
+                        <Link
+                          key={subLink.path + subLink.name}
+                          to={subLink.path}
+                          onClick={() => handleLinkClick(subLink.name, subLink.path)}
+                          className={`block py-1 sm:py-2 font-medium rounded-lg transition-colors duration-150 relative ${
+                            location.pathname === subLink.path || location.pathname.startsWith(subLink.path + '/')
+                              ? (darkMode ? 'text-yellow-200' : 'text-yellow-800')
+                              : (darkMode ? 'text-yellow-300 hover:bg-[#0f1428]' : 'text-yellow-700 hover:bg-[#fbf4de]')
+                          }`}
+                          style={{ 
+                            minHeight: 'clamp(32px, 3.5vw, 40px)',
+                            paddingLeft: 'clamp(16px, 2vw, 24px)',
+                            fontSize: 'clamp(0.7rem, 1.1vw, 0.8rem)'
+                          }}
+                        >
+                          <span className={`inline-block align-middle flex-shrink-0`} style={{
+                            fontSize: 'clamp(1.125rem, 2.2vw, 1.5rem)',
+                            marginRight: 'clamp(6px, 0.8vw, 10px)',
+                            width: 'clamp(20px, 2.5vw, 28px)',
+                            height: 'clamp(20px, 2.5vw, 28px)'
+                          }}>{subLink.icon}</span>
+                          <span className="truncate" title={subLink.name} style={{ fontSize: 'clamp(0.7rem, 1.1vw, 0.8rem)' }}>
+                            {subLink.name}
+                          </span>
+                          {/* Notification dot for sublinks */}
+                          {getNotificationCount(subLink.name, subLink.path) > 0 && (
+                            <span className={`absolute ${isTablet ? 'right-3' : 'right-4'} top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full`}></span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                    {/* Show scroll indicator when there are many classrooms */}
+                    {link.subLinks.length > (isMobile ? 3 : isTablet ? 4 : 5) && (
+                      <div className={`text-xs text-center mt-2 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'} opacity-70`}>
+                        ↑↓ Scroll to see more classrooms
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -455,85 +539,142 @@ const Navbar = () => {
               <Link
                 to={isStudent() ? '/student/join-classroom' : '/teacher/add-classroom'}
                 onClick={() => handleLinkClick('Classrooms', isStudent() ? '/student/join-classroom' : '/teacher/add-classroom')}
-                className={`flex items-center ${sidebarOpen ? 'px-4 py-3' : 'mr-4 justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
+                className={`flex items-center ${sidebarOpen ? 'px-2 sm:px-3' : 'justify-center'} py-1 sm:py-2 rounded-lg font-medium transition-colors duration-150 group relative ${
                   (isStudent() && isActive('/student/join-classroom')) || (isTeacher() && isActive('/teacher/add-classroom'))
                     ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
                     : (darkMode ? 'text-yellow-200 hover:bg-[#0f1428]' : 'text-yellow-800 hover:bg-[#fbf4de]')
                 }`}
-                style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
+                style={{ 
+                  minHeight: 'clamp(36px, 4vw, 48px)', 
+                  minWidth: sidebarOpen ? undefined : 'clamp(36px, 4vw, 48px)',
+                  padding: 'clamp(4px, 0.5vw, 8px)',
+                  fontSize: 'clamp(0.75rem, 1.2vw, 0.875rem)'
+                }}
               >
-                <span className={`inline-block text-2xl ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>
+                <span className={`inline-block flex items-center justify-center flex-shrink-0`} style={{
+                  fontSize: 'clamp(1.25rem, 2.5vw, 1.875rem)',
+                  width: 'clamp(24px, 3vw, 32px)',
+                  height: 'clamp(24px, 3vw, 32px)',
+                  marginRight: sidebarOpen ? 'clamp(8px, 1vw, 12px)' : '0'
+                }}>
                   <AiOutlinePlusCircle />
                 </span>
-                {sidebarOpen && (isStudent() ? 'Join Classroom' : 'Create Classroom')}
+                {sidebarOpen && (
+                  <span className="truncate" style={{ fontSize: 'clamp(0.75rem, 1.2vw, 0.875rem)' }}>
+                    {isStudent() ? 'Join Classroom' : 'Create Classroom'}
+                  </span>
+                )}
                 {/* Notification dot for classroom actions */}
                 {notifications.classrooms > 0 && (
-                  <span className="absolute right-4 w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className={`absolute ${isTablet ? 'right-3' : 'right-4'} w-2 h-2 bg-red-500 rounded-full`}></span>
                 )}
               </Link>
             )}
+            
             {/* Help link at the end */}
             {!isAdmin() && (
               <Link
                 to={isTeacher() ? '/teacher/help' : '/student/help'}
                 onClick={() => handleLinkClick('Help', isTeacher() ? '/teacher/help' : '/student/help')}
-                className={`flex items-center ${sidebarOpen ? 'px-4 py-3' : 'mr-4 justify-center py-3'} rounded-lg text-sm font-medium transition-colors duration-150 group relative ${
+                className={`flex items-center ${sidebarOpen ? 'px-2 sm:px-3' : 'justify-center'} py-1 sm:py-2 rounded-lg font-medium transition-colors duration-150 group relative ${
                   isActive(isTeacher() ? '/teacher/help' : '/student/help')
                     ? (darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white')
                     : (darkMode ? 'text-yellow-200 hover:bg-[#0f1428]' : 'text-yellow-800 hover:bg-[#fbf4de]')
                 }`}
-                style={{ minHeight: '48px', minWidth: sidebarOpen ? undefined : '48px' }}
+                style={{ 
+                  minHeight: 'clamp(36px, 4vw, 48px)', 
+                  minWidth: sidebarOpen ? undefined : 'clamp(36px, 4vw, 48px)',
+                  padding: 'clamp(4px, 0.5vw, 8px)',
+                  fontSize: 'clamp(0.75rem, 1.2vw, 0.875rem)'
+                }}
               >
-                <span className={`inline-block text-2xl ${sidebarOpen ? 'mr-3' : ''} flex items-center justify-center w-8 h-8`}>
+                <span className={`inline-block flex items-center justify-center flex-shrink-0`} style={{
+                  fontSize: 'clamp(1.25rem, 2.5vw, 1.875rem)',
+                  width: 'clamp(24px, 3vw, 32px)',
+                  height: 'clamp(24px, 3vw, 32px)',
+                  marginRight: sidebarOpen ? 'clamp(8px, 1vw, 12px)' : '0'
+                }}>
                   <FaQuestionCircle />
                 </span>
-                {sidebarOpen && <span>Help</span>}
+                {sidebarOpen && (
+                  <span className="truncate" style={{ fontSize: 'clamp(0.75rem, 1.2vw, 0.875rem)' }}>
+                    Help
+                  </span>
+                )}
                 {/* Notification dot for help */}
                 {notifications.help > 0 && (
-                  <span className="absolute right-4 w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className={`absolute ${isTablet ? 'right-3' : 'right-4'} w-2 h-2 bg-red-500 rounded-full`}></span>
                 )}
               </Link>
             )}
           </nav>
         </div>
         {/* Bottom: Dark/Light Toggle & User Profile & Logout */}
-        <div className={`px-3 pb-6 pt-2 ${sidebarOpen ? '' : 'px-0'}`}>
+        <div className={`${sidebarOpen ? 'px-1 sm:px-2' : 'px-0'} pb-2 sm:pb-3 pt-1 flex-shrink-0`} style={{ 
+          padding: 'clamp(8px, 1vw, 16px)',
+          paddingTop: 'clamp(4px, 0.5vw, 8px)',
+          paddingBottom: 'clamp(8px, 1vw, 16px)'
+        }}>
           {/* Dark/Light Mode Toggle */}
           {isInitialized && (
-            <div className={`flex items-center justify-center mb-4 rounded-lg p-1 ${sidebarOpen ? '' : 'justify-center'} ${
+            <div className={`flex items-center justify-center mb-2 sm:mb-3 rounded-lg ${sidebarOpen ? '' : 'justify-center'} ${
               darkMode ? 'bg-[#0f1428]' : 'bg-[#fbf4de]'
-            }`}>
+            }`} style={{ 
+              padding: 'clamp(2px, 0.3vw, 4px)',
+              marginBottom: 'clamp(8px, 1vw, 12px)'
+            }}>
               <button
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${
+                className={`flex-1 rounded-lg font-medium transition-colors duration-150 flex items-center justify-center ${
                   darkMode 
                     ? 'bg-yellow-500 text-[#0b1022]' 
                     : 'text-yellow-700'
                 }`}
+                style={{ 
+                  padding: 'clamp(6px, 0.8vw, 8px)',
+                  fontSize: 'clamp(0.6rem, 1vw, 0.75rem)'
+                }}
                 onClick={() => setDarkMode(true)}
               >
-                <FaMoon className="mr-2" />
-                {sidebarOpen && 'Dark'}
+                <FaMoon style={{ 
+                  fontSize: 'clamp(0.75rem, 1.2vw, 1rem)',
+                  marginRight: sidebarOpen ? 'clamp(4px, 0.5vw, 6px)' : '0'
+                }} />
+                {sidebarOpen && <span style={{ fontSize: 'clamp(0.6rem, 1vw, 0.75rem)' }}>Dark</span>}
               </button>
               <button
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center ${
+                className={`flex-1 rounded-lg font-medium transition-colors duration-150 flex items-center justify-center ${
                   !darkMode 
                     ? 'bg-yellow-500 text-[#0b1022]' 
                     : 'text-yellow-700'
                 }`}
+                style={{ 
+                  padding: 'clamp(6px, 0.8vw, 8px)',
+                  fontSize: 'clamp(0.6rem, 1vw, 0.75rem)'
+                }}
                 onClick={() => setDarkMode(false)}
               >
-                <FaSun className="mr-2" />
-                {sidebarOpen && 'Light'}
+                <FaSun style={{ 
+                  fontSize: 'clamp(0.75rem, 1.2vw, 1rem)',
+                  marginRight: sidebarOpen ? 'clamp(4px, 0.5vw, 6px)' : '0'
+                }} />
+                {sidebarOpen && <span style={{ fontSize: 'clamp(0.6rem, 1vw, 0.75rem)' }}>Light</span>}
               </button>
             </div>
           )}
           {/* User Profile & Logout */}
-          <div className={`flex items-center ${sidebarOpen ? 'gap-3 rounded-xl p-3' : 'justify-center'} relative ${
+          <div className={`flex items-center ${sidebarOpen ? 'gap-1 sm:gap-2 rounded-xl' : 'justify-center'} relative ${
             darkMode ? 'bg-[#0f1428]' : 'bg-[#fbf4de]'
-          }`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-semibold overflow-hidden ${
+          }`} style={{ 
+            padding: 'clamp(8px, 1vw, 12px)',
+            gap: sidebarOpen ? 'clamp(8px, 1vw, 12px)' : '0'
+          }}>
+            <div className={`rounded-full flex items-center justify-center font-semibold overflow-hidden flex-shrink-0 ${
               darkMode ? 'bg-yellow-500 text-[#0b1022]' : 'bg-yellow-600 text-white'
-            }`}>
+            }`} style={{ 
+              width: 'clamp(32px, 4vw, 40px)', 
+              height: 'clamp(32px, 4vw, 40px)',
+              fontSize: 'clamp(0.75rem, 1.2vw, 1.125rem)'
+            }}>
               {profileImageSrc ? (
                 <img
                   src={profileImageSrc}
@@ -547,23 +688,31 @@ const Navbar = () => {
               )}
             </div>
             {sidebarOpen && (
-              <div className="flex flex-col flex-1">
-                <span className={`font-semibold text-sm ${
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className={`font-semibold truncate ${
                   darkMode ? 'text-yellow-200' : 'text-yellow-800'
-                }`}>{`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.username}</span>
-                <span className={`text-xs ${
+                }`} style={{ fontSize: 'clamp(0.7rem, 1.1vw, 0.875rem)' }}>
+                  {`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.username}
+                </span>
+                <span className={`truncate ${
                   darkMode ? 'text-yellow-300' : 'text-yellow-700'
-                }`}>{isAdmin() ? 'Admin' : isTeacher() ? 'Teacher' : 'Student'}</span>
+                }`} style={{ fontSize: 'clamp(0.6rem, 1vw, 0.75rem)' }}>
+                  {isAdmin() ? 'Admin' : isTeacher() ? 'Teacher' : 'Student'}
+                </span>
               </div>
             )}
             <button
-              className={`ml-2 transition-colors duration-150 ${
+              className={`${sidebarOpen ? 'ml-auto' : ''} transition-colors duration-150 flex-shrink-0 ${
                 darkMode ? 'text-yellow-200 hover:text-red-400' : 'text-yellow-800 hover:text-red-600'
               }`}
               onClick={handleLogout}
               title="Logout"
+              style={{ 
+                padding: 'clamp(4px, 0.5vw, 6px)',
+                fontSize: 'clamp(1.25rem, 2.2vw, 1.5rem)'
+              }}
             >
-              <RiLogoutCircleRLine className="text-2xl" />
+              <RiLogoutCircleRLine />
             </button>
           </div>
         </div>
@@ -579,29 +728,45 @@ const Navbar = () => {
           darkMode 
             ? 'bg-[#0b1022] border-yellow-700/40' 
             : 'bg-[#f5ecd2] border-yellow-300'
-        }`}>
-          <div className="flex items-center justify-between px-4 py-3">
+        }`} style={{ 
+          minHeight: 'clamp(50px, 8vh, 70px)',
+          maxHeight: 'clamp(50px, 8vh, 70px)'
+        }}>
+          <div className="flex items-center justify-between w-full h-full" style={{ 
+            padding: 'clamp(8px, 1.5vw, 16px)',
+            gap: 'clamp(8px, 1.5vw, 16px)'
+          }}>
             {/* Logo on the left */}
-            <Link to="/" className="flex items-center">
+            <Link to="/" className="flex items-center flex-shrink-0">
               <img
                 src="/images/new-logo.png"
                 alt="MathQuest Logo"
-                className="h-10 w-10 object-contain"
+                className="object-contain"
+                style={{ 
+                  height: 'clamp(32px, 5vw, 48px)', 
+                  width: 'clamp(32px, 5vw, 48px)' 
+                }}
               />
             </Link>
             
             {/* Menu button on the right */}
-            <button
-              className={`p-3 rounded-lg transition-colors shadow-md ${
-                darkMode 
-                  ? 'text-yellow-200 hover:text-yellow-100' 
-                  : 'text-yellow-800 hover:text-yellow-700'
-              }`}
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open Menu"
-            >
-              <HiMenuAlt1 className="text-xl" />
-            </button>
+            <div className="flex items-center flex-shrink-0">
+              <button
+                className={`rounded-lg transition-colors shadow-md ${
+                  darkMode 
+                    ? 'text-yellow-200 hover:text-yellow-100' 
+                    : 'text-yellow-800 hover:text-yellow-700'
+                }`}
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open Menu"
+                style={{ 
+                  padding: 'clamp(8px, 1.5vw, 12px)',
+                  fontSize: 'clamp(1.125rem, 2.5vw, 1.25rem)'
+                }}
+              >
+                <HiMenuAlt1 />
+              </button>
+            </div>
           </div>
         </nav>
       )}
