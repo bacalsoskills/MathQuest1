@@ -17,46 +17,16 @@ const AddGameActivityModal = ({ isOpen, onClose, classroomId, activityId, onActi
   });
   const [loading, setLoading] = useState(false);
 
-  // Game type configurations for auto-filling
-  const gameTypeConfigs = {
-    'FALLING_GAME': {
-      name: 'game 1',
-      instructions: 'Multiplication tables (primary focus – each level focuses on a specific multiplication table)\n\n10 levels total, with increasing difficulty\n\nEach level requires solving 10 problems to advance',
-      topic: 'Multiplication'
-    },
-    'MULTIPLE_CHOICE': {
-      name: 'game 2',
-      instructions: 'Answer multiple-choice questions on addition\n\n10 questions per level\n\nEach correct answer earns points, wrong answers reduce hearts',
-      topic: 'Addition'
-    },
-    'MULTIPLE_CHOICE_SUBTRACTION': {
-      name: 'game 3',
-      instructions: 'Answer multiple-choice questions on subtraction\n\n10 questions per level\n\nEach correct answer earns points, wrong answers reduce hearts',
-      topic: 'Subtraction'
-    }
-  };
   
   if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    setFormData((prev) => {
-      const newFormData = {
-        ...prev,
-        [name]: value
-      };
-      
-      // Auto-fill fields when game type changes
-      if (name === 'type' && gameTypeConfigs[value]) {
-        const config = gameTypeConfigs[value];
-        newFormData.name = config.name;
-        newFormData.instructions = config.instructions;
-        newFormData.topic = config.topic;
-      }
-      
-      return newFormData;
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -183,9 +153,8 @@ const AddGameActivityModal = ({ isOpen, onClose, classroomId, activityId, onActi
             onChange={handleChange}
             className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
           >
-            <option value="FALLING_GAME">Falling Game Multiplication</option>
-            <option value="MULTIPLE_CHOICE">Multiple Choice Game Addition</option>
-            <option value="MULTIPLE_CHOICE_SUBTRACTION">Multiple Choice Game Subtraction</option>
+            <option value="FALLING_GAME">Falling Game (Multiplication)</option>
+            <option value="MULTIPLE_CHOICE">Multiple Choice Game (Mixed Topics)</option>
           </select>
         </div>
       </form>
