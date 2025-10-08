@@ -809,28 +809,93 @@ const QuizAttemptPage = () => {
       });
       
       // Check if the error is because the attempt is already completed
-      // Handle both direct message and 404 errors that might indicate completed attempts
+      // Handle multiple error formats that might indicate completed attempts
+      const submissionErrorMessage = error.response?.data?.message || error.message || '';
       const isAlreadyCompleted = (
-        (error.response?.data?.message && 
-         error.response.data.message.includes('already completed')) ||
+        submissionErrorMessage.includes('already completed') ||
+        submissionErrorMessage.includes('This quiz attempt is already completed') ||
         error.response?.status === 404 ||
         error.response?.status === 500 ||
-        (error.message && error.message.includes('already completed'))
+        error.response?.status === 400
       );
       
       if (isAlreadyCompleted) {
-        
         console.log('Quiz attempt already completed, fetching results...');
+        console.log('Error details for debugging:', {
+          status: error.response?.status,
+          message: submissionErrorMessage,
+          fullError: error
+        });
         
         // Fetch the completed attempt data to show results
         try {
           const attemptData = await quizService.getQuizAttempt(attemptId);
+          console.log('Fetched completed attempt data:', attemptData);
+          
           const quizLeaderboard = await leaderboardService.getLeaderboardByQuiz(quizDetails.id);
           const studentRank = quizLeaderboard?.findIndex(
             entry => entry.studentId === user.id
           ) + 1;
           
           // Calculate values for the completed attempt
+          const completedTotalPoints = quizDetails.questions.reduce((sum, q) => sum + (q.points || 1), 0);
+          const completedPercentageScore = completedTotalPoints > 0 ? Math.round((attemptData.score / completedTotalPoints) * 100) : 0;
+          
+          const resultData = {
+            score: completedPercentageScore,
+            pointsEarned: attemptData.score,
+            totalPoints: completedTotalPoints,
+            passed: attemptData.score >= quizDetails.passingScore,
+            quizName: quizDetails.quizName,
+            attemptNumber: attemptData.attemptNumber,
+            formattedTimeSpent: attemptData.timeSpentSeconds ? 
+              `${Math.floor(attemptData.timeSpentSeconds / 60)}:${(attemptData.timeSpentSeconds % 60).toString().padStart(2, '0')}` : 'N/A',
+            rank: studentRank || 1
+          };
+          
+          console.log('Setting quiz result:', resultData);
+          
+          setQuizResult(resultData);
+          setShowResultModal(true);
+          setShowConfirmationModal(false);
+          setHasUnsavedChanges(false);
+          localStorage.removeItem(lsKey);
+          
+          if (onComplete) {
+            onComplete(completedPercentageScore);
+          }
+          
+          toast.success('Quiz results retrieved successfully!');
+          return;
+        } catch (fetchError) {
+          console.error('Error fetching completed attempt:', fetchError);
+          console.error('Fetch error details:', {
+            status: fetchError.response?.status,
+            message: fetchError.message,
+            data: fetchError.response?.data
+          });
+          
+          // If we can't fetch the attempt data, show a generic error
+          toast.error('Unable to retrieve quiz results. Please try again.');
+        }
+      }
+      
+      // If we get here and it's not an "already completed" error, 
+      // let's try to fetch the attempt data anyway as a fallback
+      console.log('Attempting fallback: fetching attempt data for any submission error...');
+      try {
+        const attemptData = await quizService.getQuizAttempt(attemptId);
+        console.log('Fallback: Fetched attempt data:', attemptData);
+        
+        // If the attempt is completed, show results
+        if (attemptData.completedAt) {
+          console.log('Fallback: Attempt is completed, showing results...');
+          
+          const quizLeaderboard = await leaderboardService.getLeaderboardByQuiz(quizDetails.id);
+          const studentRank = quizLeaderboard?.findIndex(
+            entry => entry.studentId === user.id
+          ) + 1;
+          
           const completedTotalPoints = quizDetails.questions.reduce((sum, q) => sum + (q.points || 1), 0);
           const completedPercentageScore = completedTotalPoints > 0 ? Math.round((attemptData.score / completedTotalPoints) * 100) : 0;
           
@@ -856,9 +921,9 @@ const QuizAttemptPage = () => {
           
           toast.success('Quiz results retrieved successfully!');
           return;
-        } catch (fetchError) {
-          console.error('Error fetching completed attempt:', fetchError);
         }
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
       }
       
       let errorMessage = 'Failed to submit quiz. Please try again.';
