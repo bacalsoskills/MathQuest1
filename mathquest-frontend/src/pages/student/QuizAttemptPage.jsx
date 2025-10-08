@@ -431,23 +431,59 @@ const QuizAttemptPage = () => {
         const quizData = await quizService.getQuiz(quizId);
         const attemptData = await quizService.getQuizAttempt(attemptId);
 
+        console.log('Quiz data:', quizData);
+        console.log('Attempt data:', attemptData);
+        console.log('Attempt completedAt:', attemptData.completedAt);
+
         if (!quizData || !attemptData) {
           throw new Error('Quiz or attempt data not found.');
         }
 
-        // If the attempt is already completed, inform and exit gracefully
+        // If the attempt is already completed, show the results instead of redirecting
         if (attemptData.completedAt) {
-          toast.error('This quiz attempt is already completed.');
-          setLoading(false);
-          // Redirect back to classroom (if known) or quizzes page
+          console.log('Quiz attempt already completed, showing results...');
+          
+          // Get the activity data to find the classroom ID
           if (quizData.activityId) {
             try {
               const activityResponse = await api.get(`/activities/${quizData.activityId}`);
               const activityData = activityResponse.data;
               setClassroomId(activityData.classroomId);
-              navigate(`/student/classrooms/${activityData.classroomId}`, { state: { activeTab: 'activities' } });
-            } catch {}
+            } catch (activityError) {
+              console.error('Error fetching activity data:', activityError);
+            }
           }
+          
+          // Parse the completed answers if they exist
+          let completedAnswers = {};
+          if (attemptData.answers) {
+            try {
+              completedAnswers = JSON.parse(attemptData.answers);
+            } catch (e) {
+              console.error('Error parsing completed answers:', e);
+            }
+          }
+          
+          // Set up the quiz result from the completed attempt
+          const totalPoints = quizData.questions.reduce((sum, q) => sum + (q.points || 1), 0);
+          const percentageScore = totalPoints > 0 ? Math.round((attemptData.score / totalPoints) * 100) : 0;
+          
+          setQuizResult({
+            score: percentageScore,
+            pointsEarned: attemptData.score,
+            totalPoints,
+            passed: attemptData.score >= quizData.passingScore,
+            quizName: quizData.quizName,
+            attemptNumber: attemptData.attemptNumber,
+            formattedTimeSpent: attemptData.timeSpentSeconds ? 
+              `${Math.floor(attemptData.timeSpentSeconds / 60)}:${(attemptData.timeSpentSeconds % 60).toString().padStart(2, '0')}` : 'N/A',
+            rank: attemptData.rank || 'N/A'
+          });
+          
+          // Set the answers and show the result modal
+          setAnswers(completedAnswers);
+          setShowResultModal(true);
+          setLoading(false);
           return;
         }
 
@@ -526,9 +562,11 @@ const QuizAttemptPage = () => {
         // Handle timer initialization
         if (quizData.timeLimitMinutes && quizData.timeLimitMinutes > 0) {
           const timeLimitSeconds = quizData.timeLimitMinutes * 60;
+          console.log('Timer setup - timeLimitMinutes:', quizData.timeLimitMinutes, 'timeLimitSeconds:', timeLimitSeconds);
           
           if (savedTimeLeft && savedTimeLeft > 0) {
             // Use saved timer state
+            console.log('Using saved timer state:', savedTimeLeft);
             setTimeLeft(savedTimeLeft);
             setTimerStarted(true);
           } else {
@@ -538,11 +576,14 @@ const QuizAttemptPage = () => {
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             const remaining = Math.max(timeLimitSeconds - elapsedSeconds, 0);
             
+            console.log('Timer calculation - startTime:', startTime, 'now:', now, 'elapsedSeconds:', elapsedSeconds, 'remaining:', remaining);
             setTimeLeft(remaining);
             if (remaining > 0) {
               setTimerStarted(true);
             }
           }
+        } else {
+          console.log('No timer limit set for this quiz');
         }
         
       } catch (err) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import api from '../../services/api';
@@ -16,17 +16,40 @@ const AddGameActivityModal = ({ isOpen, onClose, classroomId, activityId, onActi
     type: 'FALLING_GAME'
   });
   const [loading, setLoading] = useState(false);
+  const [showTopicDropdown, setShowTopicDropdown] = useState(false);
 
+  // Initialize topic based on default game type
+  useEffect(() => {
+    if (formData.type === 'FALLING_GAME') {
+      setFormData(prev => ({ ...prev, topic: 'Multiplication' }));
+      setShowTopicDropdown(false);
+    }
+  }, []);
   
   if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => {
+      const newFormData = {
+        ...prev,
+        [name]: value
+      };
+      
+      // Auto-fill fields when game type changes
+      if (name === 'type') {
+        if (value === 'FALLING_GAME') {
+          newFormData.topic = 'Multiplication';
+          setShowTopicDropdown(false);
+        } else if (value === 'MULTIPLE_CHOICE') {
+          setShowTopicDropdown(true);
+          newFormData.topic = ''; // Reset topic for user to choose
+        }
+      }
+      
+      return newFormData;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -132,15 +155,38 @@ const AddGameActivityModal = ({ isOpen, onClose, classroomId, activityId, onActi
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Topic *
           </label>
-          <input
-            type="text"
-            name="topic"
-            value={formData.topic}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
-            placeholder="Addition or Multiplication"
-          />
+          {formData.type === 'FALLING_GAME' ? (
+            <input
+              type="text"
+              name="topic"
+              value={formData.topic}
+              readOnly
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+              placeholder="Multiplication (auto-filled)"
+            />
+          ) : showTopicDropdown ? (
+            <select
+              name="topic"
+              value={formData.topic}
+              onChange={handleChange}
+              required
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
+            >
+              <option value="">Select topic</option>
+              <option value="Addition">Addition</option>
+              <option value="Subtraction">Subtraction</option>
+            </select>
+          ) : (
+            <input
+              type="text"
+              name="topic"
+              value={formData.topic}
+              onChange={handleChange}
+              required
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
+              placeholder="Select game type first"
+            />
+          )}
         </div>
 
         <div>
