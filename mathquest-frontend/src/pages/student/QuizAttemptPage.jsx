@@ -801,6 +801,52 @@ const QuizAttemptPage = () => {
       
     } catch (error) {
       console.error('Error submitting quiz:', error);
+      
+      // Check if the error is because the attempt is already completed
+      if (error.response?.data?.message && 
+          error.response.data.message.includes('already completed')) {
+        
+        console.log('Quiz attempt already completed, fetching results...');
+        
+        // Fetch the completed attempt data to show results
+        try {
+          const attemptData = await quizService.getQuizAttempt(attemptId);
+          const quizLeaderboard = await leaderboardService.getLeaderboardByQuiz(quizDetails.id);
+          const studentRank = quizLeaderboard?.findIndex(
+            entry => entry.studentId === user.id
+          ) + 1;
+          
+          // Calculate values for the completed attempt
+          const completedTotalPoints = quizDetails.questions.reduce((sum, q) => sum + (q.points || 1), 0);
+          const completedPercentageScore = completedTotalPoints > 0 ? Math.round((attemptData.score / completedTotalPoints) * 100) : 0;
+          
+          setQuizResult({
+            score: completedPercentageScore,
+            pointsEarned: attemptData.score,
+            totalPoints: completedTotalPoints,
+            passed: attemptData.score >= quizDetails.passingScore,
+            quizName: quizDetails.quizName,
+            attemptNumber: attemptData.attemptNumber,
+            formattedTimeSpent: attemptData.timeSpentSeconds ? 
+              `${Math.floor(attemptData.timeSpentSeconds / 60)}:${(attemptData.timeSpentSeconds % 60).toString().padStart(2, '0')}` : 'N/A',
+            rank: studentRank || 1
+          });
+          setShowResultModal(true);
+          setShowConfirmationModal(false);
+          setHasUnsavedChanges(false);
+          localStorage.removeItem(lsKey);
+          
+          if (onComplete) {
+            onComplete(completedPercentageScore);
+          }
+          
+          toast.success('Quiz results retrieved successfully!');
+          return;
+        } catch (fetchError) {
+          console.error('Error fetching completed attempt:', fetchError);
+        }
+      }
+      
       let errorMessage = 'Failed to submit quiz. Please try again.';
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -957,6 +1003,12 @@ const QuizAttemptPage = () => {
                     Time Left: {Math.floor(timeLeft / 60)}:{('0' + (timeLeft % 60)).slice(-2)}
                     </div>
                 </div>
+            )}
+            {/* Debug timer state */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-2 text-xs text-gray-500 text-center">
+                Debug: timerStarted={timerStarted ? 'true' : 'false'}, timeLeft={timeLeft}, quizTimeLimit={quizDetails?.timeLimitMinutes}
+              </div>
             )}
           </div>
 
