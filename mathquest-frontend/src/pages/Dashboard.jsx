@@ -89,7 +89,7 @@ const Dashboard = () => {
   const developers = [
     { name: 'Michael Ferdinand C. Bacalso', role: 'Frontend Developer', skills: ['React', 'UI'], icon: <FaCode />, photo: michaelPhoto },
     { name: 'Angelo B. Cajegas', role: 'Frontend Developer', skills: ['React', 'UX'], icon: <FaCode />, photo: angeloPhoto },
-    { name: 'Kristoffer Josh Tesalunay', role: 'Frontend Developer', skills: ['React', 'SPA'], icon: <FaCode />, photo: kristofferPhoto },
+    { name: 'Kristoffer Josh Tesaluna', role: 'Frontend Developer', skills: ['React', 'SPA'], icon: <FaCode />, photo: kristofferPhoto },
     { name: 'Aaron Cloyd Villarta', role: 'Backend Developer', skills: ['API', 'Auth'], icon: <FaAnchor />, photo: aaronPhoto },
     { name: 'Emmanuel A. Cagampang Jr.', role: 'Backend Developer', skills: ['DB', 'Analytics'], icon: <FaAnchor />, photo: emmanuelPhoto },
   ];
