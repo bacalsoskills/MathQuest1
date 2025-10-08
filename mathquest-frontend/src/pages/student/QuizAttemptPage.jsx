@@ -801,10 +801,24 @@ const QuizAttemptPage = () => {
       
     } catch (error) {
       console.error('Error submitting quiz:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
       
       // Check if the error is because the attempt is already completed
-      if (error.response?.data?.message && 
-          error.response.data.message.includes('already completed')) {
+      // Handle both direct message and 404 errors that might indicate completed attempts
+      const isAlreadyCompleted = (
+        (error.response?.data?.message && 
+         error.response.data.message.includes('already completed')) ||
+        error.response?.status === 404 ||
+        error.response?.status === 500 ||
+        (error.message && error.message.includes('already completed'))
+      );
+      
+      if (isAlreadyCompleted) {
         
         console.log('Quiz attempt already completed, fetching results...');
         
