@@ -61,7 +61,7 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors(cors -> cors.configure(http))
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -74,6 +74,9 @@ public class WebSecurityConfig {
                         .requestMatchers("/games/**").permitAll() // Allow games routes
                         .requestMatchers("/activities/**").permitAll() // Allow activities routes
                         .requestMatchers("/lessons/**").permitAll() // Allow lessons routes
+                        .requestMatchers("/quizzes/**").permitAll() // Allow quiz routes
+                        .requestMatchers("/attempts/**").permitAll() // Allow quiz attempt routes
+                        .requestMatchers("/leaderboard/**").permitAll() // Allow leaderboard routes
                         .requestMatchers("/reports/**").permitAll() // Allow reports routes
                         .requestMatchers("/", "/error", "/h2-console/**").permitAll() // Allow other general routes
                         .anyRequest().authenticated() // All other requests need authentication
