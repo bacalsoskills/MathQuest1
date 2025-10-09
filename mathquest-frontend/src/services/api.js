@@ -3,7 +3,7 @@ import logger from "./logger";
 
 // Use environment variable for API URL, fallback to deployed backend for production
 const API_URL = process.env.REACT_APP_API_URL || 
-  (window.location.hostname === 'localhost' ? "http://localhost:8080" : "https://mathquest1-2.onrender.com");
+  (window.location.hostname === 'localhost' ? "http://localhost:8080" : "https://mathquest-dz5n.onrender.com");
 
 const api = axios.create({
   baseURL: API_URL,
