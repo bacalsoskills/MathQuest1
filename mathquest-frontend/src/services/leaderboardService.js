@@ -360,11 +360,26 @@
 //   },
 // };
 
-import api from "./api";
+import axios from "axios";
 
 const API_URL = ""; // Remove the /quizzes prefix since it's included in the endpoints
 
-// Note: No need for getAuthHeader() anymore - the api instance automatically adds the auth token via interceptors
+// Helper function to get auth header
+const getAuthHeader = () => {
+  const token = localStorage.getItem("token");
+  console.log(
+    "[LeaderboardService] Getting auth header with token:",
+    token ? "Token exists" : "No token"
+  );
+  if (!token) {
+    throw new Error("No authentication token found");
+  }
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
 
 // Helper function to get current user ID from auth context
 const getCurrentUserId = () => {
@@ -399,8 +414,9 @@ export const leaderboardService = {
         "[LeaderboardService] Fetching classroom leaderboard for classroom:",
         classroomId
       );
-      const response = await api.get(
-        `/quizzes/classroom/${classroomId}/leaderboard`
+      const response = await axios.get(
+        `/quizzes/classroom/${classroomId}/leaderboard`,
+        getAuthHeader()
       );
       console.log(
         "[LeaderboardService] Classroom leaderboard response:",
@@ -426,8 +442,9 @@ export const leaderboardService = {
         "[LeaderboardService] Fetching quiz leaderboard for quiz:",
         quizId
       );
-      const response = await api.get(
-        `/quizzes/${quizId}/leaderboard`
+      const response = await axios.get(
+        `/quizzes/${quizId}/leaderboard`,
+        getAuthHeader()
       );
       console.log(
         "[LeaderboardService] Quiz leaderboard response:",
@@ -453,8 +470,9 @@ export const leaderboardService = {
         "[LeaderboardService] Fetching quizzes for classroom:",
         classroomId
       );
-      const response = await api.get(
-        `/quizzes/classroom/${classroomId}`
+      const response = await axios.get(
+        `/quizzes/classroom/${classroomId}`,
+        getAuthHeader()
       );
       console.log(
         "[LeaderboardService] Classroom quizzes response:",
@@ -480,8 +498,9 @@ export const leaderboardService = {
         "[LeaderboardService] Fetching student quiz attempts for student:",
         studentId
       );
-      const response = await api.get(
-        `/quizzes/attempts/student/${studentId}`
+      const response = await axios.get(
+        `/quizzes/attempts/student/${studentId}`,
+        getAuthHeader()
       );
       console.log(
         "[LeaderboardService] Student quiz attempts response:",
@@ -507,8 +526,9 @@ export const leaderboardService = {
         "[LeaderboardService] Fetching available quizzes for classroom:",
         classroomId
       );
-      const response = await api.get(
-        `/quizzes/classroom/${classroomId}/available`
+      const response = await axios.get(
+        `/quizzes/classroom/${classroomId}/available`,
+        getAuthHeader()
       );
       console.log(
         "[LeaderboardService] Available quizzes response:",
@@ -648,26 +668,30 @@ export const leaderboardService = {
       classroomId
     );
     const userId = getCurrentUserId();
+    const authHeader = getAuthHeader();
 
     try {
       // Get student performance data
       console.log("[API] Fetching performance data for user:", userId);
-      const performanceResponse = await api.get(
-        `/quizzes/performance/student/${userId}/classroom/${classroomId}`
+      const performanceResponse = await axios.get(
+        `/quizzes/performance/student/${userId}/classroom/${classroomId}`,
+        authHeader
       );
       console.log("[API] Performance data:", performanceResponse.data);
 
       // Get available quizzes in the classroom
       console.log("[API] Fetching available quizzes...");
-      const quizzesResponse = await api.get(
-        `/quizzes/classroom/${classroomId}/available`
+      const quizzesResponse = await axios.get(
+        `/quizzes/classroom/${classroomId}/available`,
+        authHeader
       );
       console.log("[API] Available quizzes:", quizzesResponse.data);
 
       // Get student's attempts
       console.log("[API] Fetching student attempts...");
-      const attemptsResponse = await api.get(
-        `/quizzes/attempts/student/${userId}`
+      const attemptsResponse = await axios.get(
+        `/quizzes/attempts/student/${userId}`,
+        authHeader
       );
       console.log("[API] Student attempts:", attemptsResponse.data);
 
@@ -737,8 +761,9 @@ export const leaderboardService = {
       "[API] Fetching overall student performance for student:",
       studentId
     );
-    const response = await api.get(
-      `/quizzes/performance/student/${studentId}/overall`
+    const response = await axios.get(
+      `/quizzes/performance/student/${studentId}/overall`,
+      getAuthHeader()
     );
     console.log("[API] Overall performance response:", response.data);
     return response.data;
@@ -746,8 +771,9 @@ export const leaderboardService = {
 
   getTopPerformers: async (classroomId) => {
     console.log("[API] Fetching top performers for classroom:", classroomId);
-    const response = await api.get(
-      `/quizzes/performance/classroom/${classroomId}/top`
+    const response = await axios.get(
+      `/quizzes/performance/classroom/${classroomId}/top`,
+      getAuthHeader()
     );
     console.log("[API] Top performers response:", response.data);
     return response.data;
@@ -758,8 +784,9 @@ export const leaderboardService = {
       "[API] Fetching students needing attention for classroom:",
       classroomId
     );
-    const response = await api.get(
-      `/quizzes/performance/classroom/${classroomId}/attention`
+    const response = await axios.get(
+      `/quizzes/performance/classroom/${classroomId}/attention`,
+      getAuthHeader()
     );
     console.log("[API] Students needing attention response:", response.data);
     return response.data;
@@ -770,8 +797,9 @@ export const leaderboardService = {
       "[API] Fetching classroom average score for classroom:",
       classroomId
     );
-    const response = await api.get(
-      `/quizzes/performance/classroom/${classroomId}/average`
+    const response = await axios.get(
+      `/quizzes/performance/classroom/${classroomId}/average`,
+      getAuthHeader()
     );
     console.log("[API] Classroom average score response:", response.data);
     return response.data;
