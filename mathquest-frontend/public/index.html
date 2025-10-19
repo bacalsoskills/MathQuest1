@@ -36,12 +36,9 @@
           
           // Ensure localStorage is consistent
           localStorage.setItem('theme', shouldBeDark ? 'dark' : 'light');
-          
-          // Show the body once theme is applied
-          document.body.classList.add('theme-ready');
         } catch (error) {
           // Fallback if localStorage is not available
-          document.body.classList.add('theme-ready');
+          console.warn('Theme initialization failed:', error);
         }
       })();
     </script>

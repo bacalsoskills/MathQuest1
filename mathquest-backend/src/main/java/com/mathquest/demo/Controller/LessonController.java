@@ -4,7 +4,6 @@ import com.mathquest.demo.DTO.LessonDTO;
 import com.mathquest.demo.DTO.LessonCompletionDTO;
 import com.mathquest.demo.DTO.Request.CreateLessonRequest;
 import com.mathquest.demo.Model.User;
-import com.mathquest.demo.Model.LessonCompletion;
 import com.mathquest.demo.Repository.UserRepository;
 import com.mathquest.demo.Security.services.UserDetailsImpl;
 import com.mathquest.demo.Service.LessonService;

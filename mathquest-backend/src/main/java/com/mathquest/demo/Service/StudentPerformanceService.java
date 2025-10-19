@@ -8,7 +8,6 @@ import com.mathquest.demo.Model.User;
 import com.mathquest.demo.Repository.ClassroomRepository;
 import com.mathquest.demo.Repository.StudentPerformanceRepository;
 import com.mathquest.demo.Repository.UserRepository;
-import com.mathquest.demo.Repository.QuizAttemptRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,9 +27,6 @@ public class StudentPerformanceService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private QuizAttemptRepository quizAttemptRepository;
 
     /**
      * Update student performance based on a quiz attempt

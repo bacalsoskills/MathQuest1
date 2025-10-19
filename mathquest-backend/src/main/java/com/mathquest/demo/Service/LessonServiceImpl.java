@@ -6,25 +6,22 @@ import com.mathquest.demo.DTO.LessonDTO;
 import com.mathquest.demo.DTO.LessonCompletionDTO;
 import com.mathquest.demo.DTO.Request.CreateLessonRequest;
 import com.mathquest.demo.Exception.ResourceNotFoundException;
-import com.mathquest.demo.Model.*;
-import com.mathquest.demo.Repository.*;
-import com.mathquest.demo.Repository.LeaderboardEntryRepository;
-import com.mathquest.demo.Repository.QuizAttemptRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import com.mathquest.demo.Model.Activity;
-import com.mathquest.demo.Model.ActivityCompletion;
 import com.mathquest.demo.Model.Classroom;
 import com.mathquest.demo.Model.ContentBlock;
+import com.mathquest.demo.Model.ERole;
 import com.mathquest.demo.Model.Lesson;
+import com.mathquest.demo.Model.LessonCompletion;
+import com.mathquest.demo.Model.Quiz;
 import com.mathquest.demo.Model.User;
-import com.mathquest.demo.Repository.ActivityCompletionRepository;
 import com.mathquest.demo.Repository.ActivityRepository;
 import com.mathquest.demo.Repository.ClassroomRepository;
 import com.mathquest.demo.Repository.ContentBlockRepository;
-import com.mathquest.demo.Repository.LessonRepository;
+import com.mathquest.demo.Repository.LeaderboardEntryRepository;
 import com.mathquest.demo.Repository.LessonCompletionRepository;
+import com.mathquest.demo.Repository.LessonRepository;
+import com.mathquest.demo.Repository.QuizAttemptRepository;
+import com.mathquest.demo.Repository.QuizRepository;
 import com.mathquest.demo.Repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -35,12 +32,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,9 +53,6 @@ public class LessonServiceImpl implements LessonService {
 
     @Autowired
     private ActivityRepository activityRepository;
-
-    @Autowired
-    private ActivityCompletionRepository activityCompletionRepository;
 
     @Autowired
     private LessonCompletionRepository lessonCompletionRepository;

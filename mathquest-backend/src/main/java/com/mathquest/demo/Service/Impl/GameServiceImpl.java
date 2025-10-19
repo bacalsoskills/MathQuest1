@@ -475,8 +475,8 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public List<GameScoreDTO> getGameLeaderboard(Long gameId) {
-        // First, check if the game exists
-        Game game = gameRepository.findById(gameId)
+        // Verify the game exists
+        gameRepository.findById(gameId)
                 .orElseThrow(() -> new ResourceNotFoundException("Game not found with id: " + gameId));
 
         List<GameScore> scores = gameScoreRepository.findTopScoresByGameId(gameId);

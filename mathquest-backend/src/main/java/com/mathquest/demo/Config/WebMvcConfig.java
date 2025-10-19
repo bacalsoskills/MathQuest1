@@ -3,6 +3,7 @@ package com.mathquest.demo.Config;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
+import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -10,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
 @Override
-public void addCorsMappings(CorsRegistry registry) {
+public void addCorsMappings(@NonNull CorsRegistry registry) {
     registry.addMapping("/**")
             .allowedOriginPatterns(
                 "http://localhost:3000", 
@@ -26,12 +27,12 @@ public void addCorsMappings(CorsRegistry registry) {
 
 
     @Override
-    public void addFormatters(FormatterRegistry registry) {
+    public void addFormatters(@NonNull FormatterRegistry registry) {
         // Add custom converter for String to Long that handles "undefined" and "null"
         // strings
         registry.addConverter(new Converter<String, Long>() {
             @Override
-            public Long convert(String source) {
+            public Long convert(@NonNull String source) {
                 if (source == null || source.trim().isEmpty() ||
                         "undefined".equalsIgnoreCase(source.trim()) ||
                         "null".equalsIgnoreCase(source.trim())) {

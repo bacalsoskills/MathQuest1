@@ -4,7 +4,6 @@ import com.mathquest.demo.DTO.Request.CreateUserRequest;
 import com.mathquest.demo.DTO.Request.UpdateProfileRequest;
 import com.mathquest.demo.DTO.Request.ChangePasswordRequest;
 import com.mathquest.demo.Model.User;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 

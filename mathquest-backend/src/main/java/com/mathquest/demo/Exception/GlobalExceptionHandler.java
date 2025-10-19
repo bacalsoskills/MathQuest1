@@ -71,10 +71,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
     public ResponseEntity<?> handleTypeMismatchException(
             org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex, WebRequest request) {
+        Class<?> requiredType = ex.getRequiredType();
+        String expectedType = (requiredType != null) ? requiredType.getSimpleName() : "unknown";
+        Object value = ex.getValue();
+        String actualType = (value != null) ? value.getClass().getSimpleName() : "null";
+        String actualValue = (value != null) ? value.toString() : "null";
+        
         String errorMsg = "Type mismatch for parameter '" + ex.getName() + "'. Expected: " +
-                ex.getRequiredType().getSimpleName() + ", Actual: " +
-                (ex.getValue() != null ? ex.getValue().getClass().getSimpleName() : "null") +
-                ", Value: " + ex.getValue();
+                expectedType + ", Actual: " + actualType + ", Value: " + actualValue;
 
         ErrorResponse errorResponse = new ErrorResponse(
                 new Date(),

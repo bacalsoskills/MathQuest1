@@ -10,8 +10,6 @@ import com.mathquest.demo.Repository.QuizAttemptRepository;
 import com.mathquest.demo.Repository.QuizRepository;
 import com.mathquest.demo.Repository.UserRepository;
 import com.mathquest.demo.Repository.LeaderboardEntryRepository;
-import com.mathquest.demo.Service.LeaderboardService;
-import com.mathquest.demo.Service.LessonService;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
