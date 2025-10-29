@@ -1,6 +1,7 @@
 package com.mathquest.demo.Service;
 
 import com.mathquest.demo.DTO.LeaderboardEntryDTO;
+import com.mathquest.demo.Model.Classroom;
 import com.mathquest.demo.Model.LeaderboardEntry;
 import com.mathquest.demo.Model.Quiz;
 import com.mathquest.demo.Model.QuizAttempt;
@@ -71,7 +72,6 @@ public class LeaderboardService {
      * @param attempts    Number of attempts
      * @return Final score
      */
-    @SuppressWarnings("unused")
     private double calculateFinalScore(double avgScore, double timeMinutes, int attempts) {
         // Calculate time bonus (max time - actual time)
         double timeBonus = Math.max(0, MAX_TIME_MINUTES - timeMinutes);
@@ -296,8 +296,7 @@ public class LeaderboardService {
     public List<LeaderboardEntryDTO> getLeaderboardByQuiz(Long quizId) {
         logger.info("Getting leaderboard for quiz ID: {}", quizId);
         try {
-            // Verify quiz exists
-            quizRepository.findById(quizId)
+            Quiz quiz = quizRepository.findById(quizId)
                     .orElseThrow(() -> new RuntimeException("Quiz not found"));
 
             List<Object[]> results = leaderboardEntryRepository
@@ -392,7 +391,6 @@ public class LeaderboardService {
      * @param entry The leaderboard entry entity
      * @return The leaderboard entry DTO
      */
-    @SuppressWarnings("unused")
     private LeaderboardEntryDTO convertToDTO(LeaderboardEntry entry) {
         LeaderboardEntryDTO dto = new LeaderboardEntryDTO();
         dto.setId(entry.getId());

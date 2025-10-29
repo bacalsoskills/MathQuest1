@@ -4,6 +4,7 @@ import com.mathquest.demo.DTO.ClassroomDTO;
 import com.mathquest.demo.DTO.CreateClassroomRequest;
 import com.mathquest.demo.DTO.JoinClassroomRequest;
 import com.mathquest.demo.DTO.UserSummaryDTO;
+import com.mathquest.demo.Model.ERole;
 import com.mathquest.demo.Model.User;
 import com.mathquest.demo.Repository.UserRepository;
 import com.mathquest.demo.Security.services.UserDetailsImpl;

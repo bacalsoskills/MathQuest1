@@ -3,6 +3,8 @@ package com.mathquest.demo.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
+
+import java.util.function.Predicate;
 import org.springframework.http.HttpHeaders;
 
 @Configuration
